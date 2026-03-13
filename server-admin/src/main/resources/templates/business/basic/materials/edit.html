@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <link rel="stylesheet" th:href="@{/lib/zTree_v3/css/zTreeStyle/zTreeStyle.css}" type="text/css">
+    <link rel="stylesheet" type="text/css" th:href="@{/lib/layui-v2.3.0/css/formSelects-v4.css}"/>
+
+    <style>
+        .upload-box {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .upload-item {
+            width: 120px;
+            height: 120px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px dashed #ddd;
+            position: relative;
+        }
+        .upload-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .delete-img {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(0,0,0,.6);
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform" th:action="@{/business/basic/materials/save}" class="layui-form" method="POST">
+        <input type="hidden" name="id" th:if="${config}" th:value="${config.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">商品名称</label>
+            <div class="layui-input-inline">
+                <input type="text" name="name" class="layui-input" th:value="${config?.name}">
+            </div>
+        </div>
+
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">商品描述</label>
+            <div class="layui-input-block">
+                <textarea placeholder="" class="layui-textarea" name="description">[[${config?.description}]]</textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">品牌</label>
+            <div class="layui-input-inline">
+                <input type="text" name="brand" class="layui-input" th:value="${config?.brand}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">年份</label>
+            <div class="layui-input-inline">
+                <input type="text" name="year" class="layui-input" th:value="${config?.year}">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">价格</label>
+            <div class="layui-input-inline">
+                <input type="text" name="price" class="layui-input" th:value="${config?.price}">
+            </div>
+        </div>
+
+        <!-- 商品图片 -->
+        <div class="layui-form-item">
+            <label class="layui-form-label">商品图片</label>
+            <div class="layui-input-block">
+
+                <button type="button" class="layui-btn image-upload">
+                    <i class="layui-icon">&#xe67c;</i> 上传图片
+                </button>
+
+                <!-- 图片预览 -->
+                <div class="upload-box" id="imagePreviewBox"></div>
+
+                <!-- 存图片 JSON -->
+                <input type="hidden"
+                       id="imageUrls"
+                       name="imageUrls"
+                       th:value="${config.imageUrls}">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm"><i class="fa fa-check-circle"></i> 保存</button>
+            <button class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 关闭</button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/lib/zTree_v3/js/jquery.ztree.core.min.js}"></script>
+<script type="text/javascript" th:src="@{/lib/layui-v2.3.0/formSelects-v4.min.js}" charset="utf-8"></script>
+<script type="text/javascript" th:src="@{/js/timoTree.js}"></script>
+<script>
+    layui.use(['upload', 'form'], function () {
+
+        var upload = layui.upload;
+        var form = layui.form;
+        var $ = layui.jquery;
+
+        // ✅ 所有图片统一维护在这个数组
+        var imageList = [];
+
+        /* ===================== 1️⃣ 编辑页多图回显 ===================== */
+
+        var imageUrlsStr = $('#imageUrls').val();
+        if (imageUrlsStr) {
+            try {
+                imageList = JSON.parse(imageUrlsStr);
+                imageList.forEach(function (url) {
+                    renderImage(url);
+                });
+                syncInput();
+            } catch (e) {
+                console.error('imageUrls 不是合法 JSON');
+            }
+        }
+
+        /* ===================== 2️⃣ 上传图片 ===================== */
+
+        upload.render({
+            elem: '.image-upload',
+            url: '/business/upload/file',
+            field: 'file',
+            multiple: true,
+            number: 9,
+            acceptMime: 'image/*',
+            exts: 'jpg|jpeg|png|gif|webp',
+
+            done: function (res) {
+
+                if (res.code !== 0) {
+                    layer.msg('上传失败');
+                    return;
+                }
+
+                imageList.push(res.data.src);
+                renderImage(res.data.src);
+                syncInput();
+                layer.msg('上传成功');
+            }
+        });
+
+        /* ===================== 3️⃣ 删除图片 ===================== */
+
+        $(document).on('click', '.delete-img', function () {
+            var url = $(this).data('url');
+
+            imageList = imageList.filter(function (item) {
+                return item !== url;
+            });
+
+            $(this).parent().remove();
+            syncInput();
+        });
+
+        /* ===================== 4️⃣ 提交表单 ===================== */
+
+        form.on('submit(submitForm)', function () {
+
+            $.ajax({
+                url: '/business/basic/materials/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if(res.code == 200){
+                        window.parent.location.reload();
+                    }else{
+                        alert(res.msg);
+                    }
+                }
+            });
+
+            return false;
+        });
+
+        /* ===================== 工具方法 ===================== */
+
+        function renderImage(url) {
+            $('#imagePreviewBox').append(
+                '<div class="upload-item">' +
+                '   <img src="' + url + '">' +
+                '   <div class="delete-img" data-url="' + url + '">×</div>' +
+                '</div>'
+            );
+        }
+
+        function syncInput() {
+            $('#imageUrls').val(JSON.stringify(imageList));
+        }
+    });
+</script>
+</body>
+</html>

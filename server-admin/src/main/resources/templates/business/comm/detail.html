@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body>
+<div class="timo-detail-page">
+    <div class="timo-detail-title">内容详情</div>
+    <table class="layui-table timo-detail-table">
+        <thead>
+        <tr>
+            <th>类型</th>
+            <th>数据内容</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${dataList}">
+            <td style="width: 150px; white-space: nowrap;" th:text="${item['key']}"></td>
+            <td style="width: 900px; white-space: pre-wrap;" th:text="${item['value']}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

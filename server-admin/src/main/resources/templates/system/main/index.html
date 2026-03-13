@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>ECharts 曲线图</title>
+
+    <!-- ✅ 已验证成功的路径 -->
+    <script src="/echarts/echarts.min.js"></script>
+</head>
+<body>
+
+<div id="main" style="width: 800px; height: 400px;"></div>
+
+<script>
+    // ✅ 确认 echarts 已加载
+    console.log('echarts = ', echarts);
+
+    var chartDom = document.getElementById('main');
+    var myChart = echarts.init(chartDom);
+
+    var option = {
+        title: {
+            text: '曲线图正常显示'
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: ['周一','周二','周三','周四','周五','周六','周日']
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            name: '数据',
+            type: 'line',
+            smooth: true,
+            data: [120, 200, 150, 80, 70, 110, 130]
+        }]
+    };
+
+    myChart.setOption(option);
+</script>
+
+</body>
+</html>

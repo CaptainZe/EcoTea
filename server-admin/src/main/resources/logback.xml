@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false" scan="true" scanPeriod="30">
+	<property name="logsDir" value="/data/logs/tea-admin"/>
+
+	<property name="PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5level [%16.16thread] %24.24c{24}: %36.36X{txId}: %msg%n"/>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>info</level>
+		</filter>
+		<encoder>
+			<Pattern>${PATTERN}</Pattern>
+		</encoder>
+	</appender>
+
+	<!--作为临时开启的debug输出-->
+	<appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${logsDir}/access.log</file>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>INFO</level>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${logsDir}/access.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>5</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>${PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${logsDir}/warn.log</file>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>WARN</level>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${logsDir}/warn.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<maxHistory>5</maxHistory>
+		</rollingPolicy>
+		<encoder>
+			<pattern>${PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${logsDir}/error.log</file>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>ERROR</level>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<fileNamePattern>error.%i.log.zip</fileNamePattern>
+			<minIndex>1</minIndex>
+			<maxIndex>5</maxIndex>
+		</rollingPolicy>
+		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>200MB</maxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<pattern>${PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<logger name="org.springframework" level="info"/>
+
+	<root level="info">
+		<appender-ref ref="STDOUT"/>
+		<appender-ref ref="ACCESS"/>
+		<appender-ref ref="WARN"/>
+		<appender-ref ref="ERROR"/>
+	</root>
+</configuration>

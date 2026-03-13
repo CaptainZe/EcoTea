@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>系统概览</title>
+
+    <style>
+        body {
+            background-color: #f7f9fc;
+        }
+
+        .overview-wrapper {
+            padding: 20px;
+        }
+
+        /* 统计卡片 */
+        .stat-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-unit {
+            font-size: 14px;
+            margin-left: 4px;
+            color: #999;
+        }
+
+        /* 图表卡片 */
+        .chart-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            margin-top: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* canvas 大小 */
+        #revenueChart {
+            width: 100%;
+            height: 260px;
+        }
+    </style>
+</head>
+
+<body class="timo-layout-page">
+
+<div class="overview-wrapper layui-row layui-col-space20">
+
+    <!-- ✅ 今日出货数 -->
+    <div class="layui-col-md3">
+        <div class="stat-card">
+            <div class="stat-title">今日出货</div>
+            <div class="stat-value">128<span class="stat-unit"> 单</span></div>
+        </div>
+    </div>
+
+    <!-- ✅ 今日进货 -->
+    <div class="layui-col-md3">
+        <div class="stat-card">
+            <div class="stat-title">今日进货</div>
+            <div class="stat-value">86<span class="stat-unit"> 单</span></div>
+        </div>
+    </div>
+
+    <!-- ✅ 今日订单 -->
+    <div class="layui-col-md3">
+        <div class="stat-card">
+            <div class="stat-title">今日订单</div>
+            <div class="stat-value">154<span class="stat-unit"> 单</span></div>
+        </div>
+    </div>
+
+    <!-- ✅ 今日营业额 -->
+    <div class="layui-col-md3">
+        <div class="stat-card">
+            <div class="stat-title">今日营业额</div>
+            <div class="stat-value">￥23,680</div>
+        </div>
+    </div>
+
+    <!-- ✅ 最近七天营业额 -->
+    <div class="layui-col-md12">
+        <div class="chart-card">
+            <div class="chart-title">最近 7 天营业额趋势</div>
+            <canvas id="revenueChart" style="width:100%;"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script>
+    layui.use([], function () {
+
+        // 等 iframe & Layui 布局完成
+        setTimeout(drawRevenueChart, 200);
+
+        function drawRevenueChart() {
+            var canvas = document.getElementById('revenueChart');
+            var ctx = canvas.getContext('2d');
+
+            // ✅ 获取父容器真实宽度
+            var parentWidth = canvas.parentElement.clientWidth;
+
+            canvas.width = parentWidth - 40;
+            canvas.height = 260;
+
+            var days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            var data = [19800, 22300, 18500, 24600, 27800, 31200, 29600];
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            var padding = 40;
+            var max = Math.max.apply(null, data) * 1.1;
+            var stepX = (canvas.width - padding * 2) / (data.length - 1);
+            var scaleY = (canvas.height - padding * 2) / max;
+
+            /* 坐标轴 */
+            ctx.strokeStyle = '#e6e6e6';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            /* 折线 */
+            ctx.strokeStyle = '#5b7cff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            data.forEach(function (val, i) {
+                var x = padding + i * stepX;
+                var y = canvas.height - padding - val * scaleY;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            /* 数据点 + 标签 */
+            ctx.fillStyle = '#5b7cff';
+            ctx.font = '12px Arial';
+
+            data.forEach(function (val, i) {
+                var x = padding + i * stepX;
+                var y = canvas.height - padding - val * scaleY;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillText('￥' + val, x - 18, y - 10);
+                ctx.fillText(days[i], x - 12, canvas.height - padding + 20);
+            });
+        }
+
+        // ✅ 窗口变化时重绘（iframe resize）
+        window.onresize = function () {
+            drawRevenueChart();
+        };
+    });
+</script>
+</body>
+</html>
