@@ -91,6 +91,9 @@ public class TeaSkuService {
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
         }
+        if (StringUtils.hasText(param.getBarcode())) {
+            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode()));
+        }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName() + "%"));
         }
