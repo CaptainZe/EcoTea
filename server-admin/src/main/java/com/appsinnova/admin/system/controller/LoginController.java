@@ -60,7 +60,7 @@ public class LoginController implements ErrorController {
     @PostMapping("/login")
     @ResponseBody
     @ActionLog(key = UserAction.USER_LOGIN, action = UserAction.class)
-    public ResultVo login(String username, String password, String captcha, String rememberMe) {
+    public ResultVo<?> login(String username, String password, String captcha, String rememberMe) {
         // 判断账号密码是否为空
         if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
             throw new ResultException(ResultEnum.USER_NAME_PWD_NULL);
@@ -72,7 +72,7 @@ public class LoginController implements ErrorController {
             Session session = SecurityUtils.getSubject().getSession();
             String sessionCaptcha = (String) session.getAttribute("captcha");
             if (StringUtils.isEmpty(captcha) || StringUtils.isEmpty(sessionCaptcha)
-                    || !captcha.toUpperCase().equals(sessionCaptcha.toUpperCase())) {
+                    || !captcha.equalsIgnoreCase(sessionCaptcha)) {
                 throw new ResultException(ResultEnum.USER_CAPTCHA_ERROR);
             }
             session.removeAttribute("captcha");

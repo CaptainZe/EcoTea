@@ -74,10 +74,25 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
     /* 监听hash来切换选项卡*/
     window.onhashchange = function (e) {
         var url = location.hash.replace(/^#/, '');
-        var index = $(".layui-layout-admin .layui-side .layui-nav-item")[0];
-        $(index).children("a").attr("lay-icon", "true");
-        if (url === "" || url === undefined) {
-            url = $(index).children("[lay-url]").attr("lay-url");
+        if (url === "" || url === undefined || url === "/index") {
+            var defaultUrl = null;
+            var firstUrl = null;
+            $(".layui-layout-admin .layui-side [lay-url]").each(function () {
+                var currentUrl = $(this).attr("lay-url");
+                if (!currentUrl || currentUrl === "#" || currentUrl === "javascript:;") {
+                    return;
+                }
+                if (firstUrl == null) {
+                    firstUrl = currentUrl;
+                }
+                if (currentUrl !== "/index" && defaultUrl == null) {
+                    defaultUrl = currentUrl;
+                }
+            });
+            url = defaultUrl || firstUrl || "/index";
+            if (location.hash.replace(/^#/, '') !== url) {
+                location.hash = url;
+            }
         }
         tabs(url);
     };

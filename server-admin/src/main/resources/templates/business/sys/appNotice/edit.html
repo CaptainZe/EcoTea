@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">公告类型</label>
+            <div class="layui-input-inline" style="width: 280px;">
+                <select class="timo-search-select" name="type" mo:dict="APP_NOTICE_TYPE"
+                        mo-selected="${editItem.type}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label required">公告内容</label>
+            <div class="layui-input-block" style="margin-left: 110px;">
+                <textarea id="contentEditor" name="content" style="display: none;">[[${editItem?.content}]]</textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="noticeForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 关闭</button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    layui.use(['form', 'layedit'], function() {
+        var form = layui.form;
+        var layedit = layui.layedit;
+
+        var contentIndex = layedit.build('contentEditor', {
+            height: 360
+        });
+
+        form.on('submit(noticeForm)', function() {
+            layedit.sync(contentIndex);
+            var contentValue = $("#contentEditor").val();
+            if (!contentValue || contentValue.trim() === "") {
+                layer.msg("公告内容不能为空");
+                return false;
+            }
+
+            $.ajax({
+                url: '/business/sys/appNotice/save',
+                data: $("#editform").serialize(),
+                type: "post",
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg);
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

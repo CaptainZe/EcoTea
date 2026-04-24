@@ -1,5 +1,7 @@
 package com.appsinnova.admin.system.controller;
 
+import com.appsinnova.admin.business.service.tea.TeaSkuService;
+import com.appsinnova.admin.business.vo.tea.TeaSkuStatVo;
 import com.appsinnova.admin.common.constant.AdminConst;
 import com.appsinnova.admin.common.data.URL;
 import com.appsinnova.admin.common.enums.ResultEnum;
@@ -45,6 +47,9 @@ public class MainController {
 
     @Autowired
     private MenuService menuService;
+
+    @Autowired
+    private TeaSkuService teaSkuService;
 
     /**
      * 后台主体内容
@@ -98,9 +103,10 @@ public class MainController {
     @GetMapping("/index")
     @RequiresPermissions("index")
     public String index(Model model) {
+        TeaSkuStatVo statVo = teaSkuService.statOverview();
+        model.addAttribute("statVo", statVo);
         return "/system/main/index";
     }
-
 
     /**
      * 跳转到个人信息页面
@@ -119,9 +125,9 @@ public class MainController {
     @PostMapping("/userPicture")
     @RequiresPermissions("index")
     @ResponseBody
-    public ResultVo userPicture(@RequestParam("picture") MultipartFile picture) {
+    public ResultVo<?> userPicture(@RequestParam("picture") MultipartFile picture) {
         UploadController uploadController = SpringContextUtil.getBean(UploadController.class);
-        ResultVo imageResult = uploadController.uploadPicture(picture);
+        ResultVo<?> imageResult = uploadController.uploadPicture(picture);
         if (imageResult.getCode().equals(ResultEnum.SUCCESS.getCode())) {
             User subject = ShiroUtil.getSubject();
             subject.setPicture(((Upload) imageResult.getData()).getPath());
@@ -139,7 +145,7 @@ public class MainController {
     @PostMapping("/userInfo")
     @RequiresPermissions("index")
     @ResponseBody
-    public ResultVo userInfo(@Validated UserValid valid, User user) {
+    public ResultVo<?> userInfo(@Validated UserValid valid, User user) {
 
         // 复制保留无需修改的数据
         User subUser = ShiroUtil.getSubject();
@@ -168,16 +174,16 @@ public class MainController {
     @PostMapping("/editPwd")
     @RequiresPermissions("index")
     @ResponseBody
-    public ResultVo editPwd(String original, String password, String confirm) {
+    public ResultVo<?> editPwd(String original, String password, String confirm) {
         // 判断原来密码是否有误
         User subUser = ShiroUtil.getSubject();
         String oldPwd = ShiroUtil.encrypt(original, subUser.getSalt());
-        if (original.isEmpty() || "".equals(original.trim()) || !oldPwd.equals(subUser.getPassword())) {
+        if (original.isEmpty() || original.trim().isEmpty() || !oldPwd.equals(subUser.getPassword())) {
             throw new ResultException(ResultEnum.USER_OLD_PWD_ERROR);
         }
 
         // 判断密码是否为空
-        if (password.isEmpty() || "".equals(password.trim())) {
+        if (password.isEmpty() || password.trim().isEmpty()) {
             throw new ResultException(ResultEnum.USER_PWD_NULL);
         }
 

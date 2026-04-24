@@ -1,48 +1,199 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>ECharts 曲线图</title>
-
-    <!-- ✅ 已验证成功的路径 -->
-    <script src="/echarts/echarts.min.js"></script>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .overview-wrap {
+            padding: 18px;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+        .overview-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #111827;
+        }
+        .overview-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
+            min-height: 116px;
+        }
+        .overview-card .label {
+            color: #6b7280;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .overview-card .value {
+            margin-top: 10px;
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .chart-card {
+            margin-top: 16px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
+            padding: 16px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+        .chart-box {
+            width: 100%;
+            height: 340px;
+        }
+        .brand-table {
+            margin-top: 12px;
+        }
+        .brand-table .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 17px;
+        }
+        .brand-table .layui-table th {
+            background: #eef2ff;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 700;
+            border-bottom: 1px solid #dbe3ff;
+        }
+        .brand-table .layui-table td {
+            font-size: 18px;
+            color: #111827;
+            padding-top: 14px;
+            padding-bottom: 14px;
+        }
+        .brand-table .layui-table tbody tr:nth-child(even) {
+            background: #fafbff;
+        }
+    </style>
 </head>
 <body>
+<div class="overview-wrap">
+    <div class="overview-title">茶叶品类 概览</div>
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md4">
+            <div class="overview-card">
+                <div class="label">总数</div>
+                <div class="value" th:text="${statVo.totalCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="overview-card">
+                <div class="label">上架数</div>
+                <div class="value" style="color: #16A34A;" th:text="${statVo.onlineCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="overview-card">
+                <div class="label">下架数</div>
+                <div class="value" style="color: #DC2626;" th:text="${statVo.offlineCount}">0</div>
+            </div>
+        </div>
+    </div>
 
-<div id="main" style="width: 800px; height: 400px;"></div>
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md6">
+            <div class="chart-card">
+                <div class="chart-title">上下架占比</div>
+                <div id="statusPieChart" class="chart-box"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="chart-card">
+                <div class="chart-title">品牌数量分布</div>
+                <div id="brandBarChart" class="chart-box"></div>
+            </div>
+        </div>
+    </div>
 
-<script>
-    // ✅ 确认 echarts 已加载
-    console.log('echarts = ', echarts);
+    <div class="chart-card brand-table">
+        <div class="chart-title">茶叶品牌数量</div>
+        <table class="layui-table" lay-size="sm" id="brandStatTable">
+            <thead>
+            <tr>
+                <th width="200">品牌</th>
+                <th width="200">数量</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(statVo.brandStatList)}">
+                <td colspan="2">暂无数据</td>
+            </tr>
+            <tr th:each="item : ${statVo.brandStatList}">
+                <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}">品牌</td>
+                <td th:text="${item.count}">0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    var chartDom = document.getElementById('main');
-    var myChart = echarts.init(chartDom);
+<script th:src="@{/echarts/echarts.min.js}"></script>
+<script th:inline="javascript">
+    const onlineCount = Number([[${statVo.onlineCount}]]) || 0;
+    const offlineCount = Number([[${statVo.offlineCount}]]) || 0;
 
-    var option = {
-        title: {
-            text: '曲线图正常显示'
-        },
-        tooltip: {
-            trigger: 'axis'
-        },
+    const brandNames = [];
+    const brandCounts = [];
+    document.querySelectorAll('#brandStatTable tbody tr').forEach(function (tr) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 2) {
+            return;
+        }
+        const name = (tds[0].innerText || '').trim();
+        const count = Number((tds[1].innerText || '').trim());
+        if (!name || name === '暂无数据' || Number.isNaN(count)) {
+            return;
+        }
+        brandNames.push(name);
+        brandCounts.push(count);
+    });
+
+    const statusPie = echarts.init(document.getElementById('statusPieChart'));
+    statusPie.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0 },
+        series: [{
+            type: 'pie',
+            radius: ['45%', '70%'],
+            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+            label: { formatter: '{b}: {c} ({d}%)' },
+            data: [
+                { value: onlineCount, name: '上架', itemStyle: { color: '#16a34a' } },
+                { value: offlineCount, name: '下架', itemStyle: { color: '#ef4444' } }
+            ]
+        }]
+    });
+
+    const brandBar = echarts.init(document.getElementById('brandBarChart'));
+    brandBar.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: 40, right: 20, top: 20, bottom: 60 },
         xAxis: {
             type: 'category',
-            boundaryGap: false,
-            data: ['周一','周二','周三','周四','周五','周六','周日']
+            data: brandNames,
+            axisLabel: { interval: 0, rotate: brandNames.length > 6 ? 25 : 0 }
         },
-        yAxis: {
-            type: 'value'
-        },
+        yAxis: { type: 'value', minInterval: 1 },
         series: [{
-            name: '数据',
-            type: 'line',
-            smooth: true,
-            data: [120, 200, 150, 80, 70, 110, 130]
+            type: 'bar',
+            data: brandCounts,
+            itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] },
+            barMaxWidth: 46
         }]
-    };
+    });
 
-    myChart.setOption(option);
+    window.addEventListener('resize', function () {
+        statusPie.resize();
+        brandBar.resize();
+    });
 </script>
-
 </body>
 </html>

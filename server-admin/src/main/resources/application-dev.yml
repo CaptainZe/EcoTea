@@ -1,0 +1,19 @@
+# 服务器配置
+server:
+  port: 8041
+
+# spring配置
+spring:
+  ## 数据库配置
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    jdbc-url: jdbc:mysql://10.0.2.194:3307/tea?useSSL=false&characterEncoding=utf-8
+    username: igguser
+    password: forconnect
+
+aliyun:
+  oss:
+    endpoint: oss-cn-shenzhen.aliyuncs.com
+    bucket: tea-pub
+    host: https://tea-pub.oss-cn-shenzhen.aliyuncs.com
+    path: dev

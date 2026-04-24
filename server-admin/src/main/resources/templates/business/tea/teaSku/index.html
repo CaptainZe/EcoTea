@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 茶叶SKU管理</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">商品名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="name" th:value="${param.name}" placeholder="模糊查询" autocomplete="off"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">品牌</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="brand" mo:dict="TEA_BRAND"
+                                mo-selected="${param.brand}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">茶类</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="type" mo:dict="TEA_TYPE"
+                                mo-selected="${param.type}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">等级</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="grade" mo:dict="TEA_GRADE"
+                                mo-selected="${param.grade}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">年份</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="year" th:value="${param.year}" placeholder="精确查询" autocomplete="off"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="status" mo:dict="SKU_STATUS"
+                                mo-selected="${param.status}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">商品编码</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="skuCode" th:value="${param.skuCode}" placeholder="精确查询" autocomplete="off"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加"
+                        th:attr="data-url=@{/business/tea/teaSku/edit}" data-size="1300,800">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/status/1}">上架</a>
+                        </dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/status/2}">下架</a>
+                        </dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/delete}">删除</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="120">操作</th>
+                    <th width="90" class="sortable" data-field="status">状态</th>
+                    <th width="130">商品编码</th>
+                    <th width="150">商品名称</th>
+                    <th width="90" class="sortable" data-field="brand">品牌</th>
+                    <th width="120">规格</th>
+                    <th width="120">生产批次</th>
+                    <th width="100">官方价 / 元</th>
+                    <th width="140">销售价 / 元</th>
+                    <th width="100">回收价 / 元</th>
+                    <th width="130">回收价(破损) / 元</th>
+                    <th width="200">图片（点击查看大图）</th>
+                    <th width="100">最后操作人</th>
+                    <th width="130" class="sortable" data-field="updateTime">更新时间</th>
+                    <th width="130" class="sortable" data-field="createTime">创建时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item:${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑"
+                           th:attr="data-url=@{'/business/tea/teaSku/edit/'+${item.id}}" data-size="1300,800">编辑</a>
+                        <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="拷贝"
+                           th:attr="data-url=@{'/business/tea/teaSku/copy/'+${item.id}}" data-size="1300,800">拷贝</a>
+                        <a class="ajax-get" style="color: #DC2626; font-weight: 600;" data-msg="您是否确认删除"
+                           th:href="@{/business/tea/teaSku/delete(ids=${item.id})}">删除</a>
+                    </td>
+                    <td th:text="${#dicts.keyValue('SKU_STATUS', item.status)}"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${item.skuCode}"></td>
+                    <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
+                    <td th:text="${item.spec}"></td>
+                    <td th:text="${item.productionBatch}"></td>
+                    <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPrice}"></td>
+                    <td style="background-color: #ECFDF5; color: #047857;" th:text="${item.salePriceShow}"></td>
+                    <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePrice}"></td>
+                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
+                    <td th:utext="${item.imageShow}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        document.querySelectorAll('.photo-group').forEach(function (el) {
+            layer.photos({
+                photos: el,
+                anim: 5
+            });
+        });
+    });
+</script>
+</body>
+</html>

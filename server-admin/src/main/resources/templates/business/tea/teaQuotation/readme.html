@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .readme-wrap {
+            padding: 18px;
+            background: #f6f8fc;
+        }
+        .readme-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
+            padding: 18px;
+            margin-bottom: 14px;
+        }
+        .intro-card {
+            width: 100%;
+            height: 260px;
+            overflow: auto;
+        }
+        .readme-card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #111827;
+        }
+        .readme-text {
+            color: #1f2937;
+            line-height: 1.95;
+            font-size: 19px;
+            font-weight: 600;
+        }
+        .highlight-strong {
+            color: #b91c1c;
+            font-weight: 800;
+        }
+        .highlight-service {
+            color: #2563eb;
+            font-weight: 800;
+        }
+        .warning-line {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: #fff1f2;
+            border-left: 4px solid #ef4444;
+            border-radius: 6px;
+            color: #991b1b;
+            font-weight: 800;
+        }
+        .qrcode-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .qrcode-box {
+            text-align: center;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .qrcode-img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .notice-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .notice-type {
+            color: #2563eb;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .notice-content {
+            color: #374151;
+            line-height: 1.8;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 1100px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="readme-wrap">
+    <div class="readme-card intro-card">
+        <div class="readme-card-title">说明</div>
+        <div class="readme-text">
+            本公司专业<span class="highlight-strong">高价回收品牌茶叶</span>，尊敬的客户，若您未查询到所需茶叶品类、对应规格及报价，可随时联系我们。
+            我们将为您及时补充新增品类，并提供<span class="highlight-service">专属精准估价服务</span>，竭诚为您贴心服务。
+            <div></div>
+            <div class="warning-line">⚠️ 本公司不回收盗抢商品和非法所得物品，一经发现直接报警处理！</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="readme-card">
+            <div class="readme-card-title">微信</div>
+            <div class="qrcode-row">
+                <div class="qrcode-box">
+                    <img class="qrcode-img" th:src="@{/images/qr1.jpg}" alt="微信二维码1">
+                    <div style="margin-top: 8px; color: #6b7280;">客服微信1</div>
+                </div>
+                <div class="qrcode-box">
+                    <img class="qrcode-img" th:src="@{/images/qr2.jpg}" alt="微信二维码2">
+                    <div style="margin-top: 8px; color: #6b7280;">客服微信2</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="readme-card">
+            <div class="readme-card-title">公告</div>
+            <div th:if="${teaNotice == null}" class="readme-text" style="font-size: 16px; font-weight: 500;">暂无公告内容</div>
+            <div th:if="${teaNotice != null}" class="notice-item">
+                <div class="notice-content" th:utext="${teaNotice.content}"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

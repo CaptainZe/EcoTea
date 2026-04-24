@@ -1,8 +1,5 @@
 target
 
-# Spring
-application-*.yml
-
 ### IntelliJ IDEA ###
 .idea
 *.iws

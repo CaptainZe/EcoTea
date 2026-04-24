@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <link rel="stylesheet" th:href="@{/lib/zTree_v3/css/zTreeStyle/zTreeStyle.css}" type="text/css">
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">类型</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="type" mo:dict="APP_SECRET_KEY_TYPE"
+                        mo-selected="${editItem.type}"></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">AccessKey</label>
+            <div class="layui-input-inline" style="width: 500px;">
+                <input type="text" name="accessKey" class="layui-input" th:value='${editItem?.accessKey}'>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">AccessSecret</label>
+            <div class="layui-input-inline" style="width: 500px;">
+                <input type="text" name="accessSecret" class="layui-input" th:value='${editItem?.accessSecret}' required lay-verify="required">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline" style="width: 500px;">
+                <textarea placeholder="请输入备注" class="layui-textarea" name="remark">[[${editItem?.remark}]]</textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="pictureForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 关闭</button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/lib/zTree_v3/js/jquery.ztree.core.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/timoTree.js}"></script>
+<script th:inline="javascript">
+    layui.use('form', function() {
+        var form = layui.form;
+        //监听提交
+        form.on('submit(pictureForm)', function(data){
+            $.ajax({
+                url		: '/business/sys/appSecretKey/save',
+                data	: $("#editform").serialize(),
+                type	: "post",
+                dataType: "json",
+                success: function (res) {
+                    console.log(res);
+                    if(res.code == 200){
+                        window.parent.location.reload();
+                    }else{
+                        alert(res.msg);
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

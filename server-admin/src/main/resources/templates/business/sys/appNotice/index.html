@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> App公告管理</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">公告类型</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select class="timo-search-select layui-input" name="type" mo:dict="APP_NOTICE_TYPE"
+                                mo-selected="${param.type}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加"
+                        th:attr="data-url=@{/business/sys/appNotice/edit}" data-size="1000,700">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status"
+                               th:href="@{/business/sys/appNotice/delete}">删除</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="100">操作</th>
+                    <th width="80" class="sortable" data-field="id">ID</th>
+                    <th width="140" class="sortable" data-field="type">公告类型</th>
+                    <th>公告内容</th>
+                    <th width="80">最后操作人</th>
+                    <th width="130" class="sortable" data-field="updateTime">更新时间</th>
+                    <th width="130" class="sortable" data-field="createTime">创建时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item:${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" data-title="编辑"
+                           th:attr="data-url=@{'/business/sys/appNotice/edit/'+${item.id}}" data-size="1000,700">编辑</a>
+                        <a class="ajax-get" data-msg="您是否确认删除"
+                           th:href="@{/business/sys/appNotice/delete(ids=${item.id})}">删除</a>
+                    </td>
+                    <td th:text="${item.id}"></td>
+                    <td th:text="${#dicts.keyValue('APP_NOTICE_TYPE', item.type)}"></td>
+                    <td th:utext="${item.content}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>
