@@ -27,7 +27,6 @@ public class TeaSku implements Serializable {
     private String spec;
     private Integer year;
     private String productionBatch;
-    private String shelfLife;
     private Integer expiration;
     private String barcode;
     private String imageUrls;
