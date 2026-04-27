@@ -37,10 +37,36 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
         $(this).toggleClass("full-on");
     });
 
+    var normalizeUrl = function (url) {
+        if (url === undefined || url === null) {
+            return "";
+        }
+        url = decodeURIComponent(String(url)).trim();
+        return url.replace(/^#/, '');
+    };
+
+    var resolveMenuItem = function (url) {
+        url = normalizeUrl(url);
+        if (url === "" || url === "#") {
+            return $();
+        }
+        var item = $('[lay-url="' + url + '"]');
+        if (item.length > 0) {
+            return item;
+        }
+        if (url.charAt(0) === '/') {
+            item = $('[lay-url="' + url.substring(1) + '"]');
+        } else {
+            item = $('[lay-url="/' + url + '"]');
+        }
+        return item;
+    };
+
     /* 新建或切换标签栏 */
     var tabs = function (url) {
-        var item = $('[lay-url="' + url + '"]');
-        if (url !== undefined && url !== '#' && item.length > 0) {
+        var item = resolveMenuItem(url);
+        if (item.length > 0) {
+            url = item.attr("lay-url");
             var bootLay = $('[lay-id="' + url + '"]');
             if (bootLay.length === 0) {
                 var title = item.attr("lay-icon") === 'true' ? item.html()
@@ -73,8 +99,8 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
 
     /* 监听hash来切换选项卡*/
     window.onhashchange = function (e) {
-        var url = location.hash.replace(/^#/, '');
-        if (url === "" || url === undefined || url === "/index") {
+        var url = normalizeUrl(location.hash);
+        if (url === "") {
             var defaultUrl = null;
             var firstUrl = null;
             $(".layui-layout-admin .layui-side [lay-url]").each(function () {
@@ -92,6 +118,15 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
             url = defaultUrl || firstUrl || "/index";
             if (location.hash.replace(/^#/, '') !== url) {
                 location.hash = url;
+            }
+        } else {
+            var hashItem = resolveMenuItem(url);
+            if (hashItem.length === 0) {
+                var fallback = $(".layui-layout-admin .layui-side [lay-url]").first().attr("lay-url");
+                if (fallback) {
+                    location.hash = fallback;
+                    return;
+                }
             }
         }
         tabs(url);
