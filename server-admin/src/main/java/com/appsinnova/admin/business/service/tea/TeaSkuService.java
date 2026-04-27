@@ -88,6 +88,9 @@ public class TeaSkuService {
         if (param.getYear() != null) {
             preList.add(cb.equal(root.get("year").as(Integer.class), param.getYear()));
         }
+        if (param.getExpiration() != null) {
+            preList.add(cb.equal(root.get("expiration").as(Integer.class), param.getExpiration()));
+        }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
         }

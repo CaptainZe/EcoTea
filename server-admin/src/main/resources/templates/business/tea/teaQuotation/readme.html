@@ -15,7 +15,7 @@
         }
         .intro-card {
             width: 100%;
-            height: 260px;
+            height: 150px;
             overflow: auto;
         }
         .readme-card-title {
@@ -71,23 +71,59 @@
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 10px;
-        }
-        .notice-type {
-            color: #2563eb;
-            font-weight: 600;
-            margin-bottom: 8px;
+            background: #fcfcfd;
         }
         .notice-content {
             color: #374151;
             line-height: 1.8;
+            font-size: 15px;
         }
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 14px;
         }
+        .left-stack {
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+        .right-stack {
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+        .shipping-card {
+            min-height: 150px;
+        }
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .copy-btn {
+            border: 1px solid #dbe2ea;
+            background: #fff;
+            color: #2563eb;
+            border-radius: 6px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .copy-btn:hover {
+            background: #eff6ff;
+        }
+        .long-text {
+            line-height: 1.9;
+            font-size: 15px;
+            color: #374151;
+        }
         @media (max-width: 1100px) {
             .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .rules-wrap {
                 grid-template-columns: 1fr;
             }
         }
@@ -106,28 +142,109 @@
     </div>
 
     <div class="grid-2">
-        <div class="readme-card">
-            <div class="readme-card-title">微信</div>
-            <div class="qrcode-row">
-                <div class="qrcode-box">
-                    <img class="qrcode-img" th:src="@{/images/qr1.jpg}" alt="微信二维码1">
-                    <div style="margin-top: 8px; color: #6b7280;">客服微信1</div>
+        <div class="left-stack">
+            <div class="readme-card">
+                <div class="readme-card-title">联系我们</div>
+                <div class="qrcode-row">
+                    <div class="qrcode-box">
+                        <img class="qrcode-img" th:src="@{/images/qr-wzy.jpg}" alt="微信二维码1">
+                        <div style="margin-top: 8px; color: #6b7280;">小吴</div>
+                    </div>
+                    <div class="qrcode-box">
+                        <img class="qrcode-img" th:src="@{/images/qr-cyb.jpg}" alt="微信二维码2">
+                        <div style="margin-top: 8px; color: #6b7280;">小陈</div>
+                    </div>
                 </div>
-                <div class="qrcode-box">
-                    <img class="qrcode-img" th:src="@{/images/qr2.jpg}" alt="微信二维码2">
-                    <div style="margin-top: 8px; color: #6b7280;">客服微信2</div>
-                </div>
+            </div>
+
+            <div class="readme-card" style="margin-bottom: 0;">
+                <div class="readme-card-title">平台规则</div>
+                <div th:if="${platformRulesNotice == null}" class="readme-text" style="font-size: 16px; font-weight: 500;">暂无平台规则</div>
+                <div th:if="${platformRulesNotice != null}" class="notice-item long-text" th:utext="${platformRulesNotice.content}"></div>
             </div>
         </div>
 
-        <div class="readme-card">
-            <div class="readme-card-title">公告</div>
-            <div th:if="${teaNotice == null}" class="readme-text" style="font-size: 16px; font-weight: 500;">暂无公告内容</div>
-            <div th:if="${teaNotice != null}" class="notice-item">
-                <div class="notice-content" th:utext="${teaNotice.content}"></div>
+        <div class="right-stack">
+            <div class="readme-card shipping-card">
+                <div class="card-title-row">
+                    <div class="readme-card-title" style="margin-bottom: 0;">收货地址</div>
+                    <button type="button" class="copy-btn" id="copyAddressBtn">复制地址</button>
+                </div>
+                <div th:if="${shippingAddressNotice == null}" class="readme-text" style="font-size: 16px; font-weight: 500;">暂无收货地址</div>
+                <div th:if="${shippingAddressNotice != null}" class="notice-item">
+                    <div class="notice-content" id="shippingAddressContent" th:utext="${shippingAddressNotice.content}"></div>
+                </div>
+            </div>
+
+            <div class="readme-card" style="margin-bottom: 0;">
+                <div class="readme-card-title">保单指南</div>
+                <div th:if="${orderGuideNotice == null}" class="readme-text" style="font-size: 16px; font-weight: 500;">暂无保单指南</div>
+                <div th:if="${orderGuideNotice != null}" class="notice-item long-text" th:utext="${orderGuideNotice.content}"></div>
             </div>
         </div>
     </div>
 </div>
+<script th:replace="/common/template :: script"></script>
+<script>
+    (function () {
+        var copyBtn = document.getElementById('copyAddressBtn');
+        if (!copyBtn) {
+            return;
+        }
+        var showMsg = function (msg, icon) {
+            if (window.layui && layui.layer) {
+                layui.layer.msg(msg, {icon: icon, time: 1800});
+            } else {
+                // 页面极端情况下未加载layer时，降级为轻提示（自动消失）
+                var toast = document.createElement('div');
+                toast.innerText = msg;
+                toast.style.cssText = 'position:fixed;left:50%;top:24px;transform:translateX(-50%);' +
+                    'background:rgba(0,0,0,.75);color:#fff;padding:8px 14px;border-radius:4px;z-index:9999;font-size:13px;';
+                document.body.appendChild(toast);
+                setTimeout(function () {
+                    if (toast && toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 1800);
+            }
+        };
+
+        var copyText = function (text) {
+            if (!text) {
+                showMsg('暂无可复制地址', 2);
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function () {
+                    showMsg('地址已复制', 1);
+                }).catch(function () {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        };
+
+        var fallbackCopy = function (text) {
+            var input = document.createElement('textarea');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            try {
+                document.execCommand('copy');
+                showMsg('地址已复制', 1);
+            } catch (e) {
+                showMsg('复制失败，请手动复制', 2);
+            }
+            document.body.removeChild(input);
+        };
+
+        copyBtn.addEventListener('click', function () {
+            var contentEl = document.getElementById('shippingAddressContent');
+            var text = contentEl ? contentEl.innerText.trim() : '';
+            copyText(text);
+        });
+    })();
+</script>
 </body>
 </html>

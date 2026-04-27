@@ -2,7 +2,6 @@ package com.appsinnova.admin.business.controller.tea;
 
 import com.appsinnova.admin.business.common.enums.AppNoticeType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
-import com.appsinnova.admin.business.domain.sys.AppNotice;
 import com.appsinnova.admin.business.domain.tea.TeaSku;
 import com.appsinnova.admin.business.service.sys.AppNoticeService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
@@ -72,8 +71,9 @@ public class TeaQuotationController {
     @GetMapping("/readme")
     @RequiresPermissions("business:tea:teaQuotation:index")
     public String readme(Model model) {
-        AppNotice teaNotice = appNoticeService.getByType(AppNoticeType.TEA_NOTICE.getCode());
-        model.addAttribute("teaNotice", teaNotice);
+        model.addAttribute("shippingAddressNotice", appNoticeService.getByType(AppNoticeType.TEA_SHIPPING_ADDRESS.getCode()));
+        model.addAttribute("platformRulesNotice", appNoticeService.getByType(AppNoticeType.TEA_PLATFORM_RULES.getCode()));
+        model.addAttribute("orderGuideNotice", appNoticeService.getByType(AppNoticeType.TEA_ORDER_GUIDE.getCode()));
         return "/business/tea/teaQuotation/readme";
     }
 }

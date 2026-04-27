@@ -6,7 +6,7 @@
 <body class="timo-layout-page">
 <div class="layui-card">
     <div class="layui-card-header timo-card-header">
-        <span><i class="fa fa-bars"></i> 茶叶SKU管理</span>
+        <span><i class="fa fa-bars"></i> 茶叶管理</span>
         <i class="layui-icon layui-icon-refresh refresh-btn"></i>
     </div>
     <div class="layui-card-body">
@@ -45,6 +45,13 @@
                     <div class="layui-input-block">
                         <input type="text" name="year" th:value="${param.year}" placeholder="精确查询" autocomplete="off"
                                class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">保质期</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="expiration" mo:dict="TEA_EXPIRATION"
+                                mo-selected="${param.expiration}"></select>
                     </div>
                 </div>
                 <div class="layui-inline">
@@ -103,16 +110,17 @@
                     </th>
                     <th width="120">操作</th>
                     <th width="90" class="sortable" data-field="status">状态</th>
-                    <th width="130">商品编码</th>
-                    <th width="150">商品名称</th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
+                    <th width="150">商品名称</th>
                     <th width="120">规格</th>
                     <th width="120">生产批次</th>
                     <th width="100">官方价 / 元</th>
-                    <th width="140">销售价 / 元</th>
+                    <th width="100">销售价 / 元</th>
                     <th width="100">回收价 / 元</th>
-                    <th width="130">回收价(破损) / 元</th>
+                    <th width="100">回收价(外观破损) / 元</th>
+                    <th width="100">回收价(无提袋扣减) / 元</th>
                     <th width="200">图片（点击查看大图）</th>
+                    <th width="100">商品编码</th>
                     <th width="100">最后操作人</th>
                     <th width="130" class="sortable" data-field="updateTime">更新时间</th>
                     <th width="130" class="sortable" data-field="createTime">创建时间</th>
@@ -132,16 +140,17 @@
                     </td>
                     <td th:text="${#dicts.keyValue('SKU_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
-                    <td th:text="${item.skuCode}"></td>
-                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
+                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${item.spec}"></td>
                     <td th:text="${item.productionBatch}"></td>
                     <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPrice}"></td>
                     <td style="background-color: #ECFDF5; color: #047857;" th:text="${item.salePriceShow}"></td>
                     <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePrice}"></td>
                     <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
+                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recyclePriceReduceNoBag}"></td>
                     <td th:utext="${item.imageShow}"></td>
+                    <td th:text="${item.skuCode}"></td>
                     <td th:text="${item.operator}"></td>
                     <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
                     <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>

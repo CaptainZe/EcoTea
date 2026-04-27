@@ -45,28 +45,30 @@
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
-                    <th width="130">商品编码</th>
-                    <th width="150">商品名称</th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
+                    <th width="150">商品名称</th>
                     <th width="120">规格</th>
                     <th width="120">生产批次</th>
-                    <th width="110">官方价 / 元</th>
-                    <th width="110">回收价 / 元</th>
-                    <th width="130">回收价(外观破损) / 元</th>
+                    <th width="100">官方价 / 元</th>
+                    <th width="100">回收价 / 元</th>
+                    <th width="100">回收价(外观破损) / 元</th>
+                    <th width="100">回收价(无提袋扣减) / 元</th>
                     <th width="220">图片（点击查看大图）</th>
+                    <th width="100">商品编码</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="item:${list}">
-                    <td th:text="${item.skuCode}"></td>
-                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
+                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${item.spec}"></td>
                     <td th:text="${item.productionBatch}"></td>
                     <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPrice}"></td>
                     <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePrice}"></td>
                     <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
+                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recyclePriceReduceNoBag}"></td>
                     <td th:utext="${item.imageShow}"></td>
+                    <td th:text="${item.skuCode}"></td>
                 </tr>
                 </tbody>
             </table>

@@ -6,7 +6,10 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AppNoticeType {
-    TEA_NOTICE(1, "茶叶公告"),
+    // 茶叶相关
+    TEA_SHIPPING_ADDRESS(100, "回收地址"),
+    TEA_PLATFORM_RULES(101, "平台规则"),
+    TEA_ORDER_GUIDE(102, "报单指南"),
     ;
 
     private Integer code;
