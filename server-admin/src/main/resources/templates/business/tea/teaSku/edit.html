@@ -24,6 +24,11 @@
             margin-bottom: 10px;
             border: 1px dashed #ddd;
             position: relative;
+            cursor: move;
+        }
+        .upload-item.dragging {
+            opacity: .6;
+            border-color: #5FB878;
         }
         .upload-item img {
             width: 100%;
@@ -169,6 +174,7 @@
         var upload = layui.upload;
         var form = layui.form;
         var $ = layui.jquery;
+        var draggingEl = null;
 
         var imageList = [];
         var imageUrlsStr = $('#imageUrls').val();
@@ -213,6 +219,36 @@
             syncInput();
         });
 
+        // 支持拖拽调整图片顺序
+        $(document).on('dragstart', '.upload-item', function (e) {
+            draggingEl = this;
+            $(this).addClass('dragging');
+            if (e.originalEvent && e.originalEvent.dataTransfer) {
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        $(document).on('dragend', '.upload-item', function () {
+            $(this).removeClass('dragging');
+            draggingEl = null;
+        });
+        $(document).on('dragover', '.upload-item', function (e) {
+            e.preventDefault();
+            if (!draggingEl || draggingEl === this) {
+                return;
+            }
+            var rect = this.getBoundingClientRect();
+            var insertBefore = (e.originalEvent.clientX - rect.left) < rect.width / 2;
+            if (insertBefore) {
+                this.parentNode.insertBefore(draggingEl, this);
+            } else {
+                this.parentNode.insertBefore(draggingEl, this.nextSibling);
+            }
+        });
+        $(document).on('drop', '.upload-item', function (e) {
+            e.preventDefault();
+            rebuildImageListFromDom();
+        });
+
         form.on('submit(submitForm)', function () {
             $.ajax({
                 url: '/business/tea/teaSku/save',
@@ -231,11 +267,22 @@
 
         function renderImage(url) {
             $('#imagePreviewBox').append(
-                '<div class="upload-item">' +
+                '<div class="upload-item" draggable="true" data-url="' + url + '">' +
                 '   <img src="' + url + '">' +
                 '   <div class="delete-img" data-url="' + url + '">×</div>' +
                 '</div>'
             );
+        }
+
+        function rebuildImageListFromDom() {
+            imageList = [];
+            $('#imagePreviewBox .upload-item').each(function () {
+                var url = $(this).data('url');
+                if (url) {
+                    imageList.push(url);
+                }
+            });
+            syncInput();
         }
 
         function syncInput() {

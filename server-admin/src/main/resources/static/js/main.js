@@ -97,12 +97,26 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
         location.hash = this.getAttribute('lay-id');
     });
 
+    var firstLoadRouting = true;
     /* 监听hash来切换选项卡*/
     window.onhashchange = function (e) {
         var url = normalizeUrl(location.hash);
+        if (firstLoadRouting) {
+            firstLoadRouting = false;
+            var indexItem = resolveMenuItem("/index");
+            if (indexItem.length > 0) {
+                var indexUrl = indexItem.attr("lay-url");
+                if (normalizeUrl(location.hash) !== normalizeUrl(indexUrl)) {
+                    location.hash = indexUrl;
+                    return;
+                }
+                url = normalizeUrl(indexUrl);
+            }
+        }
         if (url === "") {
             var defaultUrl = null;
             var firstUrl = null;
+            var indexUrl = null;
             $(".layui-layout-admin .layui-side [lay-url]").each(function () {
                 var currentUrl = $(this).attr("lay-url");
                 if (!currentUrl || currentUrl === "#" || currentUrl === "javascript:;") {
@@ -111,11 +125,15 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
                 if (firstUrl == null) {
                     firstUrl = currentUrl;
                 }
-                if (currentUrl !== "/index" && defaultUrl == null) {
+                if ((currentUrl === "/index" || currentUrl === "index") && indexUrl == null) {
+                    indexUrl = currentUrl;
+                }
+                if (defaultUrl == null) {
                     defaultUrl = currentUrl;
                 }
             });
-            url = defaultUrl || firstUrl || "/index";
+            // 登录首次进入：若有概览页权限则优先进入/index
+            url = indexUrl || defaultUrl || firstUrl || "/index";
             if (location.hash.replace(/^#/, '') !== url) {
                 location.hash = url;
             }

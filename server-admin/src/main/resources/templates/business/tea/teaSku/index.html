@@ -135,8 +135,12 @@
                            th:attr="data-url=@{'/business/tea/teaSku/edit/'+${item.id}}" data-size="1300,800">编辑</a>
                         <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="拷贝"
                            th:attr="data-url=@{'/business/tea/teaSku/copy/'+${item.id}}" data-size="1300,800">拷贝</a>
-                        <a class="ajax-get" style="color: #DC2626; font-weight: 600;" data-msg="您是否确认删除"
-                           th:href="@{/business/tea/teaSku/delete(ids=${item.id})}">删除</a>
+                        <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;" data-msg="您是否确认下架"
+                           th:href="@{/business/tea/teaSku/status/2(ids=${item.id})}">下架</a>
+                        <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;" data-msg="您是否确认上架"
+                           th:href="@{/business/tea/teaSku/status/1(ids=${item.id})}">上架</a>
+                        <!--                        <a class="ajax-get" style="color: #DC2626; font-weight: 600;" data-msg="您是否确认删除"-->
+                        <!--                           th:href="@{/business/tea/teaSku/delete(ids=${item.id})}">删除</a>-->
                     </td>
                     <td th:text="${#dicts.keyValue('SKU_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>

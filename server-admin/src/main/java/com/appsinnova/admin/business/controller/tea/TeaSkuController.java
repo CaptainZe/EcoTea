@@ -88,7 +88,7 @@ public class TeaSkuController {
             editItem = new TeaSku();
             editItem.setRecyclePriceReducePer(5);
             editItem.setRecyclePriceReduceNoBag(new BigDecimal(10));
-            editItem.setStatus(SkuStatus.ONLINE.getCode());
+            editItem.setStatus(SkuStatus.OFFLINE.getCode());
         }
 
         model.addAttribute("editItem", editItem);

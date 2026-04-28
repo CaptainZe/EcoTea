@@ -42,10 +42,8 @@ public class TeaSku implements Serializable {
 
     @Transient
     private String imageShow;
-
     @Transient
     private String salePriceShow;
-
     @Transient
     private String recycleReduceAmountShow;
 }
