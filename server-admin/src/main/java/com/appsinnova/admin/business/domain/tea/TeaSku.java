@@ -41,6 +41,8 @@ public class TeaSku implements Serializable {
     private Long createTime;
 
     @Transient
+    private Integer imageConfigured;
+    @Transient
     private String imageShow;
     @Transient
     private String salePriceShow;

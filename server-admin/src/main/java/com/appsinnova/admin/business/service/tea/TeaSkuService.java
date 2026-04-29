@@ -100,6 +100,17 @@ public class TeaSkuService {
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName() + "%"));
         }
+        if (param.getImageConfigured() != null) {
+            Predicate noImage = cb.or(
+                    cb.isNull(root.get("imageUrls")),
+                    cb.equal(root.get("imageUrls").as(String.class), ""),
+                    cb.equal(root.get("imageUrls").as(String.class), "[]"));
+            if (param.getImageConfigured() == 0) {
+                preList.add(noImage);
+            } else if (param.getImageConfigured() == 1) {
+                preList.add(cb.not(noImage));
+            }
+        }
 
         return preList;
     }
@@ -132,7 +143,7 @@ public class TeaSkuService {
             brandStatList.add(new TeaSkuStatVo.BrandStatItem(entry.getKey(), entry.getValue()));
         }
         // 根据品牌排序
-        brandStatList.sort(Comparator.comparingInt(TeaSkuStatVo.BrandStatItem::getBrand));
+        brandStatList.sort(Comparator.comparingLong(TeaSkuStatVo.BrandStatItem::getCount).reversed());
         statVo.setBrandStatList(brandStatList);
 
         return statVo;

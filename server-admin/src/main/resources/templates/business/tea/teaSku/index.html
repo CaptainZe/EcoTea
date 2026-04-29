@@ -76,6 +76,13 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">图片是否配置</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="imageConfigured" mo:dict="YES_OR_NO"
+                                mo-selected="${param.imageConfigured}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
                     </button>
@@ -90,6 +97,8 @@
                 <div class="btn-group">
                     <button class="layui-btn">操作<span class="caret"></span></button>
                     <dl class="layui-nav-child layui-anim layui-anim-upbit">
+<!--                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/notifyPriceChange}">价格变更通知</a>-->
+<!--                        </dd>-->
                         <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/status/1}">上架</a>
                         </dd>
                         <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/status/2}">下架</a>

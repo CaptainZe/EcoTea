@@ -1,14 +1,19 @@
 package com.appsinnova.admin.business.controller.tea;
 
+import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
+import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.domain.tea.TeaSku;
+import com.appsinnova.admin.business.service.base.FeiShuWebhookService;
+import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
+import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.JsonUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
 import com.appsinnova.admin.component.shiro.ShiroUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.appsinnova.admin.system.domain.User;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Controller
 @RequestMapping("/business/tea/teaSku")
@@ -28,6 +34,8 @@ import java.util.List;
 public class TeaSkuController {
 
     private final TeaSkuService teaSkuService;
+    private final AppSecretKeyService appSecretKeyService;
+    private final FeiShuWebhookService feiShuWebhookService;
 
     // 列表页面
     @GetMapping("/index")
@@ -164,5 +172,60 @@ public class TeaSkuController {
         }
 
         return ResultVoUtil.success("操作成功");
+    }
+
+    // 价格变更通知
+    @RequestMapping("/notifyPriceChange")
+    @RequiresPermissions("business:tea:teaSku:edit")
+    @ResponseBody
+    public ResultVo<?> notifyPriceChange(@RequestParam(value = "ids", required = false) List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return ResultVoUtil.error("请选择一条记录");
+        }
+        if (ids.size() != 1) {
+            return ResultVoUtil.error("价格变更通知仅支持单条SKU发送");
+        }
+
+        AppSecretKey appSecretKey = appSecretKeyService.getSecretKey(AppSecretKeyType.TEA_ROBOT_PRICE_CHANGE.getCode());
+        if (appSecretKey == null || StringUtils.isBlank(appSecretKey.getAccessSecret())) {
+            return ResultVoUtil.error("未配置茶类价格变动通知机器人webhookUrl");
+        }
+
+        TeaSku item = teaSkuService.getById(ids.get(0));
+        if (item == null) {
+            return ResultVoUtil.error("未找到可通知的SKU记录");
+        }
+
+        String brandName = "-";
+        if (item.getBrand() != null) {
+            brandName = DictUtils.keyValue("TEA_BRAND", String.valueOf(item.getBrand()));
+            if (StringUtils.isBlank(brandName)) {
+                brandName = String.valueOf(item.getBrand());
+            }
+        }
+
+        StringBuilder markdown = new StringBuilder();
+        markdown.append("**商品基础信息**\n");
+        markdown.append("- 品牌：").append(brandName).append("\n");
+        markdown.append("- 商品名称：").append(StringUtils.defaultString(item.getName(), "-")).append("\n");
+        markdown.append("- 规格：").append(StringUtils.defaultString(item.getSpec(), "-")).append("\n");
+        markdown.append("- 生产批次：").append(StringUtils.defaultString(item.getProductionBatch(), "-")).append("\n\n");
+        markdown.append("**价格信息**\n");
+        markdown.append("- 官方价：").append(item.getOfficialPrice() == null ? "-" : item.getOfficialPrice()).append("\n");
+        markdown.append("- 销售价：").append(item.getSalePrice() == null ? "-" : item.getSalePrice()).append("\n");
+        markdown.append("- 回收价：").append(item.getRecyclePrice() == null ? "-" : item.getRecyclePrice()).append("\n");
+
+        final String webhookUrl = appSecretKey.getAccessSecret();
+        final String markdownContent = markdown.toString();
+
+        // 异步发送飞书消息，避免阻塞页面请求
+        CompletableFuture.runAsync(() ->
+                feiShuWebhookService.sendMarkdownCard(
+                        webhookUrl,
+                        "茶类价格变更通知",
+                        markdownContent
+                )
+        );
+        return ResultVoUtil.success("价格变更通知已提交发送");
     }
 }
