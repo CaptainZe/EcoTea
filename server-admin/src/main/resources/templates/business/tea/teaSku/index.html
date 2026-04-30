@@ -76,10 +76,17 @@
                     </div>
                 </div>
                 <div class="layui-inline">
-                    <label class="layui-form-label">图片是否配置</label>
+                    <label class="layui-form-label">展示图是否配置</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="imageConfigured" mo:dict="YES_OR_NO"
                                 mo-selected="${param.imageConfigured}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">实物图是否配置</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="realImageConfigured" mo:dict="YES_OR_NO"
+                                mo-selected="${param.realImageConfigured}"></select>
                     </div>
                 </div>
                 <div class="layui-inline">
@@ -128,7 +135,8 @@
                     <th width="100">回收价 / 元</th>
                     <th width="100">回收价(外观破损) / 元</th>
                     <th width="100">回收价(无提袋扣减) / 元</th>
-                    <th width="200">图片（点击查看大图）</th>
+                    <th width="200">官方展示图（点击查看大图）</th>
+                    <th width="200">实物鉴定图（点击查看大图）</th>
                     <th width="100">商品编码</th>
                     <th width="100">最后操作人</th>
                     <th width="130" class="sortable" data-field="updateTime">更新时间</th>
@@ -163,6 +171,7 @@
                     <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
                     <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recyclePriceReduceNoBag}"></td>
                     <td th:utext="${item.imageShow}"></td>
+                    <td th:utext="${item.realImageShow}"></td>
                     <td th:text="${item.skuCode}"></td>
                     <td th:text="${item.operator}"></td>
                     <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>

@@ -30,6 +30,7 @@ public class TeaSku implements Serializable {
     private Integer expiration;
     private String barcode;
     private String imageUrls;
+    private String realImageUrls;
     private BigDecimal officialPrice;
     private BigDecimal salePrice;
     private BigDecimal recyclePrice;
@@ -43,7 +44,11 @@ public class TeaSku implements Serializable {
     @Transient
     private Integer imageConfigured;
     @Transient
+    private Integer realImageConfigured;
+    @Transient
     private String imageShow;
+    @Transient
+    private String realImageShow;
     @Transient
     private String salePriceShow;
     @Transient

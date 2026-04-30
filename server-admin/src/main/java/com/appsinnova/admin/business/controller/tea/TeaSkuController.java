@@ -79,6 +79,21 @@ public class TeaSkuController {
                 imageShow += "</div>";
                 item.setImageShow(imageShow);
             }
+            if (StringUtils.isNotBlank(item.getRealImageUrls())) {
+                String realImageShow = "<div class=\"photo-group\">";
+                List<String> urlList = JsonUtils.readValue(item.getRealImageUrls(), new TypeReference<List<String>>() {});
+                for (String imgItem : urlList) {
+                    if (StringUtils.isBlank(imgItem)) {
+                        continue;
+                    }
+                    realImageShow += "<img class=\"preview-img\" layer-src=\"" + imgItem +
+                            "\" src=\"" + imgItem +
+                            "\" style=\"width:60px;cursor:pointer;\">";
+                    realImageShow += "&nbsp;&nbsp;";
+                }
+                realImageShow += "</div>";
+                item.setRealImageShow(realImageShow);
+            }
         });
 
         // 封装数据

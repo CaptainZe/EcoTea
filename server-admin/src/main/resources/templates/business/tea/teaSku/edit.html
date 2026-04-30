@@ -117,13 +117,23 @@
             </div>
         </div>
         <div class="layui-form-item">
-            <label class="layui-form-label required">商品图片</label>
+            <label class="layui-form-label required">官方展示图</label>
             <div class="layui-input-block">
                 <button type="button" class="layui-btn image-upload">
-                    <i class="layui-icon">&#xe67c;</i> 上传图片
+                    <i class="layui-icon">&#xe67c;</i> 上传官方展示图
                 </button>
                 <div class="upload-box" id="imagePreviewBox"></div>
                 <input type="hidden" id="imageUrls" name="imageUrls" th:value="${editItem.imageUrls}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">实物鉴定图</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn real-image-upload">
+                    <i class="layui-icon">&#xe67c;</i> 上传实物鉴定图
+                </button>
+                <div class="upload-box" id="realImagePreviewBox"></div>
+                <input type="hidden" id="realImageUrls" name="realImageUrls" th:value="${editItem.realImageUrls}">
             </div>
         </div>
 
@@ -175,48 +185,34 @@
         var form = layui.form;
         var $ = layui.jquery;
         var draggingEl = null;
-
         var imageList = [];
-        var imageUrlsStr = $('#imageUrls').val();
-        if (imageUrlsStr) {
-            try {
-                imageList = JSON.parse(imageUrlsStr);
-                imageList.forEach(function (url) {
-                    renderImage(url);
-                });
-                syncInput();
-            } catch (e) {
-                console.error('imageUrls is not valid json');
-            }
-        }
+        var realImageList = [];
 
-        upload.render({
-            elem: '.image-upload',
-            url: '/business/upload/file',
-            field: 'file',
-            multiple: true,
-            number: 9,
-            acceptMime: 'image/*',
-            exts: 'jpg|jpeg|png|gif|webp',
-            done: function (res) {
-                if (res.code !== 0) {
-                    layer.msg('上传失败');
-                    return;
-                }
-                imageList.push(res.data.src);
-                renderImage(res.data.src);
-                syncInput();
-                layer.msg('上传成功');
-            }
+        initImageGroup({
+            uploadElem: '.image-upload',
+            inputId: '#imageUrls',
+            boxId: '#imagePreviewBox',
+            imageListRef: function () { return imageList; },
+            setImageList: function (list) { imageList = list; }
+        });
+        initImageGroup({
+            uploadElem: '.real-image-upload',
+            inputId: '#realImageUrls',
+            boxId: '#realImagePreviewBox',
+            imageListRef: function () { return realImageList; },
+            setImageList: function (list) { realImageList = list; }
         });
 
         $(document).on('click', '.delete-img', function () {
-            var url = $(this).data('url');
-            imageList = imageList.filter(function (item) {
+            var $item = $(this).closest('.upload-item');
+            var url = $item.data('url');
+            var inputId = $item.data('input-id');
+            var list = getImageListByInputId(inputId).filter(function (item) {
                 return item !== url;
             });
-            $(this).parent().remove();
-            syncInput();
+            setImageListByInputId(inputId, list);
+            $item.remove();
+            syncInput(inputId);
         });
 
         // 支持拖拽调整图片顺序
@@ -236,6 +232,9 @@
             if (!draggingEl || draggingEl === this) {
                 return;
             }
+            if ($(draggingEl).data('input-id') !== $(this).data('input-id')) {
+                return;
+            }
             var rect = this.getBoundingClientRect();
             var insertBefore = (e.originalEvent.clientX - rect.left) < rect.width / 2;
             if (insertBefore) {
@@ -246,7 +245,7 @@
         });
         $(document).on('drop', '.upload-item', function (e) {
             e.preventDefault();
-            rebuildImageListFromDom();
+            rebuildImageListFromDom($(this).data('input-id'));
         });
 
         form.on('submit(submitForm)', function () {
@@ -265,28 +264,82 @@
             return false;
         });
 
-        function renderImage(url) {
-            $('#imagePreviewBox').append(
-                '<div class="upload-item" draggable="true" data-url="' + url + '">' +
+        function initImageGroup(config) {
+            var imageUrlsStr = $(config.inputId).val();
+            if (imageUrlsStr) {
+                try {
+                    var imageListTemp = JSON.parse(imageUrlsStr);
+                    config.setImageList(imageListTemp);
+                    imageListTemp.forEach(function (url) {
+                        renderImage(url, config.boxId, config.inputId);
+                    });
+                } catch (e) {
+                    console.error(config.inputId + ' is not valid json');
+                }
+            }
+            syncInput(config.inputId);
+
+            upload.render({
+                elem: config.uploadElem,
+                url: '/business/upload/file',
+                field: 'file',
+                multiple: true,
+                number: 9,
+                acceptMime: 'image/*',
+                exts: 'jpg|jpeg|png|gif|webp',
+                done: function (res) {
+                    if (res.code !== 0) {
+                        layer.msg('上传失败');
+                        return;
+                    }
+                    var imageListTemp = config.imageListRef();
+                    imageListTemp.push(res.data.src);
+                    renderImage(res.data.src, config.boxId, config.inputId);
+                    syncInput(config.inputId);
+                    layer.msg('上传成功');
+                }
+            });
+        }
+
+        function renderImage(url, boxId, inputId) {
+            $(boxId).append(
+                '<div class="upload-item" draggable="true" data-url="' + url + '" data-input-id="' + inputId + '">' +
                 '   <img src="' + url + '">' +
                 '   <div class="delete-img" data-url="' + url + '">×</div>' +
                 '</div>'
             );
         }
 
-        function rebuildImageListFromDom() {
-            imageList = [];
-            $('#imagePreviewBox .upload-item').each(function () {
+        function rebuildImageListFromDom(inputId) {
+            var imageListTemp = [];
+            $(getBoxIdByInputId(inputId) + ' .upload-item').each(function () {
                 var url = $(this).data('url');
                 if (url) {
-                    imageList.push(url);
+                    imageListTemp.push(url);
                 }
             });
-            syncInput();
+            setImageListByInputId(inputId, imageListTemp);
+            syncInput(inputId);
         }
 
-        function syncInput() {
-            $('#imageUrls').val(JSON.stringify(imageList));
+        function syncInput(inputId) {
+            $(inputId).val(JSON.stringify(getImageListByInputId(inputId)));
+        }
+
+        function getImageListByInputId(inputId) {
+            return inputId === '#realImageUrls' ? realImageList : imageList;
+        }
+
+        function setImageListByInputId(inputId, list) {
+            if (inputId === '#realImageUrls') {
+                realImageList = list;
+                return;
+            }
+            imageList = list;
+        }
+
+        function getBoxIdByInputId(inputId) {
+            return inputId === '#realImageUrls' ? '#realImagePreviewBox' : '#imagePreviewBox';
         }
     });
 </script>

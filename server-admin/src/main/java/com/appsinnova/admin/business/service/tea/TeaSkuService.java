@@ -111,6 +111,17 @@ public class TeaSkuService {
                 preList.add(cb.not(noImage));
             }
         }
+        if (param.getRealImageConfigured() != null) {
+            Predicate noRealImage = cb.or(
+                    cb.isNull(root.get("realImageUrls")),
+                    cb.equal(root.get("realImageUrls").as(String.class), ""),
+                    cb.equal(root.get("realImageUrls").as(String.class), "[]"));
+            if (param.getRealImageConfigured() == 0) {
+                preList.add(noRealImage);
+            } else if (param.getRealImageConfigured() == 1) {
+                preList.add(cb.not(noRealImage));
+            }
+        }
 
         return preList;
     }
