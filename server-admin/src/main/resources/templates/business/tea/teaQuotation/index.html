@@ -26,17 +26,7 @@
             border-right: 1px solid #ddd;
         }
 
-        .tea-quotation-table-wrap .layui-table th:nth-child(2),
-        .tea-quotation-table-wrap .layui-table td:nth-child(2) {
-            position: sticky;
-            left: 65px;
-            z-index: 2;
-            background-color: #fff;
-            border-right: 3px solid #ddd;
-        }
-
-        .tea-quotation-table-wrap .layui-table thead th:first-child,
-        .tea-quotation-table-wrap .layui-table thead th:nth-child(2) {
+        .tea-quotation-table-wrap .layui-table thead th:first-child {
             z-index: 4;
         }
     </style>
@@ -83,8 +73,8 @@
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
-                    <th width="90" class="sortable" data-field="brand">品牌</th>
                     <th width="150">商品名称</th>
+                    <th width="90" class="sortable" data-field="brand">品牌</th>
                     <th width="120">规格</th>
                     <th width="120">生产批次</th>
                     <th width="100">官方价 / 元</th>
@@ -97,8 +87,8 @@
                 </thead>
                 <tbody>
                 <tr th:each="item:${list}">
-                    <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
                     <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
                     <td th:text="${item.spec}"></td>
                     <td th:text="${item.productionBatch}"></td>
                     <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPrice}"></td>
