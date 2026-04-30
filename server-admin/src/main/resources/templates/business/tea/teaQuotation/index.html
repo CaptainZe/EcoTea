@@ -2,34 +2,6 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:mo="https://gitee.com/aun/Timo">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
-    <style>
-        .tea-quotation-table-wrap {
-            height: calc(100vh - 250px);
-            overflow-x: auto;
-            overflow-y: auto;
-            position: relative;
-            margin-bottom: 20px;
-            scrollbar-color: #ccc #f5f5f5;
-            scrollbar-width: thin;
-        }
-
-        .tea-quotation-table-wrap::-webkit-scrollbar {
-            height: 10px;
-        }
-
-        .tea-quotation-table-wrap .layui-table th:first-child,
-        .tea-quotation-table-wrap .layui-table td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 3;
-            background-color: #fff;
-            border-right: 1px solid #ddd;
-        }
-
-        .tea-quotation-table-wrap .layui-table thead th:first-child {
-            z-index: 4;
-        }
-    </style>
 </head>
 <body class="timo-layout-page">
 <div class="layui-card">
@@ -69,12 +41,12 @@
             </div>
         </div>
 
-        <div class="timo-table-wrap tea-quotation-table-wrap">
+        <div class="timo-table-wrap">
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
-                    <th width="150">商品名称</th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
+                    <th width="150">商品名称</th>
                     <th width="120">规格</th>
                     <th width="120">生产批次</th>
                     <th width="100">官方价 / 元</th>
@@ -87,8 +59,8 @@
                 </thead>
                 <tbody>
                 <tr th:each="item:${list}">
-                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
+                    <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${item.spec}"></td>
                     <td th:text="${item.productionBatch}"></td>
                     <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPrice}"></td>
