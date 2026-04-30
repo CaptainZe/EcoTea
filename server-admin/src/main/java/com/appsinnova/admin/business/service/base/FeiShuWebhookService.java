@@ -63,6 +63,8 @@ public class FeiShuWebhookService {
 
         // ---------- card.header ----------
         Map<String, Object> header = new HashMap<>();
+        header.put("template", "blue"); // blue / green / orange / red / purple
+
         Map<String, Object> titleMap = new HashMap<>();
         titleMap.put("tag", "plain_text");
         titleMap.put("content", title);
