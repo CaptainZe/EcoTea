@@ -2,6 +2,44 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:mo="https://gitee.com/aun/Timo">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .tea-quotation-table-wrap {
+            height: calc(100vh - 250px);
+            overflow-x: auto;
+            overflow-y: auto;
+            position: relative;
+            margin-bottom: 20px;
+            scrollbar-color: #ccc #f5f5f5;
+            scrollbar-width: thin;
+        }
+
+        .tea-quotation-table-wrap::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .tea-quotation-table-wrap .layui-table th:first-child,
+        .tea-quotation-table-wrap .layui-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background-color: #fff;
+            border-right: 1px solid #ddd;
+        }
+
+        .tea-quotation-table-wrap .layui-table th:nth-child(2),
+        .tea-quotation-table-wrap .layui-table td:nth-child(2) {
+            position: sticky;
+            left: 65px;
+            z-index: 2;
+            background-color: #fff;
+            border-right: 3px solid #ddd;
+        }
+
+        .tea-quotation-table-wrap .layui-table thead th:first-child,
+        .tea-quotation-table-wrap .layui-table thead th:nth-child(2) {
+            z-index: 4;
+        }
+    </style>
 </head>
 <body class="timo-layout-page">
 <div class="layui-card">
@@ -41,7 +79,7 @@
             </div>
         </div>
 
-        <div class="timo-table-wrap">
+        <div class="timo-table-wrap tea-quotation-table-wrap">
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
