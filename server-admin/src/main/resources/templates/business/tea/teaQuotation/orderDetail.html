@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body class="timo-layout-page">
+<div class="layui-card" th:if="${errorMsg == null}">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-file-text-o"></i> 报单详情</span>
+    </div>
+    <div class="layui-card-body">
+        <table class="layui-table timo-detail-table">
+            <tbody>
+            <tr>
+                <th>报单号</th>
+                <td th:text="${order.orderNo}"></td>
+                <th>状态</th>
+                <td th:text="${#dicts.keyValue('TEA_QUOTE_ORDER_STATUS', order.status)}"></td>
+            </tr>
+            <tr>
+                <th>总金额 / 元</th>
+                <td th:text="${order.totalAmount}"></td>
+                <th>总数量</th>
+                <td th:text="${order.totalQuantity}"></td>
+            </tr>
+            <tr>
+                <th>快递</th>
+                <td>
+                    <span th:if="${order.expressCompany != null}" th:text="${#dicts.keyValue('EXPRESS_COMPANY', order.expressCompany)}"></span>
+                    <span th:if="${order.expressCompany == null}">-</span>
+                    <span th:if="${order.expressNo != null and !#strings.isEmpty(order.expressNo)}">
+                        <span> / </span><span th:text="${order.expressNo}"></span>
+                    </span>
+                </td>
+                <th>打款方式</th>
+                <td th:text="${order.payMethod != null ? #dicts.keyValue('PAY_METHOD', order.payMethod) : '-'}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <fieldset class="layui-elem-field layui-field-title">
+            <legend>打款信息</legend>
+        </fieldset>
+        <table class="layui-table timo-detail-table">
+            <tbody>
+            <tr>
+                <th>微信收款码</th>
+                <td>
+                    <a th:if="${payInfoVo.wxQrCode != null and !#strings.isEmpty(payInfoVo.wxQrCode)}"
+                       th:href="${payInfoVo.wxQrCode}" target="_blank" th:text="${payInfoVo.wxQrCode}"></a>
+                    <span th:if="${payInfoVo.wxQrCode == null or #strings.isEmpty(payInfoVo.wxQrCode)}">-</span>
+                </td>
+            </tr>
+            <tr>
+                <th>支付宝收款码</th>
+                <td>
+                    <a th:if="${payInfoVo.alipayQrCode != null and !#strings.isEmpty(payInfoVo.alipayQrCode)}"
+                       th:href="${payInfoVo.alipayQrCode}" target="_blank" th:text="${payInfoVo.alipayQrCode}"></a>
+                    <span th:if="${payInfoVo.alipayQrCode == null or #strings.isEmpty(payInfoVo.alipayQrCode)}">-</span>
+                </td>
+            </tr>
+            <tr>
+                <th>银行名</th>
+                <td th:text="${payInfoVo.bankName != null and !#strings.isEmpty(payInfoVo.bankName) ? payInfoVo.bankName : '-'}"></td>
+            </tr>
+            <tr>
+                <th>银行卡号</th>
+                <td th:text="${payInfoVo.bankAccount != null and !#strings.isEmpty(payInfoVo.bankAccount) ? payInfoVo.bankAccount : '-'}"></td>
+            </tr>
+            <tr>
+                <th>收款人名</th>
+                <td th:text="${payInfoVo.payeeName != null and !#strings.isEmpty(payInfoVo.payeeName) ? payInfoVo.payeeName : '-'}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <fieldset class="layui-elem-field layui-field-title">
+            <legend>报单明细</legend>
+        </fieldset>
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="90">品牌</th>
+                    <th width="180">商品名称</th>
+                    <th width="130">规格/批次</th>
+                    <th width="90">外观</th>
+                    <th width="90">提袋</th>
+                    <th width="90">单价 / 元</th>
+                    <th width="70">数量</th>
+                    <th width="90">金额 / 元</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item:${itemList}">
+                    <td th:text="${item.skuBrand}"></td>
+                    <td>
+                        <div th:text="${item.skuName}"></div>
+                        <div style="color:#999;" th:text="${item.skuCode}"></div>
+                    </td>
+                    <td>
+                        <div th:text="${item.skuSpec}"></div>
+                        <div style="color:#999;" th:text="${item.skuProductionBatch}"></div>
+                    </td>
+                    <td th:text="${item.appearanceCondition == 1 ? '外观完整' : '外观破损'}"></td>
+                    <td th:text="${item.hasBag == 1 ? '有提袋' : '无提袋'}"></td>
+                    <td th:text="${item.baseRecyclePrice}"></td>
+                    <td th:text="${item.quantity}"></td>
+                    <td th:text="${item.amount}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="layui-card" th:if="${errorMsg != null}">
+    <div class="layui-card-body">
+        <p style="color:#c00;" th:text="${errorMsg}"></p>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

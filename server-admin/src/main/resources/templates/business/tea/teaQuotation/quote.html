@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .quote-table-wrap {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+        .module-card {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .quote-total-box {
+            text-align: right;
+            margin-top: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .quote-total-box span {
+            color: #c0392b;
+        }
+        .sku-option-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 2px;
+            margin-bottom: 4px;
+        }
+        .pay-upload-preview {
+            margin-top: 10px;
+        }
+        .pay-upload-preview img {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-edit"></i> 新建报价单</span>
+    </div>
+    <div class="layui-card-body">
+        <form class="layui-form" id="quoteForm">
+            <div class="module-card">
+
+                <div class="sku-option-bar">
+                    <button type="button" class="layui-btn layui-btn-sm" id="openProductSelectorBtn">
+                        <i class="fa fa-plus"></i> 添加商品
+                    </button>
+                </div>
+
+                <div class="quote-table-wrap">
+                    <table class="layui-table" id="quoteSkuTable">
+                        <thead>
+                        <tr>
+                            <th width="90">品牌</th>
+                            <th width="180">商品名称</th>
+                            <th width="140">规格/批次</th>
+                            <th width="120">外观完整有提袋/单价</th>
+                            <th width="90">外观完整有提袋/数量</th>
+                            <th width="120">外观完整无提袋/单价</th>
+                            <th width="90">外观完整无提袋/数量</th>
+                            <th width="120">外观破损有提袋/单价</th>
+                            <th width="90">外观破损有提袋/数量</th>
+                            <th width="120">外观破损无提袋/单价</th>
+                            <th width="90">外观破损无提袋/数量</th>
+                            <th width="100">商品总价</th>
+                            <th width="80">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="quote-total-box">
+                    总数量：<span id="totalQty">0</span>&nbsp;&nbsp;&nbsp;
+                    总报价：<span id="totalAmount">0.00</span> 元
+                </div>
+            </div>
+            <div class="layui-row layui-col-space12">
+                <div class="layui-col-md6">
+                    <div class="module-card">
+                        <div class="module-title">快递模块（可后续补充）</div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">快递公司</label>
+                            <div class="layui-input-block">
+                                <select class="timo-search-select layui-input" name="expressCompany" mo:dict="EXPRESS_COMPANY"></select>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">快递单号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="expressNo" class="layui-input" placeholder="可不填">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-md6">
+                    <div class="module-card">
+                        <div class="module-title">打款模块（可后续补充）</div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">打款方式</label>
+                            <div class="layui-input-block">
+                                <select class="timo-search-select layui-input" id="payMethod" name="payMethod" mo:dict="PAY_METHOD" lay-filter="payMethodSelect"></select>
+                            </div>
+                        </div>
+                        <div id="payInfoBank" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">银行名</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="bankName" class="layui-input" placeholder="请输入银行名">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">银行卡号</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="bankAccount" class="layui-input" placeholder="请输入银行卡号">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">收款人名</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="payeeName" class="layui-input" placeholder="请输入收款人名">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="payInfoWx" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">微信收款码</label>
+                                <div class="layui-input-block">
+                                    <button type="button" class="layui-btn layui-btn-sm" id="wxQrUploadBtn">
+                                        <i class="layui-icon">&#xe67c;</i> 上传图片
+                                    </button>
+                                    <input type="hidden" name="wxQrCode">
+                                    <div class="pay-upload-preview" id="wxQrPreview"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="payInfoAlipay" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">支付宝收款码</label>
+                                <div class="layui-input-block">
+                                    <button type="button" class="layui-btn layui-btn-sm" id="alipayQrUploadBtn">
+                                        <i class="layui-icon">&#xe67c;</i> 上传图片
+                                    </button>
+                                    <input type="hidden" name="alipayQrCode">
+                                    <div class="pay-upload-preview" id="alipayQrPreview"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item timo-finally" style="margin-top: 20px;">
+                <button type="button" class="layui-btn" id="submitQuoteBtn"><i class="fa fa-check-circle"></i> 提交报价单</button>
+                <button type="button" class="layui-btn btn-secondary" id="closeQuoteBtn"><i class="fa fa-times-circle"></i> 关闭</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    layui.use(['layer', 'upload', 'form'], function () {
+        var layer = layui.layer;
+        var upload = layui.upload;
+        var form = layui.form;
+        var $ = layui.jquery;
+
+        var selectedSkuMap = {};
+        var initSkuList = /*[[${selectedSkuList}]]*/ [];
+        var selectedSkuBrandMap = /*[[${selectedSkuBrandMap}]]*/ {};
+        initSkuList.forEach(function (sku) {
+            addSkuRow({
+                id: sku.id,
+                skuCode: sku.skuCode,
+                skuName: sku.name,
+                skuBrand: getBrandNameBySkuId(sku.id, sku.brand),
+                skuSpec: sku.spec,
+                skuProductionBatch: sku.productionBatch,
+                recyclePrice: sku.recyclePrice,
+                recyclePriceReducePer: sku.recyclePriceReducePer,
+                recyclePriceReduceNoBag: sku.recyclePriceReduceNoBag
+            });
+        });
+        recalcAll();
+        initPayMethodArea();
+        initPayUpload();
+
+        form.on('select(payMethodSelect)', function (data) {
+            togglePayInfoArea(data.value);
+        });
+
+        $('#openProductSelectorBtn').on('click', function () {
+            layer.open({
+                type: 2,
+                title: '选择商品',
+                area: ['1200px', '800px'],
+                content: '/business/tea/teaQuotation/index?selectMode=1'
+            });
+        });
+
+        $(document).on('input', '.qty-input', function () {
+            recalcRow($(this).closest('tr'));
+            recalcAll();
+        });
+
+        $(document).on('click', '.remove-sku-btn', function () {
+            var $tr = $(this).closest('tr');
+            var skuId = String($tr.data('sku-id'));
+            delete selectedSkuMap[skuId];
+            $tr.remove();
+            recalcAll();
+        });
+
+        $('#submitQuoteBtn').on('click', function () {
+            var payload = buildPayload();
+            if (!payload.itemList.length) {
+                layer.msg('请至少添加一个商品并填写数量');
+                return;
+            }
+            if (!validatePayInfo(payload)) {
+                return;
+            }
+            $.ajax({
+                url: '/business/tea/teaQuotation/quote/save',
+                type: 'POST',
+                data: JSON.stringify(payload),
+                contentType: 'application/json',
+                success: function (res) {
+                    if (res.code === 200) {
+                        layer.msg(res.msg || '报价提交成功');
+                        setTimeout(function () {
+                            window.location.href = '/business/tea/teaQuotation/index';
+                        }, 1000);
+                    } else {
+                        layer.msg(res.msg || '报价提交失败');
+                    }
+                }
+            });
+        });
+
+        $('#closeQuoteBtn').on('click', function () {
+            if (window.parent && window.parent.layer) {
+                var frameIndex = window.parent.layer.getFrameIndex(window.name);
+                if (frameIndex !== undefined && frameIndex !== null) {
+                    window.parent.layer.close(frameIndex);
+                    return;
+                }
+            }
+            window.close();
+            setTimeout(function () {
+                if (!window.closed) {
+                    history.back();
+                }
+            }, 50);
+        });
+
+        function addSkuRow(sku) {
+            var skuId = String(sku.id);
+            if (!skuId || selectedSkuMap[skuId]) {
+                return;
+            }
+            selectedSkuMap[skuId] = true;
+
+            var basePrice = num(sku.recyclePrice);
+            var reducePer = num(sku.recyclePriceReducePer);
+            var reduceNoBag = num(sku.recyclePriceReduceNoBag);
+            var completeBag = basePrice;
+            var completeNoBag = Math.max(0, basePrice - reduceNoBag);
+            var brokenBag = Math.max(0, basePrice * (1 - reducePer / 100));
+            var brokenNoBag = Math.max(0, brokenBag - reduceNoBag);
+
+            var trHtml = ''
+                + '<tr data-sku-id="' + skuId + '" data-complete-bag="' + completeBag + '" data-complete-no-bag="' + completeNoBag
+                + '" data-broken-bag="' + brokenBag + '" data-broken-no-bag="' + brokenNoBag + '">'
+                + '  <td>' + textOrEmpty(sku.skuBrand) + '</td>'
+                + '  <td title="' + textOrEmpty(sku.skuName) + '">' + textOrEmpty(sku.skuName) + '<br><span style="color:#999;">' + textOrEmpty(sku.skuCode) + '</span></td>'
+                + '  <td>' + textOrEmpty(sku.skuSpec) + '<br><span style="color:#999;">' + textOrEmpty(sku.skuProductionBatch) + '</span></td>'
+                + '  <td>' + money(completeBag) + '</td>'
+                + '  <td><input class="layui-input qty-input" type="number" min="0" value="0" data-key="qtyCompleteBag"></td>'
+                + '  <td>' + money(completeNoBag) + '</td>'
+                + '  <td><input class="layui-input qty-input" type="number" min="0" value="0" data-key="qtyCompleteNoBag"></td>'
+                + '  <td>' + money(brokenBag) + '</td>'
+                + '  <td><input class="layui-input qty-input" type="number" min="0" value="0" data-key="qtyBrokenBag"></td>'
+                + '  <td>' + money(brokenNoBag) + '</td>'
+                + '  <td><input class="layui-input qty-input" type="number" min="0" value="0" data-key="qtyBrokenNoBag"></td>'
+                + '  <td class="sku-row-amount">0.00</td>'
+                + '  <td><button type="button" class="layui-btn layui-btn-danger layui-btn-xs remove-sku-btn">删除</button></td>'
+                + '</tr>';
+            $('#quoteSkuTable tbody').append(trHtml);
+        }
+
+        function recalcRow($tr) {
+            var q1 = intVal($tr.find('input[data-key="qtyCompleteBag"]').val());
+            var q2 = intVal($tr.find('input[data-key="qtyCompleteNoBag"]').val());
+            var q3 = intVal($tr.find('input[data-key="qtyBrokenBag"]').val());
+            var q4 = intVal($tr.find('input[data-key="qtyBrokenNoBag"]').val());
+            var amount = q1 * num($tr.data('complete-bag'))
+                + q2 * num($tr.data('complete-no-bag'))
+                + q3 * num($tr.data('broken-bag'))
+                + q4 * num($tr.data('broken-no-bag'));
+            $tr.find('.sku-row-amount').text(money(amount));
+        }
+
+        function recalcAll() {
+            var totalQty = 0;
+            var totalAmount = 0;
+            $('#quoteSkuTable tbody tr').each(function () {
+                recalcRow($(this));
+                var q1 = intVal($(this).find('input[data-key="qtyCompleteBag"]').val());
+                var q2 = intVal($(this).find('input[data-key="qtyCompleteNoBag"]').val());
+                var q3 = intVal($(this).find('input[data-key="qtyBrokenBag"]').val());
+                var q4 = intVal($(this).find('input[data-key="qtyBrokenNoBag"]').val());
+                totalQty += q1 + q2 + q3 + q4;
+                totalAmount += num($(this).find('.sku-row-amount').text());
+            });
+            $('#totalQty').text(totalQty);
+            $('#totalAmount').text(money(totalAmount));
+        }
+
+        function buildPayload() {
+            var itemList = [];
+            $('#quoteSkuTable tbody tr').each(function () {
+                itemList.push({
+                    skuId: parseInt($(this).data('sku-id'), 10),
+                    qtyCompleteBag: intVal($(this).find('input[data-key="qtyCompleteBag"]').val()),
+                    qtyCompleteNoBag: intVal($(this).find('input[data-key="qtyCompleteNoBag"]').val()),
+                    qtyBrokenBag: intVal($(this).find('input[data-key="qtyBrokenBag"]').val()),
+                    qtyBrokenNoBag: intVal($(this).find('input[data-key="qtyBrokenNoBag"]').val())
+                });
+            });
+            return {
+                expressCompany: intVal($('select[name="expressCompany"]').val()) || null,
+                expressNo: $('input[name="expressNo"]').val(),
+                payMethod: intVal($('select[name="payMethod"]').val()) || null,
+                payInfo: {
+                    wxQrCode: $('input[name="wxQrCode"]').val(),
+                    alipayQrCode: $('input[name="alipayQrCode"]').val(),
+                    bankName: $('input[name="bankName"]').val(),
+                    bankAccount: $('input[name="bankAccount"]').val(),
+                    payeeName: $('input[name="payeeName"]').val()
+                },
+                itemList: itemList
+            };
+        }
+
+        function initPayMethodArea() {
+            togglePayInfoArea($('#payMethod').val());
+        }
+
+        function togglePayInfoArea(payMethod) {
+            $('#payInfoBank').hide();
+            $('#payInfoWx').hide();
+            $('#payInfoAlipay').hide();
+            if (String(payMethod) === '1') {
+                $('#payInfoWx').show();
+            } else if (String(payMethod) === '2') {
+                $('#payInfoAlipay').show();
+            } else if (String(payMethod) === '3') {
+                $('#payInfoBank').show();
+            }
+        }
+
+        function initPayUpload() {
+            upload.render({
+                elem: '#wxQrUploadBtn',
+                url: '/business/upload/file',
+                field: 'file',
+                acceptMime: 'image/*',
+                exts: 'jpg|jpeg|png|gif|webp',
+                done: function (res) {
+                    if (res.code !== 0) {
+                        layer.msg('上传失败');
+                        return;
+                    }
+                    $('input[name="wxQrCode"]').val(res.data.src);
+                    $('#wxQrPreview').html('<img src="' + res.data.src + '" alt="微信收款码">');
+                    layer.msg('上传成功');
+                }
+            });
+            upload.render({
+                elem: '#alipayQrUploadBtn',
+                url: '/business/upload/file',
+                field: 'file',
+                acceptMime: 'image/*',
+                exts: 'jpg|jpeg|png|gif|webp',
+                done: function (res) {
+                    if (res.code !== 0) {
+                        layer.msg('上传失败');
+                        return;
+                    }
+                    $('input[name="alipayQrCode"]').val(res.data.src);
+                    $('#alipayQrPreview').html('<img src="' + res.data.src + '" alt="支付宝收款码">');
+                    layer.msg('上传成功');
+                }
+            });
+        }
+
+        function validatePayInfo(payload) {
+            if (payload.payMethod === 1 && !payload.payInfo.wxQrCode) {
+                layer.msg('请选择微信收款码图片');
+                return false;
+            }
+            if (payload.payMethod === 2 && !payload.payInfo.alipayQrCode) {
+                layer.msg('请选择支付宝收款码图片');
+                return false;
+            }
+            if (payload.payMethod === 3) {
+                if (!payload.payInfo.bankName || !payload.payInfo.bankAccount || !payload.payInfo.payeeName) {
+                    layer.msg('银行卡收款请填写银行名、银行卡号、收款人名');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function num(val) {
+            var n = parseFloat(val);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function intVal(val) {
+            var n = parseInt(val, 10);
+            return isNaN(n) || n < 0 ? 0 : n;
+        }
+
+        function money(val) {
+            return num(val).toFixed(2);
+        }
+
+        function textOrEmpty(val) {
+            return val == null ? '' : String(val);
+        }
+
+        function getBrandNameBySkuId(skuId, brandCode) {
+            if (selectedSkuBrandMap && selectedSkuBrandMap[String(skuId)]) {
+                return selectedSkuBrandMap[String(skuId)];
+            }
+            return brandCode == null ? '' : String(brandCode);
+        }
+
+        window.addSelectedProductsToQuote = function (idList) {
+            $.ajax({
+                url: '/business/tea/teaQuotation/product/listByIds',
+                type: 'POST',
+                data: {ids: idList},
+                traditional: true,
+                success: function (res) {
+                    if (res.code !== 200 || !res.data) {
+                        layer.msg(res.msg || '商品加载失败');
+                        return;
+                    }
+                    res.data.forEach(function (item) {
+                        addSkuRow({
+                            id: item.id,
+                            skuCode: item.skuCode,
+                            skuName: item.name,
+                            skuBrand: item.brandName,
+                            skuSpec: item.spec,
+                            skuProductionBatch: item.productionBatch,
+                            recyclePrice: item.recyclePrice,
+                            recyclePriceReducePer: item.recyclePriceReducePer,
+                            recyclePriceReduceNoBag: item.recyclePriceReduceNoBag
+                        });
+                    });
+                    recalcAll();
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

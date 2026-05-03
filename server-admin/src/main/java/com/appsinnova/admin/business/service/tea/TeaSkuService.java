@@ -30,6 +30,13 @@ public class TeaSkuService {
         return teaSkuRepository.findById(id).orElse(null);
     }
 
+    public List<TeaSku> getByIdIn(List<Long> idList) {
+        if (CollectionUtils.isEmpty(idList)) {
+            return new ArrayList<>();
+        }
+        return teaSkuRepository.findByIdIn(idList);
+    }
+
     public Page<TeaSku> getPageList(TeaSku param) {
         List<Sort.Order> orders = new ArrayList<>();
         orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
@@ -93,6 +100,9 @@ public class TeaSkuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getStarLevel() != null) {
+            preList.add(cb.equal(root.get("starLevel").as(Integer.class), param.getStarLevel()));
         }
         if (StringUtils.hasText(param.getBarcode())) {
             preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode()));

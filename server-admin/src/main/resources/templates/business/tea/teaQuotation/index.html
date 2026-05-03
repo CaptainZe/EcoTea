@@ -39,12 +39,29 @@
                     </button>
                 </div>
             </div>
+            <div class="pull-right screen-btn-group" th:if="${!selectMode}">
+                <a class="layui-btn" th:href="@{/business/tea/teaQuotation/quote}">
+                    <i class="fa fa-plus"></i> 直接报价
+                </a>
+                <button type="button" class="layui-btn layui-btn-normal" id="batchQuoteBtn">
+                    <i class="fa fa-check-square-o"></i> 勾选报价
+                </button>
+            </div>
+            <div class="pull-right screen-btn-group" th:if="${selectMode}">
+                <button type="button" class="layui-btn layui-btn-normal" id="addSelectedProductBtn">
+                    <i class="fa fa-check-square-o"></i> 添加选中商品
+                </button>
+            </div>
         </div>
 
         <div class="timo-table-wrap">
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
                     <th width="150">商品名称</th>
                     <th width="120">规格</th>
@@ -59,6 +76,8 @@
                 </thead>
                 <tbody>
                 <tr th:each="item:${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
                     <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
                     <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${item.spec}"></td>
@@ -81,11 +100,40 @@
 <script>
     layui.use(['layer'], function () {
         var layer = layui.layer;
+        var $ = layui.jquery;
         document.querySelectorAll('.photo-group').forEach(function (el) {
             layer.photos({
                 photos: el,
                 anim: 5
             });
+        });
+
+        $('#batchQuoteBtn').on('click', function () {
+            var idList = [];
+            $('.timo-table tbody .timo-checkbox :checkbox:checked').each(function () {
+                idList.push($(this).val());
+            });
+            if (idList.length === 0) {
+                layer.msg('请至少勾选一条商品');
+                return;
+            }
+            window.location.href = '/business/tea/teaQuotation/quote?ids=' + idList.join(',');
+        });
+
+        $('#addSelectedProductBtn').on('click', function () {
+            var idList = [];
+            $('.timo-table tbody .timo-checkbox :checkbox:checked').each(function () {
+                idList.push($(this).val());
+            });
+            if (idList.length === 0) {
+                layer.msg('请至少勾选一条商品');
+                return;
+            }
+            if (window.parent && typeof window.parent.addSelectedProductsToQuote === 'function') {
+                window.parent.addSelectedProductsToQuote(idList);
+                var frameIndex = window.parent.layer.getFrameIndex(window.name);
+                window.parent.layer.close(frameIndex);
+            }
         });
     });
 </script>

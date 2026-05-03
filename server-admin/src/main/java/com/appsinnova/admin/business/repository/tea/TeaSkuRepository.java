@@ -9,4 +9,6 @@ import java.util.List;
 public interface TeaSkuRepository extends JpaRepository<TeaSku, Long>, JpaSpecificationExecutor<TeaSku> {
 
     Integer deleteByIdIn(List<Long> idList);
+
+    List<TeaSku> findByIdIn(List<Long> idList);
 }

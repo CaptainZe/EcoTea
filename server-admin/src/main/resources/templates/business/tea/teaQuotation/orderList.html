@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-list"></i> 我的报价订单</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">报单号</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="orderNo" th:value="${queryParam.orderNo}" placeholder="支持模糊查询" autocomplete="off"
+                               class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 160px;">
+                        <select class="timo-search-select layui-input" name="status" mo:dict="TEA_QUOTE_ORDER_STATUS"
+                                mo-selected="${queryParam.status}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="pull-right screen-btn-group">
+                <a class="layui-btn" th:href="@{/business/tea/teaQuotation/quote}">
+                    <i class="fa fa-plus"></i> 直接报价
+                </a>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="160">报价单号</th>
+                    <th width="90">总金额 / 元</th>
+                    <th width="70">总数量</th>
+                    <th width="90">状态</th>
+                    <th width="180">快递</th>
+                    <th width="130">创建时间</th>
+                    <th width="200">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item:${list}">
+                    <td th:text="${item.orderNo}"></td>
+                    <td th:text="${item.totalAmount}"></td>
+                    <td th:text="${item.totalQuantity}"></td>
+                    <td th:text="${#dicts.keyValue('TEA_QUOTE_ORDER_STATUS', item.status)}"></td>
+                    <td>
+                        <span th:if="${item.expressCompany != null}"
+                              th:text="${#dicts.keyValue('EXPRESS_COMPANY', item.expressCompany)}"></span>
+                        <span th:if="${item.expressCompany == null}">-</span>
+                        <span th:if="${item.expressNo != null and !#strings.isEmpty(item.expressNo)}">
+                            <span> / </span><span th:text="${item.expressNo}"></span>
+                        </span>
+                    </td>
+                    <td th:text="${item.createTime != null ? #dates.format(new java.util.Date(item.createTime), 'yyyy/MM/dd HH:mm:ss') : ''}"></td>
+                    <td>
+                        <a href="javascript:;" style="color: #DC2626; font-weight: 600;" class="quote-cancel-btn"
+                           th:if="${item.status != null and item.status == 100}"
+                           th:attr="data-id=${item.id}">取消</a>
+                        <a href="javascript:;" style="color: #1D4ED8; font-weight: 600;" class="quote-supplement-btn"
+                           th:if="${item.status != null and item.status &lt; 300}"
+                           th:attr="data-id=${item.id}">补充快递/打款</a>
+                        <a href="javascript:;" style="color: #7C3AED; font-weight: 600;" class="quote-detail-btn"
+                           th:attr="data-id=${item.id}">详情</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.jquery;
+
+        $('.quote-cancel-btn').on('click', function () {
+            var id = $(this).data('id');
+            layer.confirm('确定取消该报价单吗？', function (index) {
+                layer.close(index);
+                $.post('/business/tea/teaQuotation/order/cancel', {id: id}, function (res) {
+                    if (res.code === 200) {
+                        layer.msg(res.msg || '已取消');
+                        setTimeout(function () {
+                            location.reload();
+                        }, 600);
+                    } else {
+                        layer.msg(res.msg || '操作失败');
+                    }
+                });
+            });
+        });
+
+        $('.quote-supplement-btn').on('click', function () {
+            var id = $(this).data('id');
+            layer.open({
+                type: 2,
+                title: '补充快递与打款信息',
+                area: ['960px', '620px'],
+                content: '/business/tea/teaQuotation/order/supplement/' + id
+            });
+        });
+
+        $('.quote-detail-btn').on('click', function () {
+            var id = $(this).data('id');
+            layer.open({
+                type: 2,
+                title: '报单详情',
+                area: ['1100px', '700px'],
+                content: '/business/tea/teaQuotation/order/detail/' + id
+            });
+        });
+    });
+</script>
+</body>
+</html>

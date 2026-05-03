@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .module-card {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .pay-upload-preview img {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border: 1px solid #eee;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card" th:if="${errorMsg == null}">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-edit"></i> 补充快递与打款信息</span>
+    </div>
+    <div class="layui-card-body">
+        <form class="layui-form" id="supplementForm" th:attr="data-order-id=${editOrder.id}">
+            <div class="layui-row layui-col-space12">
+                <div class="layui-col-md6">
+                    <div class="module-card">
+                        <div class="module-title">快递模块</div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">快递公司</label>
+                            <div class="layui-input-block">
+                                <select class="timo-search-select layui-input" name="expressCompany" mo:dict="EXPRESS_COMPANY"
+                                        mo-selected="${editOrder.expressCompany}"></select>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">快递单号</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="expressNo" class="layui-input" placeholder="可不填"
+                                       th:value="${editOrder.expressNo}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-md6">
+                    <div class="module-card">
+                        <div class="module-title">打款模块</div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">打款方式</label>
+                            <div class="layui-input-block">
+                                <select class="timo-search-select layui-input" id="payMethod" name="payMethod" mo:dict="PAY_METHOD"
+                                        mo-selected="${editOrder.payMethod}" lay-filter="supplementPayMethod"></select>
+                            </div>
+                        </div>
+                        <div id="payInfoBank" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">银行名</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="bankName" class="layui-input" placeholder="请输入银行名"
+                                           th:value="${payInfoVo.bankName}">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">银行卡号</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="bankAccount" class="layui-input" placeholder="请输入银行卡号"
+                                           th:value="${payInfoVo.bankAccount}">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">收款人名</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="payeeName" class="layui-input" placeholder="请输入收款人名"
+                                           th:value="${payInfoVo.payeeName}">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="payInfoWx" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">微信收款码</label>
+                                <div class="layui-input-block">
+                                    <button type="button" class="layui-btn layui-btn-sm" id="wxQrUploadBtn">
+                                        <i class="layui-icon">&#xe67c;</i> 上传图片
+                                    </button>
+                                    <input type="hidden" name="wxQrCode" th:value="${payInfoVo.wxQrCode}">
+                                    <div class="pay-upload-preview" id="wxQrPreview">
+                                        <img th:if="${payInfoVo.wxQrCode != null and !#strings.isEmpty(payInfoVo.wxQrCode)}"
+                                             th:src="${payInfoVo.wxQrCode}" alt="微信收款码">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="payInfoAlipay" style="display:none;">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">支付宝收款码</label>
+                                <div class="layui-input-block">
+                                    <button type="button" class="layui-btn layui-btn-sm" id="alipayQrUploadBtn">
+                                        <i class="layui-icon">&#xe67c;</i> 上传图片
+                                    </button>
+                                    <input type="hidden" name="alipayQrCode" th:value="${payInfoVo.alipayQrCode}">
+                                    <div class="pay-upload-preview" id="alipayQrPreview">
+                                        <img th:if="${payInfoVo.alipayQrCode != null and !#strings.isEmpty(payInfoVo.alipayQrCode)}"
+                                             th:src="${payInfoVo.alipayQrCode}" alt="支付宝收款码">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item timo-finally">
+                <button type="button" class="layui-btn" id="saveSupplementBtn"><i class="fa fa-check-circle"></i> 保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card" th:if="${errorMsg != null}">
+    <div class="layui-card-body">
+        <p style="color:#c00;" th:text="${errorMsg}"></p>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    layui.use(['layer', 'upload', 'form'], function () {
+        var layer = layui.layer;
+        var upload = layui.upload;
+        var form = layui.form;
+        var $ = layui.jquery;
+
+        if ($('#supplementForm').length === 0) {
+            return;
+        }
+
+        function togglePayInfoArea(payMethod) {
+            $('#payInfoBank').hide();
+            $('#payInfoWx').hide();
+            $('#payInfoAlipay').hide();
+            if (String(payMethod) === '1') {
+                $('#payInfoWx').show();
+            } else if (String(payMethod) === '2') {
+                $('#payInfoAlipay').show();
+            } else if (String(payMethod) === '3') {
+                $('#payInfoBank').show();
+            }
+        }
+
+        togglePayInfoArea($('#payMethod').val());
+
+        form.on('select(supplementPayMethod)', function (data) {
+            togglePayInfoArea(data.value);
+        });
+
+        upload.render({
+            elem: '#wxQrUploadBtn',
+            url: '/business/upload/file',
+            field: 'file',
+            acceptMime: 'image/*',
+            exts: 'jpg|jpeg|png|gif|webp',
+            done: function (res) {
+                if (res.code !== 0) {
+                    layer.msg('上传失败');
+                    return;
+                }
+                $('input[name="wxQrCode"]').val(res.data.src);
+                $('#wxQrPreview').html('<img src="' + res.data.src + '" alt="微信收款码">');
+                layer.msg('上传成功');
+            }
+        });
+        upload.render({
+            elem: '#alipayQrUploadBtn',
+            url: '/business/upload/file',
+            field: 'file',
+            acceptMime: 'image/*',
+            exts: 'jpg|jpeg|png|gif|webp',
+            done: function (res) {
+                if (res.code !== 0) {
+                    layer.msg('上传失败');
+                    return;
+                }
+                $('input[name="alipayQrCode"]').val(res.data.src);
+                $('#alipayQrPreview').html('<img src="' + res.data.src + '" alt="支付宝收款码">');
+                layer.msg('上传成功');
+            }
+        });
+
+        $('#saveSupplementBtn').on('click', function () {
+            var orderId = $('#supplementForm').data('order-id');
+            var payMethodVal = parseInt($('select[name="payMethod"]').val(), 10);
+            var payload = {
+                expressCompany: $('select[name="expressCompany"]').val() ? parseInt($('select[name="expressCompany"]').val(), 10) : null,
+                expressNo: $('input[name="expressNo"]').val(),
+                payMethod: isNaN(payMethodVal) ? null : payMethodVal,
+                payInfo: {
+                    wxQrCode: $('input[name="wxQrCode"]').val(),
+                    alipayQrCode: $('input[name="alipayQrCode"]').val(),
+                    bankName: $('input[name="bankName"]').val(),
+                    bankAccount: $('input[name="bankAccount"]').val(),
+                    payeeName: $('input[name="payeeName"]').val()
+                }
+            };
+            if (payload.payMethod === 1 && !payload.payInfo.wxQrCode) {
+                layer.msg('请上传微信收款码图片');
+                return;
+            }
+            if (payload.payMethod === 2 && !payload.payInfo.alipayQrCode) {
+                layer.msg('请上传支付宝收款码图片');
+                return;
+            }
+            if (payload.payMethod === 3) {
+                if (!payload.payInfo.bankName || !payload.payInfo.bankAccount || !payload.payInfo.payeeName) {
+                    layer.msg('银行卡打款请填写银行名、银行卡号、收款人名');
+                    return;
+                }
+            }
+            $.ajax({
+                url: '/business/tea/teaQuotation/order/supplement/save/' + orderId,
+                type: 'POST',
+                data: JSON.stringify(payload),
+                contentType: 'application/json',
+                success: function (res) {
+                    if (res.code === 200) {
+                        layer.msg(res.msg || '保存成功');
+                        setTimeout(function () {
+                            if (window.parent && window.parent.layer) {
+                                var idx = window.parent.layer.getFrameIndex(window.name);
+                                window.parent.layer.close(idx);
+                                window.parent.location.reload();
+                            } else {
+                                window.location.href = '/business/tea/teaQuotation/orderList';
+                            }
+                        }, 600);
+                    } else {
+                        layer.msg(res.msg || '保存失败');
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
