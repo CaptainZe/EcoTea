@@ -62,6 +62,13 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">星级</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="starLevel" mo:dict="STAR_LEVEL"
+                                mo-selected="${param.starLevel}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">商品编码</label>
                     <div class="layui-input-block">
                         <input type="text" name="skuCode" th:value="${param.skuCode}" placeholder="精确查询" autocomplete="off"
@@ -126,6 +133,7 @@
                     </th>
                     <th width="120">操作</th>
                     <th width="90" class="sortable" data-field="status">状态</th>
+                    <th width="90">星级</th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
                     <th width="150">商品名称</th>
                     <th width="120">规格</th>
@@ -161,6 +169,7 @@
                     </td>
                     <td th:text="${#dicts.keyValue('SKU_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
                     <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}"></td>
                     <td th:text="${item.name}" th:title="${item.name}"></td>
                     <td th:text="${item.spec}"></td>

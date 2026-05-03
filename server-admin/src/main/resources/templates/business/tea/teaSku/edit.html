@@ -12,6 +12,15 @@
         .sku-form .layui-input-block {
             margin-left: 140px;
         }
+        /* 与下一行「品牌 + 茶类」两列输入区总宽对齐：260 + 110(label) + 260 */
+        .sku-form .sku-row-name .layui-input-block {
+            margin-left: 140px;
+            max-width: none;
+        }
+        .sku-form .sku-row-name .layui-input-block .layui-input {
+            width: 680px;
+            max-width: 100%;
+        }
         .upload-box {
             display: flex;
             flex-wrap: wrap;
@@ -56,11 +65,19 @@
     <form id="editform" class="layui-form sku-form" method="POST">
         <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
 
-        <div class="layui-form-item">
+        <div class="layui-form-item sku-row-name">
             <label class="layui-form-label required">商品名称</label>
-            <div class="layui-input-inline">
+            <div class="layui-input-block">
                 <input type="text" name="name" class="layui-input" th:value='${editItem?.name}' required lay-verify="required"
                        placeholder="如: 瑞泉 斑竹窠肉桂">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">星级</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="starLevel" mo:dict="STAR_LEVEL"
+                        mo-selected="${editItem.starLevel}" lay-verify="required"></select>
             </div>
             <label class="layui-form-label required">状态</label>
             <div class="layui-input-inline">

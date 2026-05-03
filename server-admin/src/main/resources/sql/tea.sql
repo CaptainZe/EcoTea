@@ -1,6 +1,7 @@
 CREATE TABLE `tea_sku` (
                            `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                            `sku_code` varchar(64) NOT NULL COMMENT 'SKU唯一编码',
+                           `star_level` int(11) NOT NULL DEFAULT 5 COMMENT '星级（热门度）',
                            `name` varchar(255) NOT NULL COMMENT '商品名称',
                            `brand` int(11) NOT NULL COMMENT '品牌',
                            `type` int(11) NOT NULL COMMENT '茶类',

@@ -109,6 +109,7 @@ public class TeaSkuController {
         // 初始化（可设置默认值）
         if (editItem == null) {
             editItem = new TeaSku();
+            editItem.setStarLevel(5);
             editItem.setRecyclePriceReducePer(5);
             editItem.setRecyclePriceReduceNoBag(new BigDecimal(10));
             editItem.setStatus(SkuStatus.OFFLINE.getCode());

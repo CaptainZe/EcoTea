@@ -20,6 +20,7 @@ public class TeaSku implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String skuCode;
+    private Integer starLevel;
     private String name;
     private Integer brand;
     private Integer type;
