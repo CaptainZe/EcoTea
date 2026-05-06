@@ -133,8 +133,9 @@ public class TeaSkuController {
     @RequiresPermissions("business:tea:teaSku:edit")
     @ResponseBody
     public ResultVo<?> save(TeaSku saveItem) {
+        TeaSku oldEntity = null;
         if (saveItem.getId() != null) {
-            TeaSku oldEntity = teaSkuService.getById(saveItem.getId());
+            oldEntity = teaSkuService.getById(saveItem.getId());
             if (oldEntity == null) {
                 return ResultVoUtil.error("编辑的数据记录不存在");
             }
@@ -151,7 +152,22 @@ public class TeaSkuController {
 
         User user = ShiroUtil.getSubject();
         saveItem.setOperator(user.getNickname());
-        teaSkuService.save(saveItem);
+
+        // save 合并到会话内同一托管实体时，会就地覆盖字段；必须在 save 前取出「变更前」价格快照再比较与发通知
+        BigDecimal prevSalePrice = null;
+        BigDecimal prevRecyclePrice = null;
+        BigDecimal prevOfficialPrice = null;
+        if (oldEntity != null) {
+            prevSalePrice = oldEntity.getSalePrice();
+            prevRecyclePrice = oldEntity.getRecyclePrice();
+            prevOfficialPrice = oldEntity.getOfficialPrice();
+        }
+
+        TeaSku saved = teaSkuService.save(saveItem);
+
+        if (oldEntity != null && saleOrRecyclePriceChanged(prevSalePrice, prevRecyclePrice, saved)) {
+            sendTeaSkuPriceChangeNoticeAsync(prevSalePrice, prevRecyclePrice, prevOfficialPrice, saved);
+        }
         return ResultVoUtil.SAVE_SUCCESS;
     }
 
@@ -190,58 +206,106 @@ public class TeaSkuController {
         return ResultVoUtil.success("操作成功");
     }
 
-    // 价格变更通知
-    @RequestMapping("/notifyPriceChange")
-    @RequiresPermissions("business:tea:teaSku:edit")
-    @ResponseBody
-    public ResultVo<?> notifyPriceChange(@RequestParam(value = "ids", required = false) List<Long> ids) {
-        if (CollectionUtils.isEmpty(ids)) {
-            return ResultVoUtil.error("请选择一条记录");
-        }
-        if (ids.size() != 1) {
-            return ResultVoUtil.error("价格变更通知仅支持单条SKU发送");
-        }
+    private static boolean saleOrRecyclePriceChanged(BigDecimal prevSalePrice, BigDecimal prevRecyclePrice, TeaSku saved) {
+        return !equalsBigDecimal(prevSalePrice, saved.getSalePrice())
+                || !equalsBigDecimal(prevRecyclePrice, saved.getRecyclePrice());
+    }
 
+    private static boolean equalsBigDecimal(BigDecimal a, BigDecimal b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.compareTo(b) == 0;
+    }
+
+    private void sendTeaSkuPriceChangeNoticeAsync(BigDecimal prevSalePrice, BigDecimal prevRecyclePrice,
+                                                  BigDecimal prevOfficialPrice, TeaSku newSku) {
         AppSecretKey appSecretKey = appSecretKeyService.getSecretKey(AppSecretKeyType.TEA_ROBOT_PRICE_CHANGE.getCode());
         if (appSecretKey == null || StringUtils.isBlank(appSecretKey.getAccessSecret())) {
-            return ResultVoUtil.error("未配置茶类价格变动通知机器人webhookUrl");
+            return;
         }
-
-        TeaSku item = teaSkuService.getById(ids.get(0));
-        if (item == null) {
-            return ResultVoUtil.error("未找到可通知的SKU记录");
-        }
-
-        String brandName = "-";
-        if (item.getBrand() != null) {
-            brandName = DictUtils.keyValue("TEA_BRAND", String.valueOf(item.getBrand()));
-            if (StringUtils.isBlank(brandName)) {
-                brandName = String.valueOf(item.getBrand());
-            }
-        }
-
-        StringBuilder markdown = new StringBuilder();
-        markdown.append("**商品基础信息**\n");
-        markdown.append("- 品牌：").append(brandName).append("\n");
-        markdown.append("- 商品名称：").append(StringUtils.defaultString(item.getName(), "-")).append("\n");
-        markdown.append("- 规格：").append(StringUtils.defaultString(item.getSpec(), "-")).append("\n");
-        markdown.append("- 生产批次：").append(StringUtils.defaultString(item.getProductionBatch(), "-")).append("\n\n");
-        markdown.append("**价格信息**\n");
-        markdown.append("- 官方价：").append(item.getOfficialPrice() == null ? "-" : item.getOfficialPrice()).append("\n");
-        markdown.append("- 销售价：").append(item.getSalePrice() == null ? "-" : item.getSalePrice()).append("\n");
-        markdown.append("- 回收价：").append(item.getRecyclePrice() == null ? "-" : item.getRecyclePrice()).append("\n");
-
         final String webhookUrl = appSecretKey.getAccessSecret();
-        final String markdownContent = markdown.toString();
-
-        // 异步发送飞书消息，避免阻塞页面请求
+        final String markdown = buildTeaSkuPriceChangeMarkdown(prevSalePrice, prevRecyclePrice, prevOfficialPrice, newSku);
         CompletableFuture.runAsync(() ->
-                feiShuWebhookService.sendMarkdownCard(
-                        webhookUrl,
-                        "茶类价格变更通知",
-                        markdownContent
-                )
-        );
-        return ResultVoUtil.success("价格变更通知已提交发送");
+                feiShuWebhookService.sendMarkdownCard(webhookUrl, "价格变更通知", markdown));
+    }
+
+    private String buildTeaSkuPriceChangeMarkdown(BigDecimal prevSalePrice, BigDecimal prevRecyclePrice,
+                                                BigDecimal prevOfficialPrice, TeaSku newSku) {
+        String brandName = resolveTeaBrandName(newSku.getBrand());
+        StringBuilder md = new StringBuilder();
+        md.append("**商品基础信息**\n");
+        md.append("- 品牌：").append(brandName).append("\n");
+        md.append("- 商品名称：").append(StringUtils.defaultString(newSku.getName(), "-")).append("\n");
+        md.append("- 规格：").append(StringUtils.defaultString(newSku.getSpec(), "-")).append("\n");
+        md.append("- 生产批次：").append(StringUtils.defaultString(newSku.getProductionBatch(), "-")).append("\n");
+        md.append("- 官方价：").append(newSku.getOfficialPrice() == null ? "-" : newSku.getOfficialPrice()).append(" 元\n\n");
+        md.append("**价格变动**\n");
+        if (!equalsBigDecimal(prevSalePrice, newSku.getSalePrice())) {
+            boolean saleUp = compareMoney(newSku.getSalePrice(), prevSalePrice) > 0;
+            md.append("- 售价：").append(feishuPriceTrendTag(saleUp)).append(" ")
+                    .append(formatSalePriceWithDiscount(prevSalePrice, prevOfficialPrice))
+                    .append(" → ")
+                    .append(formatSalePriceWithDiscount(newSku.getSalePrice(), newSku.getOfficialPrice()))
+                    .append("\n");
+        } else {
+            md.append("- 售价：")
+                    .append(formatSalePriceWithDiscount(newSku.getSalePrice(), newSku.getOfficialPrice()))
+                    .append("\n");
+        }
+        if (!equalsBigDecimal(prevRecyclePrice, newSku.getRecyclePrice())) {
+            boolean recycleUp = compareMoney(newSku.getRecyclePrice(), prevRecyclePrice) > 0;
+            md.append("- 回收价：").append(feishuPriceTrendTag(recycleUp)).append(" ")
+                    .append(formatMoneyYuan(prevRecyclePrice))
+                    .append(" → ")
+                    .append(formatMoneyYuan(newSku.getRecyclePrice()))
+                    .append("\n");
+        } else {
+            md.append("- 回收价：").append(formatMoneyYuan(newSku.getRecyclePrice())).append("\n");
+        }
+        return md.toString();
+    }
+
+    // 飞书交互卡片 Markdown 彩色标签（参见开放平台文档 text_tag）
+    private static String feishuPriceTrendTag(boolean up) {
+        return up ? "<text_tag color='red'>涨价</text_tag>" : "<text_tag color='green'>降价</text_tag>";
+    }
+
+    private String resolveTeaBrandName(Integer brand) {
+        if (brand == null) {
+            return "-";
+        }
+        String name = DictUtils.keyValue("TEA_BRAND", String.valueOf(brand));
+        return StringUtils.isNotBlank(name) ? name : String.valueOf(brand);
+    }
+
+    // 售价：金额 + 相对官方价的折扣（折），口径与列表页一致（售价×10÷官方价）
+    private String formatSalePriceWithDiscount(BigDecimal salePrice, BigDecimal officialPrice) {
+        if (salePrice == null) {
+            return "-";
+        }
+        String yuan = salePrice.stripTrailingZeros().toPlainString() + "元";
+        if (officialPrice != null && officialPrice.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discount = salePrice.multiply(BigDecimal.TEN)
+                    .divide(officialPrice, 2, RoundingMode.HALF_UP);
+            yuan += "（" + discount.stripTrailingZeros().toPlainString() + "折）";
+        }
+        return yuan;
+    }
+
+    private static String formatMoneyYuan(BigDecimal amount) {
+        if (amount == null) {
+            return "-";
+        }
+        return amount.stripTrailingZeros().toPlainString() + "元";
+    }
+
+    private static int compareMoney(BigDecimal newer, BigDecimal older) {
+        BigDecimal n = newer == null ? BigDecimal.ZERO : newer;
+        BigDecimal o = older == null ? BigDecimal.ZERO : older;
+        return n.compareTo(o);
     }
 }
