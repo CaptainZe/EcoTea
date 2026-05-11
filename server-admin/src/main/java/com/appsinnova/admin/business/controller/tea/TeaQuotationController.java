@@ -386,9 +386,7 @@ public class TeaQuotationController {
     private String buildQuoteCancelMarkdown(TeaQuoteOrder order) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         long now = System.currentTimeMillis();
-        String statusLabel = order.getStatus() == null ? "-"
-                : StringUtils.defaultString(DictUtils.keyValue("TEA_QUOTE_ORDER_STATUS", String.valueOf(order.getStatus())),
-                TeaQuoteOrderStatus.SUBMITTED.getMessage());
+
         StringBuilder md = new StringBuilder();
         md.append("**报单信息**\n");
         md.append("- 单号：").append(StringUtils.defaultString(order.getOrderNo(), "-")).append("\n");
