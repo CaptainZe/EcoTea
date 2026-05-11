@@ -4,7 +4,7 @@
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
     <style>
         .order-brand-summary {
-            max-width: 280px;
+            max-width: 260px;
             white-space: normal;
             word-break: break-word;
             font-size: 13px;
@@ -12,7 +12,7 @@
             color: #333;
         }
         .order-list-actions a {
-            margin-right: 10px;
+            margin-right: 8px;
         }
         .order-list-actions a:last-child {
             margin-right: 0;
@@ -71,12 +71,23 @@
 <body class="timo-layout-page">
 <div class="layui-card">
     <div class="layui-card-header timo-card-header">
-        <span><i class="fa fa-list"></i> 我的报价订单</span>
+        <span><i class="fa fa-check-square-o"></i> 报价单审核</span>
         <i class="layui-icon layui-icon-refresh refresh-btn"></i>
     </div>
     <div class="layui-card-body">
         <div class="layui-row timo-card-screen">
             <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">报单人</label>
+                    <div class="layui-input-block timo-search-status" style="width: 200px;">
+                        <select name="userId" class="layui-input">
+                            <option value="">全部</option>
+                            <option th:each="u : ${partnerUserList}" th:value="${u.id}"
+                                    th:selected="${queryParam.userId != null and queryParam.userId eq u.id}"
+                                    th:text="|${u.nickname}（${u.username}）|"></option>
+                        </select>
+                    </div>
+                </div>
                 <div class="layui-inline">
                     <label class="layui-form-label">报单号</label>
                     <div class="layui-input-block">
@@ -126,9 +137,9 @@
                 </div>
             </div>
             <div class="pull-right screen-btn-group">
-                <a class="layui-btn open-popup" data-title="新建报价单"
-                   th:attr="data-url=@{/business/tea/teaQuotation/quote}" data-size="max">
-                    <i class="fa fa-plus"></i> 直接报价
+                <a class="layui-btn open-popup" data-title="代建报价单"
+                   th:attr="data-url=@{/business/tea/teaQuotationOrder/quote}" data-size="max">
+                    <i class="fa fa-plus"></i> 代建报价
                 </a>
             </div>
         </div>
@@ -138,14 +149,16 @@
                 <thead>
                 <tr>
                     <th width="120">操作</th>
-                    <th width="160">报价单号</th>
+                    <th width="150">报价单号</th>
                     <th width="96">订单类型</th>
-                    <th width="260">报价简介</th>
-                    <th width="160">快递</th>
-                    <th width="100">打款方式</th>
-                    <th width="86">总金额 / 元</th>
+                    <th width="100">报单人</th>
+                    <th width="240">报价简介</th>
+                    <th width="150">快递</th>
+                    <th width="96">打款方式</th>
+                    <th width="96">总金额 / 元</th>
                     <th width="72">总数量</th>
-                    <th width="90">状态</th>
+                    <th width="88">状态</th>
+                    <th width="88">最后操作人</th>
                     <th width="130">创建时间</th>
                 </tr>
                 </thead>
@@ -153,16 +166,23 @@
                 <tr th:each="item:${list}">
                     <td class="order-list-actions">
                         <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="报单详情"
-                           th:attr="data-url=@{'/business/tea/teaQuotation/order/detail/'+${item.id}}" data-size="max">查看详情</a>
-                        <a th:if="${item.status != null and item.status &lt; 300}" class="open-popup" style="color: #1D4ED8; font-weight: 600;"
-                           data-title="补充快递与打款信息"
-                           th:attr="data-url=@{'/business/tea/teaQuotation/order/supplement/'+${item.id}}" data-size="1300,500">修改快递/打款</a>
+                           th:attr="data-url=@{'/business/tea/teaQuotationOrder/detail/'+${item.id}}" data-size="max">查看详情</a>
                         <a th:if="${item.status != null and item.status == 100}" class="ajax-get" style="color: #DC2626; font-weight: 600;"
-                           data-msg="您是否确认取消该报价单"
-                           th:href="@{/business/tea/teaQuotation/order/cancel(id=${item.id})}">取消</a>
+                           data-msg="您是否确认拒绝该报价单"
+                           th:href="@{/business/tea/teaQuotationOrder/audit/reject/{id}(id=${item.id})}">拒绝</a>
+                        <a th:if="${item.status != null and item.status == 100}" class="open-popup" style="color: #047857; font-weight: 600;"
+                           data-title="确认报价单"
+                           th:attr="data-url=@{'/business/tea/teaQuotationOrder/audit/confirm/'+${item.id}}" data-size="1100,720">确认</a>
+                        <a th:if="${item.status != null and item.status == 200}" class="open-popup" style="color: #B45309; font-weight: 600;"
+                           data-title="验收报价单"
+                           th:attr="data-url=@{'/business/tea/teaQuotationOrder/audit/accept/'+${item.id}}" data-size="1100,720">验收</a>
+                        <a th:if="${item.status != null and item.status == 300}" class="ajax-get" style="color: #1D4ED8; font-weight: 600;"
+                           data-msg="您是否确认已打款"
+                           th:href="@{/business/tea/teaQuotationOrder/audit/pay/{id}(id=${item.id})}">打款</a>
                     </td>
                     <td th:text="${item.orderNo}"></td>
                     <td th:text="${item.type != null ? #dicts.keyValue('TEA_QUOTE_ORDER_TYPE', item.type) : '-'}"></td>
+                    <td th:text="${item.userName != null ? item.userName : '-'}"></td>
                     <td class="order-brand-summary"
                         th:attr="title=${item.itemBrandSummary}"
                         th:text="${item.itemBrandSummary != null ? item.itemBrandSummary : '-'}"></td>
@@ -189,6 +209,7 @@
                               th:text="${#dicts.keyValue('TEA_QUOTE_ORDER_STATUS', item.status)}"></span>
                         <span th:if="${item.status == null}" class="quote-status-badge quote-status-unknown">-</span>
                     </td>
+                    <td th:text="${item.operator}"></td>
                     <td th:text="${item.createTime != null ? #dates.format(new java.util.Date(item.createTime), 'yyyy/MM/dd HH:mm:ss') : ''}"></td>
                 </tr>
                 </tbody>

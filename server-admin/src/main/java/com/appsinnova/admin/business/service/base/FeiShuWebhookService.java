@@ -60,10 +60,23 @@ public class FeiShuWebhookService {
     public void sendMarkdownCard(String webhookUrl,
                                  String title,
                                  String markdownContent) {
+        sendMarkdownCard(webhookUrl, title, markdownContent, "blue");
+    }
+
+    /**
+     * 发送飞书卡片消息（Markdown），可指定卡片头配色模板。
+     *
+     * @param headerTemplate blue / green / orange / red / purple，空则按 blue
+     */
+    public void sendMarkdownCard(String webhookUrl,
+                                 String title,
+                                 String markdownContent,
+                                 String headerTemplate) {
 
         // ---------- card.header ----------
         Map<String, Object> header = new HashMap<>();
-        header.put("template", "blue"); // blue / green / orange / red / purple
+        String tpl = (headerTemplate == null || headerTemplate.isEmpty()) ? "blue" : headerTemplate;
+        header.put("template", tpl); // blue / green / orange / red / purple
 
         Map<String, Object> titleMap = new HashMap<>();
         titleMap.put("tag", "plain_text");

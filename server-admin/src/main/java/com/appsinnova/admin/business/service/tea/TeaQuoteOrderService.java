@@ -5,6 +5,7 @@ import com.appsinnova.admin.business.common.enums.SkuStatus;
 import com.appsinnova.admin.business.common.enums.tea.AppearanceCondition;
 import com.appsinnova.admin.business.common.enums.tea.HasBag;
 import com.appsinnova.admin.business.common.enums.tea.TeaQuoteOrderStatus;
+import com.appsinnova.admin.business.common.enums.tea.TeaQuoteOrderType;
 import com.appsinnova.admin.business.common.utils.TimeUtils;
 import com.appsinnova.admin.business.domain.tea.TeaQuoteOrder;
 import com.appsinnova.admin.business.domain.tea.TeaQuoteOrderItem;
@@ -13,6 +14,8 @@ import com.appsinnova.admin.business.repository.tea.TeaQuoteOrderItemRepository;
 import com.appsinnova.admin.business.repository.tea.TeaQuoteOrderRepository;
 import com.appsinnova.admin.business.service.sys.DailySequenceService;
 import com.appsinnova.admin.business.vo.base.PayInfoVo;
+import com.appsinnova.admin.business.vo.tea.TeaQuoteOrderAuditAdjustRequest;
+import com.appsinnova.admin.business.vo.tea.TeaQuoteOrderItemManualLineVo;
 import com.appsinnova.admin.business.vo.tea.TeaQuoteOrderSubmitVo;
 import com.appsinnova.admin.business.vo.tea.TeaQuoteOrderSupplementVo;
 import com.appsinnova.admin.business.vo.tea.TeaQuoteSkuQuoteVo;
@@ -36,9 +39,12 @@ import javax.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -76,6 +82,28 @@ public class TeaQuoteOrderService {
         if (StringUtils.hasText(param.getOrderNo())) {
             preList.add(cb.like(root.get("orderNo").as(String.class), "%" + param.getOrderNo().trim() + "%"));
         }
+        if (param.getExpressCompany() != null) {
+            preList.add(cb.equal(root.get("expressCompany").as(Integer.class), param.getExpressCompany()));
+        }
+        if (param.getPayMethod() != null) {
+            preList.add(cb.equal(root.get("payMethod").as(Integer.class), param.getPayMethod()));
+        }
+        if (param.getManualPriceAdjust() != null) {
+            if (param.getManualPriceAdjust() == 1) {
+                preList.add(cb.and(
+                        cb.isNotNull(root.get("totalManualAmount")),
+                        cb.notEqual(root.get("totalManualAmount"), root.get("totalAmount"))
+                ));
+            } else if (param.getManualPriceAdjust() == 0) {
+                preList.add(cb.or(
+                        cb.isNull(root.get("totalManualAmount")),
+                        cb.equal(root.get("totalManualAmount"), root.get("totalAmount"))
+                ));
+            }
+        }
+        if (param.getType() != null) {
+            preList.add(cb.equal(root.get("type").as(Integer.class), param.getType()));
+        }
         return preList;
     }
 
@@ -85,11 +113,174 @@ public class TeaQuoteOrderService {
                 .orElse(null);
     }
 
+    public TeaQuoteOrder getById(Long orderId) {
+        if (orderId == null) {
+            return null;
+        }
+        return teaQuoteOrderRepository.findById(orderId).orElse(null);
+    }
+
+    public TeaQuoteOrder getByOrderNo(String orderNo) {
+        if (!StringUtils.hasText(orderNo)) {
+            return null;
+        }
+        return teaQuoteOrderRepository.findByOrderNo(orderNo.trim());
+    }
+
+    /**
+     * 审核：已提交 → 已拒绝
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void rejectOrderForAudit(Long orderId, String operator) {
+        TeaQuoteOrder order = getById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("报价单不存在");
+        }
+        if (!TeaQuoteOrderStatus.SUBMITTED.getCode().equals(order.getStatus())) {
+            throw new IllegalArgumentException("当前状态不可拒绝");
+        }
+        long now = System.currentTimeMillis();
+        order.setStatus(TeaQuoteOrderStatus.REJECTED.getCode());
+        order.setOperator(operator);
+        order.setUpdateTime(now);
+        teaQuoteOrderRepository.save(order);
+    }
+
+    /**
+     * 审核：已提交 → 已确认，可同步调整明细人工金额
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void confirmOrderForAudit(Long orderId, String operator, TeaQuoteOrderAuditAdjustRequest body) {
+        TeaQuoteOrder order = requireOrderForAudit(orderId, TeaQuoteOrderStatus.SUBMITTED);
+        List<TeaQuoteOrderItem> items = teaQuoteOrderItemRepository.findByOrderIdOrderByIdAsc(orderId);
+        applyManualLines(orderId, items, body);
+        syncOrderTotalManualFromItems(order, items);
+        long now = System.currentTimeMillis();
+        order.setStatus(TeaQuoteOrderStatus.CONFIRMED.getCode());
+        order.setOperator(operator);
+        order.setUpdateTime(now);
+        teaQuoteOrderItemRepository.saveAll(items);
+        teaQuoteOrderRepository.save(order);
+    }
+
+    /**
+     * 审核：已确认 → 已验收，可同步调整明细人工金额
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void acceptOrderForAudit(Long orderId, String operator, TeaQuoteOrderAuditAdjustRequest body) {
+        TeaQuoteOrder order = requireOrderForAudit(orderId, TeaQuoteOrderStatus.CONFIRMED);
+        List<TeaQuoteOrderItem> items = teaQuoteOrderItemRepository.findByOrderIdOrderByIdAsc(orderId);
+        applyManualLines(orderId, items, body);
+        syncOrderTotalManualFromItems(order, items);
+        long now = System.currentTimeMillis();
+        order.setStatus(TeaQuoteOrderStatus.ACCEPTED.getCode());
+        order.setOperator(operator);
+        order.setUpdateTime(now);
+        teaQuoteOrderItemRepository.saveAll(items);
+        teaQuoteOrderRepository.save(order);
+    }
+
+    /**
+     * 审核：已验收 → 已打款（不改价）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void payOrderForAudit(Long orderId, String operator) {
+        TeaQuoteOrder order = requireOrderForAudit(orderId, TeaQuoteOrderStatus.ACCEPTED);
+        long now = System.currentTimeMillis();
+        order.setStatus(TeaQuoteOrderStatus.PAID.getCode());
+        order.setOperator(operator);
+        order.setUpdateTime(now);
+        teaQuoteOrderRepository.save(order);
+    }
+
+    private TeaQuoteOrder requireOrderForAudit(Long orderId, TeaQuoteOrderStatus expected) {
+        TeaQuoteOrder order = getById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("报价单不存在");
+        }
+        if (!expected.getCode().equals(order.getStatus())) {
+            throw new IllegalArgumentException("当前状态不可执行该操作");
+        }
+        return order;
+    }
+
+    private void applyManualLines(Long orderId, List<TeaQuoteOrderItem> dbItems, TeaQuoteOrderAuditAdjustRequest body) {
+        if (body == null || CollectionUtils.isEmpty(body.getLines())) {
+            return;
+        }
+        Map<Long, TeaQuoteOrderItem> map = dbItems.stream()
+                .filter(it -> it.getId() != null)
+                .collect(Collectors.toMap(TeaQuoteOrderItem::getId, it -> it, (a, b) -> a));
+        for (TeaQuoteOrderItemManualLineVo line : body.getLines()) {
+            if (line == null || line.getItemId() == null) {
+                continue;
+            }
+            TeaQuoteOrderItem it = map.get(line.getItemId());
+            if (it == null || !Objects.equals(orderId, it.getOrderId())) {
+                continue;
+            }
+            if (line.getManualAmount() != null) {
+                if (line.getManualAmount().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new IllegalArgumentException("人工金额不能为负数");
+                }
+                it.setManualAmount(line.getManualAmount().setScale(2, RoundingMode.HALF_UP));
+            }
+            if (line.getManualRemark() != null) {
+                it.setManualRemark(line.getManualRemark());
+            }
+        }
+    }
+
+    private void syncOrderTotalManualFromItems(TeaQuoteOrder order, List<TeaQuoteOrderItem> items) {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (TeaQuoteOrderItem it : items) {
+            if (it.getManualAmount() != null) {
+                sum = sum.add(it.getManualAmount());
+            }
+        }
+        order.setTotalManualAmount(sum.setScale(2, RoundingMode.HALF_UP));
+    }
+
     public List<TeaQuoteOrderItem> getItemListByOrderId(Long orderId) {
         if (orderId == null) {
             return new ArrayList<>();
         }
         return teaQuoteOrderItemRepository.findByOrderIdOrderByIdAsc(orderId);
+    }
+
+    /**
+     * 为列表中的每条订单填充「品牌×数量」简介（按明细顺序汇总同名品牌）。
+     */
+    public void attachBrandQuantitySummary(List<TeaQuoteOrder> orders) {
+        if (CollectionUtils.isEmpty(orders)) {
+            return;
+        }
+        List<Long> ids = orders.stream().map(TeaQuoteOrder::getId).filter(Objects::nonNull).collect(Collectors.toList());
+        if (ids.isEmpty()) {
+            return;
+        }
+        List<TeaQuoteOrderItem> items = teaQuoteOrderItemRepository.findByOrderIdIn(ids);
+        items.sort(Comparator.comparing(TeaQuoteOrderItem::getOrderId, Comparator.nullsLast(Long::compareTo))
+                .thenComparing(TeaQuoteOrderItem::getId, Comparator.nullsLast(Long::compareTo)));
+        Map<Long, LinkedHashMap<String, Integer>> orderBrandQty = new LinkedHashMap<>();
+        for (TeaQuoteOrderItem it : items) {
+            if (it.getOrderId() == null || it.getQuantity() == null || it.getQuantity() <= 0) {
+                continue;
+            }
+            String brand = StringUtils.hasText(it.getSkuBrand()) ? it.getSkuBrand().trim() : "未分类";
+            LinkedHashMap<String, Integer> m = orderBrandQty.computeIfAbsent(it.getOrderId(), k -> new LinkedHashMap<>());
+            m.merge(brand, it.getQuantity(), Integer::sum);
+        }
+        for (TeaQuoteOrder o : orders) {
+            LinkedHashMap<String, Integer> m = orderBrandQty.get(o.getId());
+            if (m == null || m.isEmpty()) {
+                o.setItemBrandSummary("-");
+            } else {
+                o.setItemBrandSummary(m.entrySet().stream()
+                        .map(e -> e.getKey() + "×" + e.getValue())
+                        .collect(Collectors.joining("；")));
+            }
+        }
     }
 
     /**
@@ -155,17 +346,21 @@ public class TeaQuoteOrderService {
             totalAmount = totalAmount.add(item.getAmount());
             totalQuantity += item.getQuantity();
         }
+        BigDecimal totalScaled = totalAmount.setScale(2, RoundingMode.HALF_UP);
 
         long now = System.currentTimeMillis();
         TeaQuoteOrder order = new TeaQuoteOrder();
         order.setOrderNo(this.generateOrderNo(now));
+        Integer orderType = submitVo.getType() != null ? submitVo.getType() : TeaQuoteOrderType.Self.getCode();
+        order.setType(orderType);
         order.setUserId(submitVo.getUserId());
         order.setUserName(submitVo.getUserName());
         order.setExpressCompany(submitVo.getExpressCompany());
         order.setExpressNo(submitVo.getExpressNo());
         order.setPayMethod(submitVo.getPayMethod());
         order.setPayInfo(JsonUtils.writeValueAsString(submitVo.getPayInfo()));
-        order.setTotalAmount(totalAmount.setScale(2, RoundingMode.HALF_UP));
+        order.setTotalAmount(totalScaled);
+        order.setTotalManualAmount(totalScaled);
         order.setTotalQuantity(totalQuantity);
         order.setStatus(TeaQuoteOrderStatus.SUBMITTED.getCode());
         order.setOperator(operator);
@@ -188,12 +383,11 @@ public class TeaQuoteOrderService {
             return orderItemList;
         }
 
-        List<Long> skuIdList = new ArrayList<>();
-        for (TeaQuoteSkuQuoteVo item : submitVo.getItemList()) {
-            if (item.getSkuId() != null) {
-                skuIdList.add(item.getSkuId());
-            }
-        }
+        List<Long> skuIdList = submitVo.getItemList().stream()
+                .map(TeaQuoteSkuQuoteVo::getSkuId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
         List<TeaSku> skuList = teaSkuService.getByIdIn(skuIdList);
         Map<Long, TeaSku> skuMap = new LinkedHashMap<>();
         for (TeaSku sku : skuList) {
@@ -210,24 +404,62 @@ public class TeaQuoteOrderService {
             if (sku == null || sku.getStatus() == null || !sku.getStatus().equals(SkuStatus.ONLINE.getCode())) {
                 continue;
             }
-
-            BigDecimal noBagReduce = sku.getRecyclePriceReduceNoBag() == null ? BigDecimal.ZERO : sku.getRecyclePriceReduceNoBag();
-            BigDecimal completeBagUnitPrice = defaultPrice(sku.getRecyclePrice());
-            BigDecimal completeNoBagUnitPrice = nonNegative(completeBagUnitPrice.subtract(noBagReduce));
-            BigDecimal brokenBagUnitPrice = this.calculateBrokenUnitPrice(sku);
-            BigDecimal brokenNoBagUnitPrice = nonNegative(brokenBagUnitPrice.subtract(noBagReduce));
-
-            this.tryAddOrderItem(orderItemList, sku, AppearanceCondition.COMPLETE, HasBag.YES,
-                    completeBagUnitPrice, item.getQtyCompleteBag());
-            this.tryAddOrderItem(orderItemList, sku, AppearanceCondition.COMPLETE, HasBag.NO,
-                    completeNoBagUnitPrice, item.getQtyCompleteNoBag());
-            this.tryAddOrderItem(orderItemList, sku, AppearanceCondition.DAMAGED, HasBag.YES,
-                    brokenBagUnitPrice, item.getQtyBrokenBag());
-            this.tryAddOrderItem(orderItemList, sku, AppearanceCondition.DAMAGED, HasBag.NO,
-                    brokenNoBagUnitPrice, item.getQtyBrokenNoBag());
+            AppearanceCondition appearance = parseAppearanceCondition(item.getAppearanceCondition());
+            HasBag hasBag = parseHasBag(item.getHasBag());
+            int qty = item.getQuantity() == null ? 0 : item.getQuantity();
+            if (appearance == null || hasBag == null || qty <= 0) {
+                continue;
+            }
+            BigDecimal unitPrice = resolveRecycleUnitPrice(sku, appearance, hasBag);
+            this.tryAddOrderItem(orderItemList, sku, appearance, hasBag, unitPrice, qty);
         }
 
         return orderItemList;
+    }
+
+    private AppearanceCondition parseAppearanceCondition(Integer code) {
+        if (code == null) {
+            return null;
+        }
+        for (AppearanceCondition e : AppearanceCondition.values()) {
+            if (e.getCode().equals(code)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private HasBag parseHasBag(Integer code) {
+        if (code == null) {
+            return null;
+        }
+        for (HasBag e : HasBag.values()) {
+            if (e.getCode().equals(code)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal resolveRecycleUnitPrice(TeaSku sku, AppearanceCondition appearance, HasBag hasBag) {
+        BigDecimal noBagReduce = sku.getRecyclePriceReduceNoBag() == null ? BigDecimal.ZERO : sku.getRecyclePriceReduceNoBag();
+        BigDecimal completeBagUnitPrice = defaultPrice(sku.getRecyclePrice());
+        BigDecimal completeNoBagUnitPrice = nonNegative(completeBagUnitPrice.subtract(noBagReduce));
+        BigDecimal brokenBagUnitPrice = this.calculateBrokenUnitPrice(sku);
+        BigDecimal brokenNoBagUnitPrice = nonNegative(brokenBagUnitPrice.subtract(noBagReduce));
+        if (appearance == AppearanceCondition.COMPLETE && hasBag == HasBag.YES) {
+            return completeBagUnitPrice;
+        }
+        if (appearance == AppearanceCondition.COMPLETE && hasBag == HasBag.NO) {
+            return completeNoBagUnitPrice;
+        }
+        if (appearance == AppearanceCondition.DAMAGED && hasBag == HasBag.YES) {
+            return brokenBagUnitPrice;
+        }
+        if (appearance == AppearanceCondition.DAMAGED && hasBag == HasBag.NO) {
+            return brokenNoBagUnitPrice;
+        }
+        return BigDecimal.ZERO;
     }
 
     private BigDecimal calculateBrokenUnitPrice(TeaSku sku) {
@@ -255,7 +487,10 @@ public class TeaQuoteOrderService {
         orderItem.setHasBag(hasBag.getCode());
         orderItem.setBaseRecyclePrice(unitPrice.setScale(2, RoundingMode.HALF_UP));
         orderItem.setQuantity(qty);
-        orderItem.setAmount(unitPrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP));
+        BigDecimal lineAmount = unitPrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
+        orderItem.setAmount(lineAmount);
+        orderItem.setManualAmount(lineAmount);
+        orderItem.setManualRemark(null);
         orderItemList.add(orderItem);
     }
 

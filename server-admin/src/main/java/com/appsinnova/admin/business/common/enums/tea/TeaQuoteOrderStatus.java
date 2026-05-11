@@ -14,6 +14,7 @@ public enum TeaQuoteOrderStatus {
     ACCEPTED(300, "已验收"),
     PAID(400, "已打款"),
     CANCELLED(500, "已取消"),
+    REJECTED(600, "已拒绝"),
     ;
 
     private final Integer code;

@@ -37,7 +37,19 @@ public class TeaQuoteOrderItem implements Serializable {
     private BigDecimal baseRecyclePrice;
     private BigDecimal amount;
     private Integer quantity;
+    private BigDecimal manualAmount;
+    private String manualRemark;
 
     private Long updateTime;
     private Long createTime;
+
+    /**
+     * 行小计是否有人工改价（manualAmount 与系统 amount 不一致）。
+     */
+    public boolean isLineManualAdjusted() {
+        if (amount == null || manualAmount == null) {
+            return false;
+        }
+        return manualAmount.compareTo(amount) != 0;
+    }
 }

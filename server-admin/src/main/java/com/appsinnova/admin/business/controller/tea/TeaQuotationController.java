@@ -1,12 +1,19 @@
 package com.appsinnova.admin.business.controller.tea;
 
 import com.appsinnova.admin.business.common.enums.AppNoticeType;
+import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
+import com.appsinnova.admin.business.common.enums.tea.AppearanceCondition;
+import com.appsinnova.admin.business.common.enums.tea.HasBag;
 import com.appsinnova.admin.business.common.enums.tea.TeaQuoteOrderStatus;
+import com.appsinnova.admin.business.common.enums.tea.TeaQuoteOrderType;
+import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.domain.tea.TeaQuoteOrder;
 import com.appsinnova.admin.business.domain.tea.TeaQuoteOrderItem;
 import com.appsinnova.admin.business.domain.tea.TeaSku;
+import com.appsinnova.admin.business.service.base.FeiShuWebhookService;
 import com.appsinnova.admin.business.service.sys.AppNoticeService;
+import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.appsinnova.admin.business.service.tea.TeaQuoteOrderService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
 import com.appsinnova.admin.business.vo.base.PayInfoVo;
@@ -20,6 +27,7 @@ import com.appsinnova.admin.component.shiro.ShiroUtil;
 import com.appsinnova.admin.system.domain.User;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.data.domain.Page;
@@ -30,12 +38,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Controller
 @RequestMapping("/business/tea/teaQuotation")
 @RequiredArgsConstructor
@@ -44,6 +57,8 @@ public class TeaQuotationController {
     private final TeaSkuService teaSkuService;
     private final AppNoticeService appNoticeService;
     private final TeaQuoteOrderService teaQuoteOrderService;
+    private final AppSecretKeyService appSecretKeyService;
+    private final FeiShuWebhookService feiShuWebhookService;
 
     // 报价必读
     @GetMapping("/readme")
@@ -101,7 +116,7 @@ public class TeaQuotationController {
 
     // 报单页
     @GetMapping("/quote")
-    @RequiresPermissions("business:tea:teaQuotation:index")
+    @RequiresPermissions("business:tea:teaQuotation:quote")
     public String quote(@RequestParam(value = "ids", required = false) List<Long> ids, Model model) {
         List<TeaSku> selectedSkuList = new ArrayList<>();
         Map<Long, String> selectedSkuBrandMap = new HashMap<>();
@@ -115,6 +130,12 @@ public class TeaQuotationController {
         }
         model.addAttribute("selectedSkuList", selectedSkuList);
         model.addAttribute("selectedSkuBrandMap", selectedSkuBrandMap);
+        Map<String, String> appearanceDict = DictUtils.value("TEA_APPEARANCE_CONDITION");
+        Map<String, String> hasBagDict = DictUtils.value("TEA_HAS_BAG");
+        model.addAttribute("appearanceDictJson", JsonUtils.writeValueAsString(appearanceDict != null ? appearanceDict : Collections.emptyMap()));
+        model.addAttribute("hasBagDictJson", JsonUtils.writeValueAsString(hasBagDict != null ? hasBagDict : Collections.emptyMap()));
+        model.addAttribute("defaultAppearanceCode", AppearanceCondition.COMPLETE.getCode());
+        model.addAttribute("defaultHasBagCode", HasBag.YES.getCode());
         return "/business/tea/teaQuotation/quote";
     }
 
@@ -148,7 +169,7 @@ public class TeaQuotationController {
 
     // 报单保存
     @PostMapping("/quote/save")
-    @RequiresPermissions("business:tea:teaQuotation:index")
+    @RequiresPermissions("business:tea:teaQuotation:quote")
     @ResponseBody
     public ResultVo<?> saveQuote(@RequestBody TeaQuoteOrderSubmitVo submitVo) {
         if (submitVo == null) {
@@ -164,10 +185,12 @@ public class TeaQuotationController {
 
         submitVo.setUserId(ShiroUtil.getSubject().getId());
         submitVo.setUserName(ShiroUtil.getSubject().getNickname());
+        submitVo.setType(TeaQuoteOrderType.Self.getCode());
         String operator = ShiroUtil.getSubject().getNickname();
 
         try {
             String orderNo = teaQuoteOrderService.createQuoteOrder(submitVo, operator);
+            sendQuoteSubmitNoticeAsync(orderNo);
             return ResultVoUtil.success("报价单已提交，单号：" + orderNo);
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
@@ -176,9 +199,7 @@ public class TeaQuotationController {
         }
     }
 
-    /**
-     * 我的报价订单列表（仅当前登录用户）
-     */
+    // 我的报价订单列表（仅当前登录用户）
     @GetMapping("/orderList")
     @RequiresPermissions("business:tea:teaQuotation:index")
     public String orderList(Model model, TeaQuoteOrder queryParam) {
@@ -189,12 +210,14 @@ public class TeaQuotationController {
         // 仅查当前用户数据，覆盖请求中可能携带的 userId
         queryParam.setUserId(user.getId());
         Page<TeaQuoteOrder> page = teaQuoteOrderService.getPageList(queryParam);
+        teaQuoteOrderService.attachBrandQuantitySummary(page.getContent());
         model.addAttribute("list", page.getContent());
         model.addAttribute("page", page);
         model.addAttribute("queryParam", queryParam);
         return "/business/tea/teaQuotation/orderList";
     }
 
+    // 报价单详情
     @GetMapping("/order/detail/{id}")
     @RequiresPermissions("business:tea:teaQuotation:index")
     public String orderDetail(@PathVariable("id") Long id, Model model) {
@@ -215,10 +238,8 @@ public class TeaQuotationController {
         return "/business/tea/teaQuotation/orderDetail";
     }
 
-    /**
-     * 取消报价单（仅【已提交】，未到【已确认】）
-     */
-    @PostMapping("/order/cancel")
+    // 取消报价单（仅【已提交】，未到【已确认】）
+    @RequestMapping("/order/cancel")
     @RequiresPermissions("business:tea:teaQuotation:index")
     @ResponseBody
     public ResultVo<?> cancelOrder(@RequestParam("id") Long id) {
@@ -226,17 +247,20 @@ public class TeaQuotationController {
         if (user == null) {
             return ResultVoUtil.error("请先登录");
         }
+        TeaQuoteOrder snap = teaQuoteOrderService.getByIdAndUserId(id, user.getId());
+        if (snap == null) {
+            return ResultVoUtil.error("报价单不存在或无权操作");
+        }
         try {
             teaQuoteOrderService.cancelOrderForUser(id, user.getId());
-            return ResultVoUtil.success("已取消");
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
         }
+        sendQuoteCancelNoticeAsync(snap);
+        return ResultVoUtil.success("已取消");
     }
 
-    /**
-     * 补充快递、打款信息（验收之前）
-     */
+    // 补充快递、打款信息（验收之前）
     @GetMapping("/order/supplement/{id}")
     @RequiresPermissions("business:tea:teaQuotation:index")
     public String orderSupplement(@PathVariable("id") Long id, Model model) {
@@ -277,6 +301,117 @@ public class TeaQuotationController {
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
         }
+    }
+
+    private void sendQuoteSubmitNoticeAsync(String orderNo) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                AppSecretKey appSecretKey = appSecretKeyService.getSecretKey(AppSecretKeyType.TEA_ROBOT_QUOTE_ORDER.getCode());
+                if (appSecretKey == null || StringUtils.isBlank(appSecretKey.getAccessSecret())) {
+                    return;
+                }
+                TeaQuoteOrder order = teaQuoteOrderService.getByOrderNo(orderNo);
+                if (order == null || !TeaQuoteOrderType.Self.getCode().equals(order.getType())) {
+                    return;
+                }
+                List<TeaQuoteOrderItem> itemList = teaQuoteOrderService.getItemListByOrderId(order.getId());
+                String markdown = buildQuoteSubmitMarkdown(order, itemList);
+                feiShuWebhookService.sendMarkdownCard(
+                        appSecretKey.getAccessSecret(),
+                        "报价单已提交",
+                        markdown,
+                        "green");
+            } catch (Exception ex) {
+                log.warn("飞书通知-报价单提交失败: {}", ex.getMessage());
+            }
+        });
+    }
+
+    private void sendQuoteCancelNoticeAsync(TeaQuoteOrder orderBeforeCancel) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                AppSecretKey appSecretKey = appSecretKeyService.getSecretKey(AppSecretKeyType.TEA_ROBOT_QUOTE_ORDER.getCode());
+                if (appSecretKey == null || StringUtils.isBlank(appSecretKey.getAccessSecret())) {
+                    return;
+                }
+                String markdown = buildQuoteCancelMarkdown(orderBeforeCancel);
+                feiShuWebhookService.sendMarkdownCard(
+                        appSecretKey.getAccessSecret(),
+                        "报价单已取消",
+                        markdown,
+                        "orange");
+            } catch (Exception ex) {
+                log.warn("飞书通知-报价单取消失败: {}", ex.getMessage());
+            }
+        });
+    }
+
+    private String buildQuoteSubmitMarkdown(TeaQuoteOrder order, List<TeaQuoteOrderItem> itemList) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        StringBuilder md = new StringBuilder();
+        md.append("**报单概要**\n");
+        md.append("- 单号：").append(StringUtils.defaultString(order.getOrderNo(), "-")).append("\n");
+        md.append("- 报单人：").append(StringUtils.defaultString(order.getUserName(), "-")).append("\n");
+        md.append("- 总金额：").append(formatMoneyYuan(order.getTotalAmount())).append("\n");
+        md.append("- 总数量：").append(order.getTotalQuantity() == null ? "-" : String.valueOf(order.getTotalQuantity())).append("\n");
+        md.append("- 提交时间：").append(order.getCreateTime() == null ? "-" : sdf.format(new Date(order.getCreateTime()))).append("\n\n");
+        if (itemList != null && !itemList.isEmpty()) {
+            md.append("**明细（前 15 行）**\n");
+            int max = Math.min(itemList.size(), 15);
+            for (int i = 0; i < max; i++) {
+                TeaQuoteOrderItem it = itemList.get(i);
+                String appearance = it.getAppearanceCondition() == null ? "-"
+                        : StringUtils.defaultString(DictUtils.keyValue("TEA_APPEARANCE_CONDITION", String.valueOf(it.getAppearanceCondition())), "-");
+                String hasBag = it.getHasBag() == null ? "-"
+                        : StringUtils.defaultString(DictUtils.keyValue("TEA_HAS_BAG", String.valueOf(it.getHasBag())), "-");
+                int qty = it.getQuantity() == null ? 0 : it.getQuantity();
+                md.append("- ")
+                        .append(quoteDetailBracket(it.getSkuBrand()))
+                        .append(quoteDetailBracket(it.getSkuName()))
+                        .append(quoteDetailBracket(it.getSkuSpec()))
+                        .append(quoteDetailBracket(it.getSkuProductionBatch()))
+                        .append(quoteDetailBracket(appearance))
+                        .append(quoteDetailBracket(hasBag))
+                        .append("x ").append(qty)
+                        .append("，小计 ").append(formatMoneyYuan(it.getAmount()))
+                        .append("\n");
+            }
+            if (itemList.size() > 15) {
+                md.append("- … 共 **").append(itemList.size()).append("** 行明细\n");
+            }
+        }
+        return md.toString();
+    }
+
+    private String buildQuoteCancelMarkdown(TeaQuoteOrder order) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        long now = System.currentTimeMillis();
+        String statusLabel = order.getStatus() == null ? "-"
+                : StringUtils.defaultString(DictUtils.keyValue("TEA_QUOTE_ORDER_STATUS", String.valueOf(order.getStatus())),
+                TeaQuoteOrderStatus.SUBMITTED.getMessage());
+        StringBuilder md = new StringBuilder();
+        md.append("**报单信息**\n");
+        md.append("- 单号：").append(StringUtils.defaultString(order.getOrderNo(), "-")).append("\n");
+        md.append("- 报单人：").append(StringUtils.defaultString(order.getUserName(), "-")).append("\n");
+        md.append("- 总金额：").append(formatMoneyYuan(order.getTotalAmount())).append("\n");
+        md.append("- 总数量：").append(order.getTotalQuantity() == null ? "-" : String.valueOf(order.getTotalQuantity())).append("\n");
+        md.append("- 取消时间：").append(sdf.format(new Date(now))).append("\n");
+        return md.toString();
+    }
+
+    /** 飞书明细行：【文案】，空则【-】 */
+    private static String quoteDetailBracket(String text) {
+        if (StringUtils.isBlank(text)) {
+            return "【-】";
+        }
+        return "【" + text.trim() + "】";
+    }
+
+    private static String formatMoneyYuan(BigDecimal amount) {
+        if (amount == null) {
+            return "-";
+        }
+        return amount.stripTrailingZeros().toPlainString() + " 元";
     }
 
     private boolean validateSupplementPay(TeaQuoteOrderSupplementVo vo) {

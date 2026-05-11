@@ -32,10 +32,12 @@ CREATE TABLE `tea_sku` (
 CREATE TABLE `tea_quote_order` (
                                    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                    `order_no` varchar(128) NOT NULL COMMENT '报价单号',
+                                   `type` int(11) NOT NULL DEFAULT '100' COMMENT '订单类型 TEA_QUOTE_ORDER_TYPE',
                                    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
                                    `user_name` varchar(255) NOT NULL DEFAULT '' COMMENT '用户昵称',
                                    `total_amount` decimal(10,2) NOT NULL COMMENT '报价总金额',
                                    `total_quantity` int(11) NOT NULL COMMENT '总数量',
+                                   `total_manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后总金额',
 
                                    `express_company` int(11) NOT NULL DEFAULT '0' COMMENT '快递公司',
                                    `express_no` varchar(255) NOT NULL DEFAULT '' COMMENT '快递单号',
@@ -65,6 +67,8 @@ CREATE TABLE `tea_quote_order_item` (
                                         `has_bag` tinyint(2) NOT NULL DEFAULT '1' COMMENT '有无提袋',
                                         `base_recycle_price` decimal(10,2) NOT NULL COMMENT '回收价单价',
                                         `amount` decimal(10,2) NOT NULL COMMENT '回收价总价',
+                                        `manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后小计',
+                                        `manual_remark` varchar(500) DEFAULT NULL COMMENT '人工调整备注',
                                         `quantity` int(11) NOT NULL COMMENT '数量',
 
                                         `update_time` bigint(20) NOT NULL COMMENT '更新时间',
@@ -73,3 +77,18 @@ CREATE TABLE `tea_quote_order_item` (
                                         KEY `idx_order_id` (`order_id`),
                                         KEY `idx_sku_id` (`sku_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='茶叶回收报价明细';
+
+-- 已有库增量：人工改价字段（若列已存在请忽略报错）
+ALTER TABLE `tea_quote_order` ADD COLUMN `total_manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后总金额' AFTER `total_quantity`;
+ALTER TABLE `tea_quote_order_item` ADD COLUMN `manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后小计' AFTER `amount`;
+ALTER TABLE `tea_quote_order_item` ADD COLUMN `manual_remark` varchar(500) DEFAULT NULL COMMENT '人工调整备注' AFTER `manual_amount`;
+
+ALTER TABLE `tea_quote_order` ADD COLUMN `type` int(11) NOT NULL DEFAULT '100' COMMENT '订单类型 TEA_QUOTE_ORDER_TYPE' AFTER `order_no`;
+
+INSERT INTO `sys_dict` (`id`, `title`, `name`, `type`, `value`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (188, '茶叶报价单类型', 'TEA_QUOTE_ORDER_TYPE', 2, '100:自建,200:代建', '', '2026-05-10 12:00:00', '2026-05-10 12:00:00', 1, 1, 1);
+
+-- 内部审核菜单（权限 business:tea:teaQuotationOrder:index）；若 id 冲突请调整
+INSERT INTO `sys_menu` (`id`, `title`, `pid`, `pids`, `url`, `perms`, `icon`, `type`, `sort`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (186, '报价单审核', 148, '[0],[148]', '/business/tea/teaQuotationOrder/index', 'business:tea:teaQuotationOrder:index', 'fa fa-check-square-o', 2, 4, '', '2026-05-09 12:00:00', '2026-05-09 12:00:00', 1, 1, 1);
+
+-- 报单人下拉：角色标识 teaPartner（与 TeaQuotationOrderController.TEA_PARTNER_ROLE_NAME 一致）。请将外部报单用户关联到此角色。
+INSERT INTO `sys_role` (`id`, `title`, `name`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (99, '茶叶合作报单', 'teaPartner', '外部报单用户', '2026-05-09 12:00:00', '2026-05-09 12:00:00', 1, 1, 1);

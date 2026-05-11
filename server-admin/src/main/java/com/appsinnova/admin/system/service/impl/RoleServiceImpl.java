@@ -1,11 +1,15 @@
 package com.appsinnova.admin.system.service.impl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.appsinnova.admin.common.data.PageSort;
 import com.appsinnova.admin.common.enums.StatusEnum;
 import com.appsinnova.admin.system.domain.Role;
+import com.appsinnova.admin.system.domain.User;
 import com.appsinnova.admin.system.service.RoleService;
 import com.appsinnova.admin.system.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,5 +132,37 @@ public class RoleServiceImpl implements RoleService {
             roleRepository.cancelMenuJoin(ids);
         }
         return roleRepository.updateStatus(statusEnum.getCode(), ids) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> listActiveUsersByRoleName(String roleName) {
+        if (roleName == null || roleName.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Role role = roleRepository.findByName(roleName);
+        if (role == null || role.getUsers() == null) {
+            return new ArrayList<>();
+        }
+        Byte ok = StatusEnum.OK.getCode();
+        return role.getUsers().stream()
+                .filter(u -> u.getStatus() != null && u.getStatus().equals(ok))
+                .sorted(Comparator.comparing(User::getId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean userHasActiveRoleName(Long userId, String roleName) {
+        if (userId == null || roleName == null || roleName.isEmpty()) {
+            return false;
+        }
+        Role role = roleRepository.findByName(roleName);
+        if (role == null || role.getUsers() == null) {
+            return false;
+        }
+        Byte ok = StatusEnum.OK.getCode();
+        return role.getUsers().stream()
+                .anyMatch(u -> userId.equals(u.getId()) && u.getStatus() != null && u.getStatus().equals(ok));
     }
 }

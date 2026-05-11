@@ -238,6 +238,7 @@ public class TeaSkuController {
         String brandName = resolveTeaBrandName(newSku.getBrand());
         StringBuilder md = new StringBuilder();
         md.append("**商品基础信息**\n");
+        md.append("- 编码：").append(newSku.getSkuCode()).append("\n");
         md.append("- 品牌：").append(brandName).append("\n");
         md.append("- 商品名称：").append(StringUtils.defaultString(newSku.getName(), "-")).append("\n");
         md.append("- 规格：").append(StringUtils.defaultString(newSku.getSpec(), "-")).append("\n");
@@ -266,6 +267,8 @@ public class TeaSkuController {
         } else {
             md.append("- 回收价：").append(formatMoneyYuan(newSku.getRecyclePrice())).append("\n");
         }
+        md.append("\n");
+        md.append("- 操作人：").append(StringUtils.defaultString(newSku.getOperator(), "-")).append("\n");
         return md.toString();
     }
 

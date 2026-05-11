@@ -2,10 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
     <style>
-        .quote-table-wrap {
-            overflow-x: auto;
-            margin-top: 12px;
-        }
+        .quote-table-wrap { overflow-x: auto; margin-top: 12px; }
         .module-card {
             border: 1px solid #ebeef5;
             border-radius: 4px;
@@ -13,41 +10,13 @@
             margin-bottom: 12px;
             background: #fff;
         }
-        .module-title {
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .quote-total-box {
-            text-align: right;
-            margin-top: 12px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .quote-total-box span {
-            color: #c0392b;
-        }
-        .order-detail-meta {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed #eee;
-        }
-        .order-detail-meta .meta-sep {
-            margin: 0 8px;
-            color: #ccc;
-        }
-        .pay-upload-preview {
-            margin-top: 10px;
-        }
-        .pay-upload-preview img {
-            width: 140px;
-            height: 140px;
-            object-fit: cover;
-            border: 1px solid #eee;
-        }
+        .module-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+        .quote-total-box { text-align: right; margin-top: 12px; font-size: 16px; font-weight: 600; }
+        .quote-total-box span { color: #c0392b; }
+        .order-detail-meta { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+        .order-detail-meta .meta-sep { margin: 0 8px; color: #ccc; }
+        .pay-upload-preview { margin-top: 10px; }
+        .pay-upload-preview img { width: 140px; height: 140px; object-fit: cover; border: 1px solid #eee; }
         .quote-readonly-input {
             padding: 9px 15px;
             min-height: 38px;
@@ -58,15 +27,8 @@
             color: #333;
             word-break: break-all;
         }
-        .order-amount-original {
-            text-decoration: line-through;
-            color: #999;
-        }
-        .order-amount-manual {
-            color: #c0392b;
-            font-weight: 600;
-            margin-left: 6px;
-        }
+        .order-amount-original { text-decoration: line-through; color: #999; }
+        .order-amount-manual { color: #c0392b; font-weight: 600; margin-left: 6px; }
     </style>
 </head>
 <body class="timo-layout-page">
@@ -75,11 +37,12 @@
         <span><i class="fa fa-file-text-o"></i> 报单详情</span>
     </div>
     <div class="layui-card-body">
-        <!-- 与 quote.html 一致：先整块报价（表格 + 合计），再双列快递 / 打款 -->
         <form class="layui-form" id="orderDetailForm">
             <div class="module-card">
                 <div class="order-detail-meta">
                     <span th:text="|报单号：${order.orderNo}|"></span>
+                    <span class="meta-sep">|</span>
+                    <span th:text="|报单人：${order.userName != null ? order.userName : '-'}|"></span>
                     <span class="meta-sep">|</span>
                     <span th:text="|订单类型：${order.type != null ? #dicts.keyValue('TEA_QUOTE_ORDER_TYPE', order.type) : '-'}|"></span>
                     <span class="meta-sep">|</span>
@@ -154,7 +117,7 @@
             <div class="layui-row layui-col-space12">
                 <div class="layui-col-md6">
                     <div class="module-card">
-                        <div class="module-title">快递模块（可后续补充）</div>
+                        <div class="module-title">快递模块</div>
                         <div class="layui-form-item">
                             <label class="layui-form-label">快递公司</label>
                             <div class="layui-input-block">
@@ -171,7 +134,7 @@
                 </div>
                 <div class="layui-col-md6">
                     <div class="module-card">
-                        <div class="module-title">打款模块（可后续补充）</div>
+                        <div class="module-title">打款模块</div>
                         <div class="layui-form-item">
                             <label class="layui-form-label">打款方式</label>
                             <div class="layui-input-block">

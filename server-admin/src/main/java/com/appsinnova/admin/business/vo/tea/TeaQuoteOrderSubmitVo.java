@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class TeaQuoteOrderSubmitVo {
+    private Integer type;
     private Long userId;
     private String userName;
     private Integer expressCompany;

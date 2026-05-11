@@ -2,6 +2,7 @@ package com.appsinnova.admin.system.service;
 
 import com.appsinnova.admin.common.enums.StatusEnum;
 import com.appsinnova.admin.system.domain.Role;
+import com.appsinnova.admin.system.domain.User;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -73,4 +74,16 @@ public interface RoleService {
      */
     @Transactional
     Boolean updateStatus(StatusEnum statusEnum, List<Long> idList);
+
+    /**
+     * 指定角色标识下、状态正常的用户列表（与角色管理中「查看用户」数据来源一致）
+     */
+    @Transactional(readOnly = true)
+    List<User> listActiveUsersByRoleName(String roleName);
+
+    /**
+     * 用户是否拥有指定标识的启用中角色
+     */
+    @Transactional(readOnly = true)
+    boolean userHasActiveRoleName(Long userId, String roleName);
 }

@@ -42,6 +42,11 @@ public interface RoleRepository extends BaseRepository<Role,Long> {
     Role findByNameAndIdNot(String name, Long id);
 
     /**
+     * 根据角色标识查询（唯一）
+     */
+    Role findByName(String name);
+
+    /**
      * 判断指定的用户是否存在角色
      * @param id 用户ID
      * @param status 角色状态

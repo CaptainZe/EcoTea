@@ -8,4 +8,6 @@ package com.appsinnova.admin.business.common;
  */
 public interface BaseConstant {
 
+    /** 与角色管理中角色标识一致，用于筛选报单人 */
+    String TEA_PARTNER_ROLE_NAME = "teaPartner";
 }

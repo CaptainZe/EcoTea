@@ -44,8 +44,9 @@
             object-fit: cover;
             border: 1px solid #eee;
         }
-        /* 表格内筛选下拉：明确为下拉框而非输入框 */
-        #quoteSkuTable select.quote-field-select {
+        /* 表格内筛选下拉、合作方选择：统一下拉箭头样式 */
+        #quoteSkuTable select.quote-field-select,
+        select#partnerUserId.partner-select {
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -65,10 +66,12 @@
             -moz-appearance: none;
             appearance: none;
         }
-        #quoteSkuTable select.quote-field-select::-ms-expand {
+        #quoteSkuTable select.quote-field-select::-ms-expand,
+        select#partnerUserId.partner-select::-ms-expand {
             display: none;
         }
-        #quoteSkuTable select.quote-field-select:focus {
+        #quoteSkuTable select.quote-field-select:focus,
+        select#partnerUserId.partner-select:focus {
             border-color: #5FB878;
             outline: none;
         }
@@ -77,12 +80,25 @@
 <body class="timo-layout-page">
 <div class="layui-card">
     <div class="layui-card-header timo-card-header">
-        <span><i class="fa fa-edit"></i> 新建报价单</span>
+        <span><i class="fa fa-edit"></i> 代建报价单</span>
     </div>
     <div class="layui-card-body">
         <form class="layui-form" id="quoteForm">
             <script type="application/json" id="appearanceDictJson" th:utext="${appearanceDictJson}">{}</script>
             <script type="application/json" id="hasBagDictJson" th:utext="${hasBagDictJson}">{}</script>
+            <div class="module-card">
+                <div class="module-title">合作方</div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">指定报单人</label>
+                    <div class="layui-input-block" style="max-width: 420px;">
+                        <select id="partnerUserId" class="layui-input partner-select" lay-ignore>
+                            <option value="">请选择合作方</option>
+                            <option th:each="u : ${partnerUserList}" th:value="${u.id}"
+                                    th:text="|${u.nickname}（${u.username}）|"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="module-card">
 
                 <div class="sku-option-bar">
@@ -227,8 +243,8 @@
         var defaultAppearance = Number(/*[[${defaultAppearanceCode}]]*/) || 1;
         var defaultHasBag = Number(/*[[${defaultHasBagCode}]]*/) || 1;
 
-        var quoteSubmitUrl = '/business/tea/teaQuotation/quote/save';
-        var afterSubmitReloadUrl = '/business/tea/teaQuotation/index';
+        var quoteSubmitUrl = /*[[@{/business/tea/teaQuotationOrder/quote/save}]]*/ '/business/tea/teaQuotationOrder/quote/save';
+        var afterSubmitReloadUrl = /*[[@{/business/tea/teaQuotationOrder/index}]]*/ '/business/tea/teaQuotationOrder/index';
 
         var initSkuList = /*[[${selectedSkuList}]]*/ [];
         var selectedSkuBrandMap = /*[[${selectedSkuBrandMap}]]*/ {};
@@ -281,6 +297,10 @@
             var payload = buildPayload();
             if (!payload.itemList.length) {
                 layer.msg('请至少添加一行商品并填写数量');
+                return;
+            }
+            if (!payload.userId || payload.userId <= 0) {
+                layer.msg('请选择合作方');
                 return;
             }
             if (!validatePayInfo(payload)) {
@@ -444,6 +464,8 @@
                 },
                 itemList: itemList
             };
+            var uid = intVal($('#partnerUserId').val());
+            payload.userId = uid > 0 ? uid : null;
             return payload;
         }
 

@@ -274,7 +274,16 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
             size = ['100%', '100%'];
         }else if (size.indexOf(',') !== -1) {
             var split = size.split(",");
-            size = [split[0] + 'px', split[1] + 'px'];
+            var w = split[0].trim();
+            var h = split[1].trim();
+            if (w.indexOf('%') >= 0 || h.indexOf('%') >= 0) {
+                size = [
+                    w.indexOf('%') >= 0 ? w : w + 'px',
+                    h.indexOf('%') >= 0 ? h : h + 'px'
+                ];
+            } else {
+                size = [w + 'px', h + 'px'];
+            }
         }
         window.layerIndex = layer.open({
             type: 2,

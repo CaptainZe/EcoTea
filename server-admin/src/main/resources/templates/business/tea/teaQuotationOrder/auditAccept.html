@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .audit-head { font-size: 14px; color: #666; margin-bottom: 12px; }
+        .audit-head strong { color: #333; }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card" th:if="${errorMsg != null}">
+    <div class="layui-card-body"><p style="color:#c00;" th:text="${errorMsg}"></p></div>
+</div>
+<div class="layui-card" th:if="${errorMsg == null}">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-inbox"></i> 验收报价单</span>
+    </div>
+    <div class="layui-card-body">
+        <div class="audit-head">
+            单号 <strong th:text="${order.orderNo}"></strong>，
+            报单人 <strong th:text="${order.userName}"></strong>。
+            可再次调整「人工小计」与备注。
+        </div>
+        <table class="layui-table" id="auditItemTable">
+            <thead>
+            <tr>
+                <th>商品</th>
+                <th width="90">单价</th>
+                <th width="72">数量</th>
+                <th width="100">系统小计</th>
+                <th width="120">人工小计 / 元</th>
+                <th width="200">备注</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${itemList}" th:attr="data-item-id=${item.id}">
+                <td>
+                    <div th:text="${item.skuName}"></div>
+                    <div style="color:#999;font-size:12px;" th:text="${item.skuCode}"></div>
+                </td>
+                <td th:text="${item.baseRecyclePrice}"></td>
+                <td th:text="${item.quantity}"></td>
+                <td th:text="${item.amount}"></td>
+                <td><input type="number" step="0.01" class="layui-input manual-amt" th:value="${item.manualAmount}"></td>
+                <td><input type="text" class="layui-input manual-remark" th:value="${item.manualRemark}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="layui-form-item timo-finally" style="margin-top: 16px;">
+            <button type="button" class="layui-btn" id="auditSubmitBtn"><i class="fa fa-check"></i> 提交验收</button>
+            <button type="button" class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 取消</button>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.jquery;
+        var orderId = /*[[${order != null ? order.id : null}]]*/ null;
+        var postUrl = orderId ? '/business/tea/teaQuotationOrder/audit/accept/' + orderId : '';
+
+        function collectPayload() {
+            var lines = [];
+            $('#auditItemTable tbody tr').each(function () {
+                var $tr = $(this);
+                var id = parseInt($tr.attr('data-item-id'), 10);
+                if (isNaN(id)) {
+                    return;
+                }
+                var amtVal = $tr.find('.manual-amt').val();
+                var manualAmount = amtVal === '' || amtVal == null ? null : parseFloat(amtVal);
+                if (manualAmount != null && isNaN(manualAmount)) {
+                    manualAmount = null;
+                }
+                lines.push({
+                    itemId: id,
+                    manualAmount: manualAmount,
+                    manualRemark: $tr.find('.manual-remark').val() || null
+                });
+            });
+            return {lines: lines};
+        }
+
+        $('#auditSubmitBtn').on('click', function () {
+            if (!postUrl) {
+                return;
+            }
+            $.ajax({
+                url: postUrl,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(collectPayload()),
+                success: function (res) {
+                    if (res.code === 200) {
+                        layer.msg(res.msg || '已验收');
+                        setTimeout(function () {
+                            if (window.parent && window.parent !== window && window.parent.layer) {
+                                var idx = window.parent.layer.getFrameIndex(window.name);
+                                if (typeof idx === 'number' && idx >= 0) {
+                                    window.parent.layer.close(idx);
+                                }
+                            }
+                            if (window.parent && window.parent !== window) {
+                                window.parent.location.reload();
+                            } else {
+                                window.location.reload();
+                            }
+                        }, 800);
+                    } else {
+                        layer.msg(res.msg || '操作失败');
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
