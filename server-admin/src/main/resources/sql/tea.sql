@@ -78,17 +78,30 @@ CREATE TABLE `tea_quote_order_item` (
                                         KEY `idx_sku_id` (`sku_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='茶叶回收报价明细';
 
--- 已有库增量：人工改价字段（若列已存在请忽略报错）
-ALTER TABLE `tea_quote_order` ADD COLUMN `total_manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后总金额' AFTER `total_quantity`;
-ALTER TABLE `tea_quote_order_item` ADD COLUMN `manual_amount` decimal(10,2) DEFAULT NULL COMMENT '人工调整后小计' AFTER `amount`;
-ALTER TABLE `tea_quote_order_item` ADD COLUMN `manual_remark` varchar(500) DEFAULT NULL COMMENT '人工调整备注' AFTER `manual_amount`;
+-- 1. 按时间范围 + 状态（仪表盘 80% 查询）
+CREATE INDEX idx_order_status_time
+    ON tea_quote_order (status, create_time);
 
-ALTER TABLE `tea_quote_order` ADD COLUMN `type` int(11) NOT NULL DEFAULT '100' COMMENT '订单类型 TEA_QUOTE_ORDER_TYPE' AFTER `order_no`;
+-- 2. 单独时间索引（纯趋势统计）
+CREATE INDEX idx_order_create_time
+    ON tea_quote_order (create_time);
 
-INSERT INTO `sys_dict` (`id`, `title`, `name`, `type`, `value`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (188, '茶叶报价单类型', 'TEA_QUOTE_ORDER_TYPE', 2, '100:自建,200:代建', '', '2026-05-10 12:00:00', '2026-05-10 12:00:00', 1, 1, 1);
+-- 3. 用户维度统计
+CREATE INDEX idx_order_user
+    ON tea_quote_order (user_id, create_time);
 
--- 内部审核菜单（权限 business:tea:teaQuotationOrder:index）；若 id 冲突请调整
-INSERT INTO `sys_menu` (`id`, `title`, `pid`, `pids`, `url`, `perms`, `icon`, `type`, `sort`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (186, '报价单审核', 148, '[0],[148]', '/business/tea/teaQuotationOrder/index', 'business:tea:teaQuotationOrder:index', 'fa fa-check-square-o', 2, 4, '', '2026-05-09 12:00:00', '2026-05-09 12:00:00', 1, 1, 1);
+-- 4. 状态单列（分布统计）
+CREATE INDEX idx_order_status
+    ON tea_quote_order (status);
 
--- 报单人下拉：角色标识 teaPartner（与 TeaQuotationOrderController.TEA_PARTNER_ROLE_NAME 一致）。请将外部报单用户关联到此角色。
-INSERT INTO `sys_role` (`id`, `title`, `name`, `remark`, `create_date`, `update_date`, `create_by`, `update_by`, `status`) VALUES (99, '茶叶合作报单', 'teaPartner', '外部报单用户', '2026-05-09 12:00:00', '2026-05-09 12:00:00', 1, 1, 1);
+-- 1. 订单 -> 明细（JOIN & 子查询）
+CREATE INDEX idx_item_order_id
+    ON tea_quote_order_item (order_id);
+
+-- 2. SKU 统计
+CREATE INDEX idx_item_sku
+    ON tea_quote_order_item (sku_id);
+
+-- 3. SKU + 时间（高级分析）
+CREATE INDEX idx_item_sku_order
+    ON tea_quote_order_item (sku_id, order_id);

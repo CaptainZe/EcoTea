@@ -79,8 +79,8 @@
             <div class="layui-form pull-left layui-form-pane timo-search-box">
                 <div class="layui-inline">
                     <label class="layui-form-label">报单人</label>
-                    <div class="layui-input-block timo-search-status" style="width: 200px;">
-                        <select name="userId" class="layui-input">
+                    <div class="layui-input-block timo-search-status" style="width: 220px;">
+                        <select name="userId" class="layui-input timo-search-select" lay-search>
                             <option value="">全部</option>
                             <option th:each="u : ${partnerUserList}" th:value="${u.id}"
                                     th:selected="${queryParam.userId != null and queryParam.userId eq u.id}"

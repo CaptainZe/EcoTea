@@ -44,9 +44,8 @@
             object-fit: cover;
             border: 1px solid #eee;
         }
-        /* 表格内筛选下拉、合作方选择：统一下拉箭头样式 */
-        #quoteSkuTable select.quote-field-select,
-        select#partnerUserId.partner-select {
+        /* 表格内筛选下拉：统一下拉箭头样式 */
+        #quoteSkuTable select.quote-field-select {
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -66,12 +65,10 @@
             -moz-appearance: none;
             appearance: none;
         }
-        #quoteSkuTable select.quote-field-select::-ms-expand,
-        select#partnerUserId.partner-select::-ms-expand {
+        #quoteSkuTable select.quote-field-select::-ms-expand {
             display: none;
         }
-        #quoteSkuTable select.quote-field-select:focus,
-        select#partnerUserId.partner-select:focus {
+        #quoteSkuTable select.quote-field-select:focus {
             border-color: #5FB878;
             outline: none;
         }
@@ -91,7 +88,7 @@
                 <div class="layui-form-item">
                     <label class="layui-form-label">指定报单人</label>
                     <div class="layui-input-block" style="max-width: 420px;">
-                        <select id="partnerUserId" class="layui-input partner-select" lay-ignore>
+                        <select id="partnerUserId" class="layui-input timo-search-select" lay-search>
                             <option value="">请选择合作方</option>
                             <option th:each="u : ${partnerUserList}" th:value="${u.id}"
                                     th:text="|${u.nickname}（${u.username}）|"></option>
@@ -264,6 +261,7 @@
         recalcAll();
         initPayMethodArea();
         initPayUpload();
+        form.render('select');
 
         form.on('select(payMethodSelect)', function (data) {
             togglePayInfoArea(data.value);
