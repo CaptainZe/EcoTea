@@ -1,6 +1,6 @@
 package com.appsinnova.admin.system.controller;
 
-import com.appsinnova.admin.business.service.tea.TeaSkuService;
+import com.appsinnova.admin.business.service.tea.TeaSkuDashboardService;
 import com.appsinnova.admin.business.vo.tea.TeaSkuStatVo;
 import com.appsinnova.admin.common.constant.AdminConst;
 import com.appsinnova.admin.common.data.URL;
@@ -49,7 +49,7 @@ public class MainController {
     private MenuService menuService;
 
     @Autowired
-    private TeaSkuService teaSkuService;
+    private TeaSkuDashboardService teaSkuDashboardService;
 
     /**
      * 后台主体内容
@@ -103,7 +103,7 @@ public class MainController {
     @GetMapping("/index")
     @RequiresPermissions("index")
     public String index(Model model) {
-        TeaSkuStatVo statVo = teaSkuService.statOverview();
+        TeaSkuStatVo statVo = teaSkuDashboardService.buildStatOverview();
         model.addAttribute("statVo", statVo);
         return "/system/main/index";
     }

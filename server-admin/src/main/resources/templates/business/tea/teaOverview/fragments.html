@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!-- 茶品仪表盘公共样式（SKU / 报价单页 th:replace 引用） -->
+<th:block th:fragment="teaOverviewCss">
+    <style>
+        .tea-overview-wrap {
+            padding: 18px;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+        .tea-overview-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #111827;
+        }
+        .tea-overview-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
+            min-height: 116px;
+        }
+        .tea-overview-card .label {
+            color: #6b7280;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .tea-overview-card .value {
+            margin-top: 10px;
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .tea-chart-card {
+            margin-top: 16px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
+            padding: 16px;
+        }
+        .tea-chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+        .tea-chart-box {
+            width: 100%;
+            height: 340px;
+        }
+        .tea-chart-box-wide {
+            height: 380px;
+        }
+        .tea-brand-table {
+            margin-top: 12px;
+        }
+        .tea-brand-table .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 17px;
+        }
+        .tea-brand-table .layui-table th {
+            background: #eef2ff;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 700;
+            border-bottom: 1px solid #dbe3ff;
+        }
+        .tea-brand-table .layui-table td {
+            font-size: 18px;
+            color: #111827;
+            padding-top: 14px;
+            padding-bottom: 14px;
+        }
+        .tea-brand-table .layui-table tbody tr:nth-child(even) {
+            background: #fafbff;
+        }
+    </style>
+</th:block>
+</html>

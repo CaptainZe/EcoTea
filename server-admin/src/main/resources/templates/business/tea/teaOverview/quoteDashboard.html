@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>报价单仪表盘</title>
+    <th:block th:fragment="style">
+        <th:block th:replace="/business/tea/teaOverview/fragments :: teaOverviewCss"/>
+        <style>
+            .tea-quote-trend-tools {
+                float: right;
+                font-weight: 400;
+            }
+            .tea-quote-trend-tools .layui-btn-xs {
+                margin-left: 4px;
+            }
+            /* 商品信息为「编码 | 品牌 | …」整段文案，勿限宽、勿 word-break，避免横向仍够却折行 */
+            .tea-quote-sku-top-table {
+                table-layout: auto;
+                width: 100%;
+            }
+            .tea-quote-sku-top-table .tea-sku-info-cell {
+                white-space: nowrap;
+                line-height: 1.5;
+                font-size: 13px;
+                color: #111827;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+<div class="tea-overview-wrap">
+<!--    <div class="tea-overview-title">报价单仪表盘</div>-->
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md3">
+            <div class="tea-overview-card">
+                <div class="label">报价单数</div>
+                <div class="value" style="color: #6366f1;" th:text="${quoteDash.orderCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md3">
+            <div class="tea-overview-card">
+                <div class="label">报价金额</div>
+                <div class="value" style="font-size: 32px; color: #16a34a;"
+                     th:text="${#numbers.formatDecimal(quoteDash.totalAmountSum, 1, 'COMMA', 2, 'POINT')}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md3">
+            <div class="tea-overview-card">
+                <div class="label">调整后金额</div>
+                <div class="value" style="font-size: 32px; color: #f59e0b;"
+                     th:text="${#numbers.formatDecimal(quoteDash.totalManualAmountSum, 1, 'COMMA', 2, 'POINT')}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md3">
+            <div class="tea-overview-card">
+                <div class="label">总数量</div>
+                <div class="value" style="color: #ec4899;" th:text="${quoteDash.totalQuantitySum}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md12">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">
+                    报价趋势
+                    <span class="tea-quote-trend-tools">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-xs tea-trend-gran" data-gran="day">天</button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-xs tea-trend-gran" data-gran="week">周</button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-xs tea-trend-gran" data-gran="month">月</button>
+                    </span>
+                </div>
+                <div id="teaQuoteTrendChart" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">状态分布</div>
+                <div id="teaQuoteStatusPie" class="tea-chart-box"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="tea-chart-card tea-brand-table">
+                <div class="tea-chart-title">用户活跃排行</div>
+                <table class="layui-table" lay-size="sm">
+                    <thead>
+                    <tr>
+                        <th>用户</th>
+                        <th>报价单数</th>
+                        <th>报价金额</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(quoteDash.userRankList)}">
+                        <td colspan="3" style="text-align:center;color:#9ca3af;">暂无数据</td>
+                    </tr>
+                    <tr th:each="row : ${quoteDash.userRankList}">
+                        <td th:text="${row.userName}">-</td>
+                        <td th:text="${row.orderCount}">0</td>
+                        <td th:text="${#numbers.formatDecimal(row.amountSum, 1, 'COMMA', 2, 'POINT')}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">各茶品牌报价数量（Top 20）</div>
+                <div id="teaQuoteBrandQtyBar" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">各茶品牌报价金额·人工调整后（Top 20）</div>
+                <div id="teaQuoteBrandAmtBar" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tea-chart-card tea-brand-table">
+        <div class="tea-chart-title">SKU Top 分析（按明细数量）</div>
+        <table class="layui-table tea-quote-sku-top-table" lay-size="sm">
+            <thead>
+            <tr>
+                <th>商品信息</th>
+                <th width="100">数量合计</th>
+                <th width="120">金额合计</th>
+                <th width="120">涉及报价单数</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(quoteDash.skuTopList)}">
+                <td colspan="4" style="text-align:center;color:#9ca3af;">暂无数据</td>
+            </tr>
+            <tr th:each="row : ${quoteDash.skuTopList}">
+                <td><div class="tea-sku-info-cell" th:text="${row.productInfoSummary}">-</div></td>
+                <td th:text="${row.quantitySum}">0</td>
+                <td th:text="${#numbers.formatDecimal(row.amountSum, 1, 'COMMA', 2, 'POINT')}">0</td>
+                <td th:text="${row.orderDistinctCount}">0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script th:src="@{/echarts/echarts.min.js}"></script>
+<script th:inline="javascript">
+    layui.use(['jquery', 'layer'], function () {
+        var $ = layui.$;
+        var layer = layui.layer;
+
+        var trendUrl = /*[[@{/business/tea/teaOverview/quote/trend}]]*/ '/business/tea/teaOverview/quote/trend';
+        var initialTrend = /*[[${quoteTrendJson}]]*/ '[]';
+        var initialStatus = /*[[${quoteStatusJson}]]*/ '[]';
+        var initialBrandQty = /*[[${quoteBrandQtyJson}]]*/ '[]';
+        var initialBrandAmt = /*[[${quoteBrandAmtJson}]]*/ '[]';
+
+        function parseJsonArray(raw) {
+            try {
+                var arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function trendLabel(p) {
+            return p.bucketLabel != null ? p.bucketLabel : p.bucket_label;
+        }
+        function trendOrders(p) {
+            var v = p.orderCount != null ? p.orderCount : p.order_count;
+            return Number(v) || 0;
+        }
+        function trendAmt(p) {
+            var v = p.totalAmount != null ? p.totalAmount : p.total_amount;
+            return Number(v) || 0;
+        }
+        function trendMan(p) {
+            var v = p.totalManualAmount != null ? p.totalManualAmount : p.total_manual_amount;
+            return Number(v) || 0;
+        }
+        function trendQty(p) {
+            var v = p.totalQuantity != null ? p.totalQuantity : p.total_quantity;
+            return Number(v) || 0;
+        }
+
+        function statusName(s) {
+            return s.statusLabel != null ? s.statusLabel : s.status_label;
+        }
+        function statusCnt(s) {
+            return Number(s.count) || 0;
+        }
+
+        var trendChart = echarts.init(document.getElementById('teaQuoteTrendChart'));
+        var statusChart = echarts.init(document.getElementById('teaQuoteStatusPie'));
+        var brandQtyChart = echarts.init(document.getElementById('teaQuoteBrandQtyBar'));
+        var brandAmtChart = echarts.init(document.getElementById('teaQuoteBrandAmtBar'));
+
+        function setTrendChart(series) {
+            var labels = series.map(trendLabel);
+            var orders = series.map(trendOrders);
+            var amounts = series.map(trendAmt);
+            var manuals = series.map(trendMan);
+            var qtys = series.map(trendQty);
+            trendChart.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['报价单数', '报价金额', '调整后金额', '总数量'], bottom: 0 },
+                grid: { left: 48, right: 48, top: 36, bottom: 72 },
+                xAxis: { type: 'category', boundaryGap: false, data: labels, axisLabel: { rotate: labels.length > 12 ? 30 : 0 } },
+                yAxis: [
+                    { type: 'value', name: '单数/数量', minInterval: 1 },
+                    { type: 'value', name: '金额', splitLine: { show: false } }
+                ],
+                series: [
+                    { name: '报价单数', type: 'line', smooth: true, data: orders, itemStyle: { color: '#6366f1' } },
+                    { name: '报价金额', type: 'line', smooth: true, yAxisIndex: 1, data: amounts, itemStyle: { color: '#16a34a' } },
+                    { name: '调整后金额', type: 'line', smooth: true, yAxisIndex: 1, data: manuals, itemStyle: { color: '#f59e0b' } },
+                    { name: '总数量', type: 'line', smooth: true, data: qtys, itemStyle: { color: '#ec4899' } }
+                ]
+            }, true);
+        }
+
+        function brandBarLabel(r) {
+            return r.brandLabel != null ? r.brandLabel : r.brand_label;
+        }
+        function brandQtyVal(r) {
+            var v = r.quantitySum != null ? r.quantitySum : r.quantity_sum;
+            return Number(v) || 0;
+        }
+        function brandAmtVal(r) {
+            var v = r.manualAmountSum != null ? r.manualAmountSum : r.manual_amount_sum;
+            return Number(v) || 0;
+        }
+
+        function setBrandQtyBar(list) {
+            var names = list.map(brandBarLabel);
+            var vals = list.map(brandQtyVal);
+            brandQtyChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: 44, right: 16, top: 16, bottom: names.length > 8 ? 72 : 48 },
+                xAxis: {
+                    type: 'category',
+                    data: names,
+                    axisLabel: { interval: 0, rotate: names.length > 6 ? 28 : 0 }
+                },
+                yAxis: { type: 'value', name: '数量', minInterval: 1 },
+                series: [{
+                    type: 'bar',
+                    data: vals,
+                    itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] },
+                    barMaxWidth: 40
+                }]
+            }, true);
+        }
+
+        function setBrandAmtBar(list) {
+            var names = list.map(brandBarLabel);
+            var vals = list.map(brandAmtVal);
+            brandAmtChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        var p = params && params[0];
+                        if (!p) {
+                            return '';
+                        }
+                        return p.name + '<br/>' + p.marker + (Number(p.value).toFixed(2));
+                    }
+                },
+                grid: { left: 52, right: 16, top: 16, bottom: names.length > 8 ? 72 : 48 },
+                xAxis: {
+                    type: 'category',
+                    data: names,
+                    axisLabel: { interval: 0, rotate: names.length > 6 ? 28 : 0 }
+                },
+                yAxis: { type: 'value', name: '金额' },
+                series: [{
+                    type: 'bar',
+                    data: vals,
+                    itemStyle: { color: '#059669', borderRadius: [6, 6, 0, 0] },
+                    barMaxWidth: 40
+                }]
+            }, true);
+        }
+
+        function setStatusPie(list) {
+            var data = list.map(function (s) {
+                return { name: statusName(s) || '-', value: statusCnt(s) };
+            });
+            statusChart.setOption({
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0, type: data.length > 8 ? 'scroll' : 'plain' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '68%'],
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    label: { formatter: '{b}: {c} ({d}%)' },
+                    data: data.length ? data : [{ value: 0, name: '暂无数据' }]
+                }]
+            }, true);
+        }
+
+        setTrendChart(parseJsonArray(initialTrend));
+        setStatusPie(parseJsonArray(initialStatus));
+        setBrandQtyBar(parseJsonArray(initialBrandQty));
+        setBrandAmtBar(parseJsonArray(initialBrandAmt));
+
+        var currentGran = 'day';
+        function syncGranButtons() {
+            $('.tea-trend-gran').each(function () {
+                var g = $(this).data('gran');
+                if (g === currentGran) {
+                    $(this).removeClass('layui-btn-primary');
+                } else {
+                    $(this).addClass('layui-btn-primary');
+                }
+            });
+        }
+        syncGranButtons();
+
+        $('.tea-trend-gran').on('click', function () {
+            var g = $(this).data('gran');
+            if (!g || g === currentGran) {
+                return;
+            }
+            currentGran = g;
+            syncGranButtons();
+            $.get(trendUrl, { granularity: g }, function (res) {
+                if (res.code !== 200) {
+                    layer.msg(res.msg || '加载失败');
+                    return;
+                }
+                var arr = Array.isArray(res.data) ? res.data : [];
+                setTrendChart(arr);
+            }).fail(function () {
+                layer.msg('网络错误');
+            });
+        });
+
+        window.addEventListener('resize', function () {
+            trendChart.resize();
+            statusChart.resize();
+            brandQtyChart.resize();
+            brandAmtChart.resize();
+        });
+    });
+</script>
+</body>
+</html>

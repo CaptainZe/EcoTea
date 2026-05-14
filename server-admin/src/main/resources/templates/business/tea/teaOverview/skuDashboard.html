@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>茶品SKU仪表盘</title>
+    <th:block th:fragment="style">
+        <th:block th:replace="/business/tea/teaOverview/fragments :: teaOverviewCss"/>
+    </th:block>
+</head>
+<body>
+<div class="tea-overview-wrap">
+<!--    <div class="tea-overview-title">茶品SKU仪表盘</div>-->
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">总数</div>
+                <div class="value" th:text="${statVo.totalCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">上架数</div>
+                <div class="value" style="color: #16A34A;" th:text="${statVo.onlineCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">下架数</div>
+                <div class="value" style="color: #DC2626;" th:text="${statVo.offlineCount}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">上下架占比</div>
+                <div id="teaSkuStatusPie" class="tea-chart-box"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">星级占比</div>
+                <div id="teaSkuStarPie" class="tea-chart-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md12">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">品牌数量分布<span style="font-size:13px;font-weight:400;color:#6b7280;margin-left:8px;">（数量前 20）</span></div>
+                <div id="teaSkuBrandBar" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tea-chart-card tea-brand-table">
+        <div class="tea-chart-title">茶叶品牌数量</div>
+        <table class="layui-table" lay-size="sm" id="teaSkuBrandTable">
+            <thead>
+            <tr>
+                <th width="200">品牌</th>
+                <th width="200">数量</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(statVo.brandStatList)}">
+                <td colspan="2">暂无数据</td>
+            </tr>
+            <tr th:each="item : ${statVo.brandStatList}">
+                <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}">品牌</td>
+                <td th:text="${item.count}">0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script th:src="@{/echarts/echarts.min.js}"></script>
+<script th:inline="javascript">
+    const teaSkuOnline = Number([[${statVo.onlineCount}]]) || 0;
+    const teaSkuOffline = Number([[${statVo.offlineCount}]]) || 0;
+
+    const teaSkuStarPieData = [];
+    /*[# th:each="s : ${statVo.starLevelStatList}"]*/
+    teaSkuStarPieData.push({ name: /*[[${s.label}]]*/, value: Number(/*[[${s.count}]]*/) || 0 });
+    /*[/]*/
+
+    const teaSkuBrandRows = [];
+    document.querySelectorAll('#teaSkuBrandTable tbody tr').forEach(function (tr) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 2) {
+            return;
+        }
+        const name = (tds[0].innerText || '').trim();
+        const count = Number((tds[1].innerText || '').trim());
+        if (!name || name === '暂无数据' || Number.isNaN(count)) {
+            return;
+        }
+        teaSkuBrandRows.push({ name: name, count: count });
+    });
+    teaSkuBrandRows.sort(function (a, b) {
+        return b.count - a.count;
+    });
+    const teaSkuBrandTop20 = teaSkuBrandRows.slice(0, 20);
+    const teaSkuBrandNames = teaSkuBrandTop20.map(function (r) {
+        return r.name;
+    });
+    const teaSkuBrandCounts = teaSkuBrandTop20.map(function (r) {
+        return r.count;
+    });
+
+    const teaSkuStatusPie = echarts.init(document.getElementById('teaSkuStatusPie'));
+    teaSkuStatusPie.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0 },
+        series: [{
+            type: 'pie',
+            radius: ['45%', '70%'],
+            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+            label: { formatter: '{b}: {c} ({d}%)' },
+            data: [
+                { value: teaSkuOnline, name: '上架', itemStyle: { color: '#16a34a' } },
+                { value: teaSkuOffline, name: '下架', itemStyle: { color: '#ef4444' } }
+            ]
+        }]
+    });
+
+    const teaSkuStarPie = echarts.init(document.getElementById('teaSkuStarPie'));
+    teaSkuStarPie.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, type: teaSkuStarPieData.length > 6 ? 'scroll' : 'plain' },
+        color: ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#64748b'],
+        series: [{
+            type: 'pie',
+            radius: ['45%', '70%'],
+            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+            label: { formatter: '{b}: {c} ({d}%)' },
+            data: teaSkuStarPieData.length ? teaSkuStarPieData : [{ value: 0, name: '暂无数据' }]
+        }]
+    });
+
+    const teaSkuBrandBar = echarts.init(document.getElementById('teaSkuBrandBar'));
+    teaSkuBrandBar.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: 40, right: 20, top: 20, bottom: 60 },
+        xAxis: {
+            type: 'category',
+            data: teaSkuBrandNames,
+            axisLabel: { interval: 0, rotate: teaSkuBrandNames.length > 6 ? 25 : 0 }
+        },
+        yAxis: { type: 'value', minInterval: 1 },
+        series: [{
+            type: 'bar',
+            data: teaSkuBrandCounts,
+            itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] },
+            barMaxWidth: 46
+        }]
+    });
+
+    window.addEventListener('resize', function () {
+        teaSkuStatusPie.resize();
+        teaSkuStarPie.resize();
+        teaSkuBrandBar.resize();
+    });
+</script>
+</body>
+</html>
