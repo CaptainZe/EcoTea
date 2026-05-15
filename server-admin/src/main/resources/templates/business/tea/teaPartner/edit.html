@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .partner-form .layui-form-label {
+            width: 110px;
+        }
+        .partner-form .layui-input-inline {
+            width: 260px;
+        }
+        .partner-form .layui-input-block {
+            margin-left: 140px;
+        }
+        .partner-form .partner-row-full .layui-input-block {
+            margin-left: 140px;
+            max-width: none;
+        }
+        .partner-form .partner-row-full .layui-input-block .layui-input,
+        .partner-form .partner-row-full .layui-input-block .layui-textarea {
+            width: 680px;
+            max-width: 100%;
+        }
+        .partner-form .partner-row-full .layui-form-text .layui-textarea {
+            min-height: 120px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form partner-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item partner-row-full">
+            <label class="layui-form-label required">合作方名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="partnerName" class="layui-input" th:value='${editItem?.partnerName}' required lay-verify="required"
+                       maxlength="200" placeholder="如: XX茶叶商行">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">合作方类型</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="partnerType" mo:dict="TEA_PARTNER_TYPE"
+                        mo-selected="${editItem.partnerType}" lay-verify="required"></select>
+            </div>
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="status" mo:dict="TEA_PARTNER_STATUS"
+                        mo-selected="${editItem.status}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">联系人姓名</label>
+            <div class="layui-input-inline">
+                <input type="text" name="contactName" class="layui-input" th:value='${editItem?.contactName}'
+                       required lay-verify="required" maxlength="64">
+            </div>
+            <label class="layui-form-label required">联系电话</label>
+            <div class="layui-input-inline">
+                <input type="text" name="contactPhone" class="layui-input" th:value='${editItem?.contactPhone}'
+                       required lay-verify="required" maxlength="32">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">省</label>
+            <div class="layui-input-inline">
+                <input type="text" name="province" class="layui-input" th:value='${editItem?.province}'
+                       required lay-verify="required" maxlength="32" placeholder="">
+            </div>
+            <label class="layui-form-label required">市</label>
+            <div class="layui-input-inline">
+                <input type="text" name="city" class="layui-input" th:value='${editItem?.city}'
+                       required lay-verify="required" maxlength="32" placeholder="">
+            </div>
+        </div>
+
+        <div class="layui-form-item partner-row-full">
+            <label class="layui-form-label required">详细地址</label>
+            <div class="layui-input-block">
+                <input type="text" name="address" class="layui-input" th:value='${editItem?.address}'
+                       required lay-verify="required" maxlength="500" placeholder="">
+            </div>
+        </div>
+
+        <div class="layui-form-item layui-form-text partner-row-full">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+                <textarea name="remark" class="layui-textarea" maxlength="500" placeholder="最多500字"
+                          th:text="${editItem?.remark}"></textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">对接客服</label>
+            <div class="layui-input-block" style="max-width: 680px;">
+                <select id="liaisonUserId" name="liaisonUserId" class="layui-input timo-search-select" lay-search required lay-verify="required">
+                    <option value="" th:selected="${editItem == null or editItem.liaisonUserId == null or editItem.liaisonUserId == 0}">请选择对接客服</option>
+                    <option th:each="u : ${salespersonUserList}" th:value="${u.id}"
+                            th:selected="${editItem != null and editItem.liaisonUserId != null and editItem.liaisonUserId > 0 and editItem.liaisonUserId == u.id}"
+                            th:text="|${u.nickname}（${u.username}）|"></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">关联登录账号</label>
+            <div class="layui-input-block" style="max-width: 680px;">
+                <select id="partnerUserId" name="userId" class="layui-input timo-search-select" lay-search>
+                    <option value="0" th:selected="${editItem == null or editItem.userId == null or editItem.userId == 0}">不关联登录账号</option>
+                    <option th:each="u : ${partnerUserList}" th:value="${u.id}"
+                            th:selected="${editItem != null and editItem.userId != null and editItem.userId > 0 and editItem.userId == u.id}"
+                            th:text="|${u.nickname}（${u.username}）|"></option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm"><i class="fa fa-check-circle"></i> 保存</button>
+            <button class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 关闭</button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.render('select');
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/tea/teaPartner/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg);
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

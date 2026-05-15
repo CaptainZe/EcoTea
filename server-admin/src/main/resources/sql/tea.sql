@@ -105,3 +105,25 @@ CREATE INDEX idx_item_sku
 -- 3. SKU + 时间（高级分析）
 CREATE INDEX idx_item_sku_order
     ON tea_quote_order_item (sku_id, order_id);
+
+CREATE TABLE `tea_partner` (
+                               `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                               `user_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '用户ID',
+                               `liaison_user_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '对接客服',
+                               `partner_type` int(11) NOT NULL DEFAULT '0' COMMENT '合作方类型',
+                               `partner_name` varchar(200) NOT NULL COMMENT '合作方名称',
+                               `contact_name` varchar(128) NOT NULL COMMENT '联系人姓名',
+                               `contact_phone` varchar(32) NOT NULL COMMENT '联系电话',
+                               `province` varchar(32) NOT NULL DEFAULT '' COMMENT '省',
+                               `city` varchar(32) NOT NULL DEFAULT '' COMMENT '市',
+                               `address` varchar(500) NOT NULL DEFAULT '' COMMENT '详细地址',
+                               `remark` varchar(500) NOT NULL DEFAULT '' COMMENT '备注',
+                               `status` int(11) NOT NULL DEFAULT '0' COMMENT '状态',
+                               `operator` varchar(64) NOT NULL COMMENT '最后操作人',
+                               `update_time` bigint(20) NOT NULL COMMENT '更新时间',
+                               `create_time` bigint(20) NOT NULL COMMENT '创建时间',
+                               PRIMARY KEY (`id`),
+                               KEY `idx_user_id` (`user_id`),
+                               KEY `idx_liaison_user_id` (`liaison_user_id`),
+                               KEY `idx_status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='茶叶合作方信息表';

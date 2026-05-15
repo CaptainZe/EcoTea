@@ -10,4 +10,7 @@ public interface BaseConstant {
 
     /** 与角色管理中角色标识一致，用于筛选报单人 */
     String TEA_PARTNER_ROLE_NAME = "teaPartner";
+
+    /** 与角色管理中角色标识一致，用于筛选对接客服 */
+    String TEA_SALESPERSON_ROLE_NAME = "teaSalesperson";
 }

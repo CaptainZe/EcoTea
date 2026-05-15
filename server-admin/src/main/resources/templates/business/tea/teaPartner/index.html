@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>合作方管理</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 合作方管理</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">合作方名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="partnerName" th:value="${param.partnerName}" placeholder="模糊查询"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="partnerType" mo:dict="TEA_PARTNER_TYPE"
+                                mo-selected="${param.partnerType}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="status" mo:dict="TEA_PARTNER_STATUS"
+                                mo-selected="${param.status}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">联系人</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="contactName" th:value="${param.contactName}" placeholder="模糊查询"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">联系电话</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="contactPhone" th:value="${param.contactPhone}" placeholder="模糊查询"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">对接客服</label>
+                    <div class="layui-input-block timo-search-status" style="width: 220px;">
+                        <select name="liaisonUserId" class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="u : ${salespersonUserList}" th:value="${u.id}"
+                                    th:selected="${param.liaisonUserId != null and param.liaisonUserId eq u.id}"
+                                    th:text="|${u.nickname}（${u.username}）|"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">关联登录账号</label>
+                    <div class="layui-input-block timo-search-status" style="width: 220px;">
+                        <select name="userId" class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="u : ${partnerUserList}" th:value="${u.id}"
+                                    th:selected="${param.userId != null and param.userId eq u.id}"
+                                    th:text="|${u.nickname}（${u.username}）|"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">是否关联登录账号</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="userLinked" mo:dict="YES_OR_NO"
+                                mo-selected="${param.userLinked}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加"
+                        th:attr="data-url=@{/business/tea/teaPartner/edit}" data-size="1300,800">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaPartner/status/1}">签约</a></dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaPartner/status/2}">解约</a></dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaPartner/delete}">删除</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="120">操作</th>
+                    <th width="90" class="sortable" data-field="status">状态</th>
+                    <th width="90" class="sortable" data-field="partnerType">类型</th>
+                    <th width="160">合作方名称</th>
+                    <th width="100">联系人</th>
+                    <th width="120">联系电话</th>
+                    <th width="80" class="sortable" data-field="province">省</th>
+                    <th width="80" class="sortable" data-field="city">市</th>
+                    <th width="200">详细地址</th>
+                    <th width="180">对接客服</th>
+                    <th width="180">关联登录账号</th>
+                    <th width="100">操作人</th>
+                    <th width="130" class="sortable" data-field="updateTime">更新时间</th>
+                    <th width="130" class="sortable" data-field="createTime">创建时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑"
+                           th:attr="data-url=@{'/business/tea/teaPartner/edit/'+${item.id}}" data-size="1300,800">编辑</a>
+                        <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="拷贝"
+                           th:attr="data-url=@{'/business/tea/teaPartner/copy/'+${item.id}}" data-size="1300,800">拷贝</a>
+                        <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
+                           data-msg="是否确认解约" th:href="@{/business/tea/teaPartner/status/2(ids=${item.id})}">解约</a>
+                        <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;"
+                           data-msg="是否确认签约" th:href="@{/business/tea/teaPartner/status/1(ids=${item.id})}">签约</a>
+                    </td>
+                    <td th:text="${#dicts.keyValue('TEA_PARTNER_STATUS', item.status)}"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${#dicts.keyValue('TEA_PARTNER_TYPE', item.partnerType)}"></td>
+                    <td th:text="${item.partnerName}" th:title="${item.partnerName}"></td>
+                    <td th:text="${item.contactName}"></td>
+                    <td th:text="${item.contactPhone}"></td>
+                    <td th:text="${item.province}"></td>
+                    <td th:text="${item.city}"></td>
+                    <td th:text="${item.address}" th:title="${item.address}"></td>
+                    <td th:text="${item.liaisonUserShow}">-</td>
+                    <td th:text="${item.linkedUserShow}">-</td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

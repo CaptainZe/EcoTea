@@ -206,10 +206,12 @@ public class TeaSkuController {
             return ResultVoUtil.error("请选择一条记录");
         }
 
+        User user = ShiroUtil.getSubject();
         for (Long id : ids) {
             TeaSku entity = teaSkuService.getById(id);
             if (entity != null && !status.equals(entity.getStatus())) {
                 entity.setStatus(status);
+                entity.setOperator(user.getNickname());
                 teaSkuService.save(entity);
             }
         }

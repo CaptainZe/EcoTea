@@ -1,5 +1,7 @@
 target
 
+.cursorignore
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
