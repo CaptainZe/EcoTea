@@ -53,5 +53,7 @@ public class TeaSku implements Serializable {
     @Transient
     private String salePriceShow;
     @Transient
+    private String recyclePriceShow;
+    @Transient
     private String recycleReduceAmountShow;
 }

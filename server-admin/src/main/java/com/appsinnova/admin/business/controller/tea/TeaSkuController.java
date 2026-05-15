@@ -54,6 +54,17 @@ public class TeaSkuController {
                 item.setSalePriceShow(salePriceShow);
             }
 
+            if (item.getRecyclePrice() != null) {
+                String recyclePriceShow = item.getRecyclePrice().stripTrailingZeros().toPlainString();
+                if (item.getOfficialPrice() != null && item.getOfficialPrice().compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal discount = item.getRecyclePrice()
+                            .multiply(BigDecimal.TEN)
+                            .divide(item.getOfficialPrice(), 2, RoundingMode.HALF_UP);
+                    recyclePriceShow += " (" + discount.stripTrailingZeros().toPlainString() + "折)";
+                }
+                item.setRecyclePriceShow(recyclePriceShow);
+            }
+
             if (item.getRecyclePrice() != null && item.getRecyclePriceReducePer() != null) {
                 BigDecimal reduceAmount = item.getRecyclePrice()
                         .multiply(BigDecimal.valueOf(item.getRecyclePriceReducePer()))
