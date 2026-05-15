@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>合作方仪表盘</title>
+    <th:block th:fragment="style">
+        <th:block th:replace="/business/tea/teaOverview/fragments :: teaOverviewCss"/>
+    </th:block>
+</head>
+<body>
+<div class="tea-overview-wrap">
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">合作方总数</div>
+                <div class="value" style="color: #6366f1;" th:text="${partnerDash.totalCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">签约总数</div>
+                <div class="value" style="color: #16a34a;" th:text="${partnerDash.signedCount}">0</div>
+            </div>
+        </div>
+        <div class="layui-col-md4">
+            <div class="tea-overview-card">
+                <div class="label">解约总数</div>
+                <div class="value" style="color: #dc2626;" th:text="${partnerDash.terminatedCount}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md12">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">合作方增长趋势（按月 · 新增数）</div>
+                <div id="teaPartnerGrowthLine" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">状态分布</div>
+                <div id="teaPartnerStatusPie" class="tea-chart-box"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="tea-chart-card tea-brand-table">
+                <div class="tea-chart-title">对接客服负责的合作方数</div>
+                <table class="layui-table" lay-size="sm">
+                    <thead>
+                    <tr>
+                        <th>对接客服</th>
+                        <th width="120">合作方数</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(partnerDash.liaisonPartnerRankList)}">
+                        <td colspan="2" style="text-align:center;color:#9ca3af;">暂无数据</td>
+                    </tr>
+                    <tr th:each="row : ${partnerDash.liaisonPartnerRankList}">
+                        <td th:text="${row.displayName}">-</td>
+                        <td th:text="${row.partnerCount}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script th:src="@{/echarts/echarts.min.js}"></script>
+<script th:inline="javascript">
+    (function () {
+        var initialTrend = /*[[${partnerTrendJson}]]*/ '[]';
+        var initialStatus = /*[[${partnerStatusJson}]]*/ '[]';
+
+        function parseJsonArray(raw) {
+            try {
+                var arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function trendMonth(p) {
+            return p.monthLabel != null ? p.monthLabel : p.month_label;
+        }
+        function trendCnt(p) {
+            var v = p.newPartnerCount != null ? p.newPartnerCount : p.new_partner_count;
+            return Number(v) || 0;
+        }
+
+        function statusName(s) {
+            return s.statusLabel != null ? s.statusLabel : s.status_label;
+        }
+        function statusCnt(s) {
+            return Number(s.count) || 0;
+        }
+
+        var growthChart = echarts.init(document.getElementById('teaPartnerGrowthLine'));
+        var statusChart = echarts.init(document.getElementById('teaPartnerStatusPie'));
+
+        function setGrowthLine(series) {
+            var labels = series.map(trendMonth);
+            var counts = series.map(trendCnt);
+            growthChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: 48, right: 32, top: 36, bottom: labels.length > 12 ? 72 : 52 },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: labels,
+                    axisLabel: { rotate: labels.length > 10 ? 28 : 0 }
+                },
+                yAxis: { type: 'value', name: '新增数', minInterval: 1 },
+                series: [{
+                    name: '新增合作方',
+                    type: 'line',
+                    smooth: true,
+                    data: counts,
+                    areaStyle: { color: 'rgba(99, 102, 241, 0.12)' },
+                    itemStyle: { color: '#6366f1' },
+                    lineStyle: { width: 3 }
+                }]
+            }, true);
+        }
+
+        function setStatusPie(list) {
+            var data = list.map(function (s) {
+                return { name: statusName(s) || '-', value: statusCnt(s) };
+            });
+            statusChart.setOption({
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0, type: data.length > 8 ? 'scroll' : 'plain' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '68%'],
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    label: { formatter: '{b}: {c} ({d}%)' },
+                    data: data.length ? data : [{ value: 0, name: '暂无数据' }]
+                }]
+            }, true);
+        }
+
+        setGrowthLine(parseJsonArray(initialTrend));
+        setStatusPie(parseJsonArray(initialStatus));
+
+        window.addEventListener('resize', function () {
+            growthChart.resize();
+            statusChart.resize();
+        });
+    })();
+</script>
+</body>
+</html>

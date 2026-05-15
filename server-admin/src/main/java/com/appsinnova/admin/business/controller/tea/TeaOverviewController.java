@@ -1,8 +1,10 @@
 package com.appsinnova.admin.business.controller.tea;
 
 import com.appsinnova.admin.business.common.enums.tea.TeaQuoteTrendGranularity;
+import com.appsinnova.admin.business.service.tea.TeaPartnerDashboardService;
 import com.appsinnova.admin.business.service.tea.TeaQuoteOrderDashboardService;
 import com.appsinnova.admin.business.service.tea.TeaSkuDashboardService;
+import com.appsinnova.admin.business.vo.tea.TeaPartnerDashboardVo;
 import com.appsinnova.admin.business.vo.tea.TeaQuoteDashboardVo;
 import com.appsinnova.admin.common.utils.JsonUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * 茶品相关仪表盘（SKU、报价单等）
+ * 茶品相关仪表盘
  */
 @Controller
 @RequestMapping("/business/tea/teaOverview")
@@ -26,12 +28,23 @@ public class TeaOverviewController {
 
     private final TeaSkuDashboardService teaSkuDashboardService;
     private final TeaQuoteOrderDashboardService teaQuoteOrderDashboardService;
+    private final TeaPartnerDashboardService teaPartnerDashboardService;
 
     @GetMapping("/sku")
     @RequiresPermissions("business:tea:teaOverview:sku")
     public String skuDashboard(Model model) {
         model.addAttribute("statVo", teaSkuDashboardService.buildStatOverview());
         return "/business/tea/teaOverview/skuDashboard";
+    }
+
+    @GetMapping("/partner")
+    @RequiresPermissions("business:tea:teaOverview:partner")
+    public String partnerDashboard(Model model) {
+        TeaPartnerDashboardVo dash = teaPartnerDashboardService.buildFullDashboard();
+        model.addAttribute("partnerDash", dash);
+        model.addAttribute("partnerTrendJson", JsonUtils.writeValueAsString(dash.getGrowthTrendByMonth()));
+        model.addAttribute("partnerStatusJson", JsonUtils.writeValueAsString(dash.getStatusDistribution()));
+        return "/business/tea/teaOverview/partnerDashboard";
     }
 
     @GetMapping("/quote")
