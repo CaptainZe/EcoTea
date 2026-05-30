@@ -68,13 +68,24 @@
         <div class="layui-form-item">
             <label class="layui-form-label required">省</label>
             <div class="layui-input-inline">
-                <input type="text" name="province" class="layui-input" th:value='${editItem?.province}'
-                       required lay-verify="required" maxlength="32" placeholder="">
+                <select id="partnerProvince" name="province" lay-filter="pcaProvince"
+                        class="layui-input timo-search-select" lay-search required lay-verify="required">
+                    <option value="">请选择省</option>
+                </select>
             </div>
             <label class="layui-form-label required">市</label>
             <div class="layui-input-inline">
-                <input type="text" name="city" class="layui-input" th:value='${editItem?.city}'
-                       required lay-verify="required" maxlength="32" placeholder="">
+                <select id="partnerCity" name="city" lay-filter="pcaCity"
+                        class="layui-input timo-search-select" lay-search required lay-verify="required">
+                    <option value="">请选择市</option>
+                </select>
+            </div>
+            <label class="layui-form-label required">区/县</label>
+            <div class="layui-input-inline">
+                <select id="partnerDistrict" name="district" lay-filter="pcaDistrict"
+                        class="layui-input timo-search-select" lay-search required lay-verify="required">
+                    <option value="">请选择区/县</option>
+                </select>
             </div>
         </div>
 
@@ -126,11 +137,29 @@
 </div>
 <script th:replace="/common/template :: script"></script>
 <script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/sys/pca-cascade.js}"></script>
+<script th:inline="javascript">
+    var partnerPcaInitial = {
+        province: /*[[${editItem != null ? editItem.province : null}]]*/ null,
+        city: /*[[${editItem != null ? editItem.city : null}]]*/ null,
+        district: /*[[${editItem != null ? editItem.district : null}]]*/ null
+    };
+</script>
 <script>
     layui.use(['form'], function () {
         var form = layui.form;
         var $ = layui.jquery;
         form.render('select');
+
+        new PcaCascade({
+            $: $,
+            province: '#partnerProvince',
+            city: '#partnerCity',
+            district: '#partnerDistrict',
+            layForm: form,
+            allowEmpty: true,
+            initial: partnerPcaInitial
+        }).init();
 
         form.on('submit(submitForm)', function () {
             $.ajax({

@@ -32,6 +32,7 @@ public class TeaPartner implements Serializable {
 
     private String province;
     private String city;
+    private String district;
     private String address;
 
     private String remark;
@@ -51,4 +52,16 @@ public class TeaPartner implements Serializable {
     /** 查询：是否关联登录账号（YES_OR_NO：0-否 1-是） */
     @Transient
     private Integer userLinked;
+
+    /** 列表展示：省名称（由编码解析） */
+    @Transient
+    private String provinceName;
+
+    /** 列表展示：市名称（由编码解析） */
+    @Transient
+    private String cityName;
+
+    /** 列表展示：区/县名称（由编码解析） */
+    @Transient
+    private String districtName;
 }

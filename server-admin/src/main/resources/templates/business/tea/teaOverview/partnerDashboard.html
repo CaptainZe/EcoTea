@@ -4,6 +4,14 @@
     <title>合作方仪表盘</title>
     <th:block th:fragment="style">
         <th:block th:replace="/business/tea/teaOverview/fragments :: teaOverviewCss"/>
+        <style>
+            .tea-partner-region-hint {
+                float: right;
+                font-size: 13px;
+                font-weight: 400;
+                color: #6b7280;
+            }
+        </style>
     </th:block>
 </head>
 <body>
@@ -31,22 +39,27 @@
     </div>
 
     <div class="layui-row layui-col-space15" style="margin-top: 2px;">
-        <div class="layui-col-md12">
+        <div class="layui-col-md6">
             <div class="tea-chart-card">
-                <div class="tea-chart-title">合作方增长趋势（按月 · 新增数）</div>
-                <div id="teaPartnerGrowthLine" class="tea-chart-box tea-chart-box-wide"></div>
+                <div class="tea-chart-title">
+                    各省合作方数量
+                    <span class="tea-partner-region-hint">点击柱条查看省内各市</span>
+                </div>
+                <div id="teaPartnerProvinceBar" class="tea-chart-box tea-chart-box-wide"></div>
+            </div>
+        </div>
+        <div class="layui-col-md6">
+            <div class="tea-chart-card">
+                <div class="tea-chart-title">
+                    <span id="teaPartnerCityTitle">各市合作方数量</span>
+                </div>
+                <div id="teaPartnerCityBar" class="tea-chart-box tea-chart-box-wide"></div>
             </div>
         </div>
     </div>
 
     <div class="layui-row layui-col-space15" style="margin-top: 2px;">
-        <div class="layui-col-md6">
-            <div class="tea-chart-card">
-                <div class="tea-chart-title">状态分布</div>
-                <div id="teaPartnerStatusPie" class="tea-chart-box"></div>
-            </div>
-        </div>
-        <div class="layui-col-md6">
+        <div class="layui-col-md12">
             <div class="tea-chart-card tea-brand-table">
                 <div class="tea-chart-title">对接客服负责的合作方数</div>
                 <table class="layui-table" lay-size="sm">
@@ -74,9 +87,12 @@
 <script th:replace="/common/template :: script"></script>
 <script th:src="@{/echarts/echarts.min.js}"></script>
 <script th:inline="javascript">
-    (function () {
-        var initialTrend = /*[[${partnerTrendJson}]]*/ '[]';
-        var initialStatus = /*[[${partnerStatusJson}]]*/ '[]';
+    layui.use(['jquery', 'layer'], function () {
+        var $ = layui.$;
+        var layer = layui.layer;
+
+        var cityStatsUrl = /*[[@{/business/tea/teaOverview/partner/cityStats}]]*/ '/business/tea/teaOverview/partner/cityStats';
+        var initialProvince = /*[[${partnerProvinceJson}]]*/ '[]';
 
         function parseJsonArray(raw) {
             try {
@@ -87,74 +103,121 @@
             }
         }
 
-        function trendMonth(p) {
-            return p.monthLabel != null ? p.monthLabel : p.month_label;
+        function regionCode(r) {
+            return r.regionCode != null ? r.regionCode : r.region_code;
         }
-        function trendCnt(p) {
-            var v = p.newPartnerCount != null ? p.newPartnerCount : p.new_partner_count;
+        function regionName(r) {
+            return r.regionName != null ? r.regionName : r.region_name;
+        }
+        function regionCnt(r) {
+            var v = r.partnerCount != null ? r.partnerCount : r.partner_count;
             return Number(v) || 0;
         }
 
-        function statusName(s) {
-            return s.statusLabel != null ? s.statusLabel : s.status_label;
-        }
-        function statusCnt(s) {
-            return Number(s.count) || 0;
-        }
+        var provinceList = parseJsonArray(initialProvince);
+        var selectedProvinceIndex = -1;
+        var provinceChart = echarts.init(document.getElementById('teaPartnerProvinceBar'));
+        var cityChart = echarts.init(document.getElementById('teaPartnerCityBar'));
 
-        var growthChart = echarts.init(document.getElementById('teaPartnerGrowthLine'));
-        var statusChart = echarts.init(document.getElementById('teaPartnerStatusPie'));
-
-        function setGrowthLine(series) {
-            var labels = series.map(trendMonth);
-            var counts = series.map(trendCnt);
-            growthChart.setOption({
+        function setRegionBar(chart, list, barColor) {
+            var names = list.map(regionName);
+            var vals = list.map(regionCnt);
+            chart.setOption({
                 tooltip: { trigger: 'axis' },
-                grid: { left: 48, right: 32, top: 36, bottom: labels.length > 12 ? 72 : 52 },
+                grid: { left: 44, right: 16, top: 16, bottom: names.length > 8 ? 72 : 48 },
                 xAxis: {
                     type: 'category',
-                    boundaryGap: false,
-                    data: labels,
-                    axisLabel: { rotate: labels.length > 10 ? 28 : 0 }
+                    data: names.length ? names : ['暂无数据'],
+                    axisLabel: { interval: 0, rotate: names.length > 6 ? 28 : 0 }
                 },
-                yAxis: { type: 'value', name: '新增数', minInterval: 1 },
+                yAxis: { type: 'value', name: '合作方数', minInterval: 1 },
                 series: [{
-                    name: '新增合作方',
-                    type: 'line',
-                    smooth: true,
-                    data: counts,
-                    areaStyle: { color: 'rgba(99, 102, 241, 0.12)' },
-                    itemStyle: { color: '#6366f1' },
-                    lineStyle: { width: 3 }
+                    type: 'bar',
+                    data: names.length ? vals : [0],
+                    itemStyle: { color: barColor, borderRadius: [6, 6, 0, 0] },
+                    barMaxWidth: 40
                 }]
             }, true);
         }
 
-        function setStatusPie(list) {
-            var data = list.map(function (s) {
-                return { name: statusName(s) || '-', value: statusCnt(s) };
+        function renderProvinceChart() {
+            var names = provinceList.map(regionName);
+            var vals = provinceList.map(regionCnt);
+            var colors = provinceList.map(function (_, idx) {
+                return idx === selectedProvinceIndex ? '#4338ca' : '#6366f1';
             });
-            statusChart.setOption({
-                tooltip: { trigger: 'item' },
-                legend: { bottom: 0, type: data.length > 8 ? 'scroll' : 'plain' },
+            provinceChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: 44, right: 16, top: 16, bottom: names.length > 8 ? 72 : 48 },
+                xAxis: {
+                    type: 'category',
+                    data: names.length ? names : ['暂无数据'],
+                    axisLabel: { interval: 0, rotate: names.length > 6 ? 28 : 0 }
+                },
+                yAxis: { type: 'value', name: '合作方数', minInterval: 1 },
                 series: [{
-                    type: 'pie',
-                    radius: ['40%', '68%'],
-                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-                    label: { formatter: '{b}: {c} ({d}%)' },
-                    data: data.length ? data : [{ value: 0, name: '暂无数据' }]
+                    type: 'bar',
+                    data: names.length ? vals.map(function (v, idx) {
+                        return { value: v, itemStyle: { color: colors[idx], borderRadius: [6, 6, 0, 0] } };
+                    }) : [0],
+                    barMaxWidth: 40
                 }]
             }, true);
         }
 
-        setGrowthLine(parseJsonArray(initialTrend));
-        setStatusPie(parseJsonArray(initialStatus));
+        function updateCityTitle(provinceName) {
+            var titleEl = document.getElementById('teaPartnerCityTitle');
+            if (!provinceName) {
+                titleEl.textContent = '各市合作方数量';
+                return;
+            }
+            titleEl.textContent = provinceName + ' · 各市合作方数量';
+        }
+
+        function loadCityStats(provinceRow, index) {
+            if (!provinceRow) {
+                updateCityTitle(null);
+                setRegionBar(cityChart, [], '#8b5cf6');
+                return;
+            }
+            selectedProvinceIndex = index;
+            renderProvinceChart();
+            updateCityTitle(regionName(provinceRow));
+            $.get(cityStatsUrl, { provinceCode: regionCode(provinceRow) }, function (res) {
+                if (res && res.code === 200) {
+                    setRegionBar(cityChart, res.data || [], '#8b5cf6');
+                } else {
+                    setRegionBar(cityChart, [], '#8b5cf6');
+                    if (res && res.msg) {
+                        layer.msg(res.msg);
+                    }
+                }
+            }).fail(function () {
+                setRegionBar(cityChart, [], '#8b5cf6');
+                layer.msg('加载市级统计失败');
+            });
+        }
+
+        provinceChart.on('click', function (params) {
+            if (params.dataIndex == null || params.dataIndex < 0 || params.dataIndex >= provinceList.length) {
+                return;
+            }
+            loadCityStats(provinceList[params.dataIndex], params.dataIndex);
+        });
+
+        renderProvinceChart();
+        if (provinceList.length > 0) {
+            loadCityStats(provinceList[0], 0);
+        } else {
+            updateCityTitle(null);
+            setRegionBar(cityChart, [], '#8b5cf6');
+        }
 
         window.addEventListener('resize', function () {
-            growthChart.resize();
-            statusChart.resize();
+            provinceChart.resize();
+            cityChart.resize();
         });
-    })();
+    });
 </script>
 </body>
 </html>

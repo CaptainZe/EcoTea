@@ -17,10 +17,8 @@ public class TeaPartnerDashboardVo {
     private Long signedCount = 0L;
     private Long terminatedCount = 0L;
 
-    /** 按月新增合作方（create_time） */
-    private List<MonthTrendPoint> growthTrendByMonth = new ArrayList<>();
-
-    private List<StatusSlice> statusDistribution = new ArrayList<>();
+    /** 按省（PCA 编码）统计合作方数量 */
+    private List<RegionStatRow> provinceStatList = new ArrayList<>();
 
     /** 对接客服负责的合作方数量排行 */
     private List<LiaisonRankRow> liaisonPartnerRankList = new ArrayList<>();
@@ -28,19 +26,12 @@ public class TeaPartnerDashboardVo {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class MonthTrendPoint {
-        private String monthLabel;
-        private Long newPartnerCount;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class StatusSlice {
-        private Integer status;
-        private Long count;
-        /** 字典 TEA_PARTNER_STATUS */
-        private String statusLabel;
+    public static class RegionStatRow {
+        /** 省/市 PCA 编码 */
+        private String regionCode;
+        /** 展示名称（由编码解析） */
+        private String regionName;
+        private Long partnerCount;
     }
 
     @Data

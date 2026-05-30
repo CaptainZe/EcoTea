@@ -85,10 +85,13 @@ public class TeaPartnerService {
             preList.add(cb.like(root.get("contactPhone").as(String.class), "%" + param.getContactPhone().trim() + "%"));
         }
         if (StringUtils.hasText(param.getProvince())) {
-            preList.add(cb.like(root.get("province").as(String.class), "%" + param.getProvince().trim() + "%"));
+            preList.add(cb.equal(root.get("province").as(String.class), param.getProvince().trim()));
         }
         if (StringUtils.hasText(param.getCity())) {
-            preList.add(cb.like(root.get("city").as(String.class), "%" + param.getCity().trim() + "%"));
+            preList.add(cb.equal(root.get("city").as(String.class), param.getCity().trim()));
+        }
+        if (StringUtils.hasText(param.getDistrict())) {
+            preList.add(cb.equal(root.get("district").as(String.class), param.getDistrict().trim()));
         }
         if (param.getUserId() != null && param.getUserId() > 0) {
             preList.add(cb.equal(root.get("userId").as(Long.class), param.getUserId()));

@@ -1,4 +1,4 @@
-CREATE TABLE `tea_sku` (
+﻿CREATE TABLE `tea_sku` (
                            `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                            `sku_code` varchar(64) NOT NULL COMMENT 'SKU唯一编码',
                            `star_level` int(11) NOT NULL DEFAULT 5 COMMENT '星级（热门度）',
@@ -114,8 +114,9 @@ CREATE TABLE `tea_partner` (
                                `partner_name` varchar(200) NOT NULL COMMENT '合作方名称',
                                `contact_name` varchar(128) NOT NULL COMMENT '联系人姓名',
                                `contact_phone` varchar(32) NOT NULL COMMENT '联系电话',
-                               `province` varchar(32) NOT NULL DEFAULT '' COMMENT '省',
-                               `city` varchar(32) NOT NULL DEFAULT '' COMMENT '市',
+                               `province` varchar(32) NOT NULL DEFAULT '' COMMENT '省编码(PCA)',
+                               `city` varchar(32) NOT NULL DEFAULT '' COMMENT '市编码(PCA)',
+                               `district` varchar(32) NOT NULL DEFAULT '' COMMENT '区/县编码(PCA)',
                                `address` varchar(500) NOT NULL DEFAULT '' COMMENT '详细地址',
                                `remark` varchar(500) NOT NULL DEFAULT '' COMMENT '备注',
                                `status` int(11) NOT NULL DEFAULT '0' COMMENT '状态',

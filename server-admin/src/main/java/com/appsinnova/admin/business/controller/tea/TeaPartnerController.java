@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.controller.tea;
 import com.appsinnova.admin.business.common.BaseConstant;
 import com.appsinnova.admin.business.common.enums.tea.TeaPartnerStatus;
 import com.appsinnova.admin.business.common.enums.tea.TeaPartnerType;
+import com.appsinnova.admin.business.common.pca.PcaCodeService;
 import com.appsinnova.admin.business.domain.tea.TeaPartner;
 import com.appsinnova.admin.business.service.tea.TeaPartnerService;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class TeaPartnerController {
 
     private final TeaPartnerService teaPartnerService;
+    private final PcaCodeService pcaCodeService;
     private final RoleService roleService;
     private final UserService userService;
 
@@ -43,6 +45,7 @@ public class TeaPartnerController {
         Page<TeaPartner> page = teaPartnerService.getPageList(queryParam);
         Map<Long, User> userMap = buildRelatedUserMap(page.getContent());
         page.getContent().forEach(item -> {
+            pcaCodeService.fillRegionNames(item);
             item.setLinkedUserShow(formatLinkedUser(item.getUserId(), userMap));
             item.setLiaisonUserShow(formatLinkedUser(item.getLiaisonUserId(), userMap));
         });
@@ -65,6 +68,7 @@ public class TeaPartnerController {
             editItem.setUserId(0L);
         }
 
+        pcaCodeService.fillRegionNames(editItem);
         model.addAttribute("editItem", editItem);
         model.addAttribute("partnerUserList", roleService.listActiveUsersByRoleName(BaseConstant.TEA_PARTNER_ROLE_NAME));
         model.addAttribute("salespersonUserList", roleService.listActiveUsersByRoleName(BaseConstant.TEA_SALESPERSON_ROLE_NAME));
@@ -77,6 +81,7 @@ public class TeaPartnerController {
     public String toCopy(@PathVariable(value = "id") TeaPartner editItem, Model model) {
         editItem.setId(null);
         editItem.setUserId(0L);
+        pcaCodeService.fillRegionNames(editItem);
         model.addAttribute("editItem", editItem);
         model.addAttribute("partnerUserList", roleService.listActiveUsersByRoleName(BaseConstant.TEA_PARTNER_ROLE_NAME));
         model.addAttribute("salespersonUserList", roleService.listActiveUsersByRoleName(BaseConstant.TEA_SALESPERSON_ROLE_NAME));
@@ -108,11 +113,10 @@ public class TeaPartnerController {
         if (StringUtils.isBlank(saveItem.getContactPhone())) {
             return ResultVoUtil.error("联系电话必填");
         }
-        if (StringUtils.isBlank(saveItem.getProvince())) {
-            return ResultVoUtil.error("省必填");
-        }
-        if (StringUtils.isBlank(saveItem.getCity())) {
-            return ResultVoUtil.error("市必填");
+        String regionError = pcaCodeService.validateRegion(
+                saveItem.getProvince(), saveItem.getCity(), saveItem.getDistrict());
+        if (regionError != null) {
+            return ResultVoUtil.error(regionError);
         }
         if (StringUtils.isBlank(saveItem.getAddress())) {
             return ResultVoUtil.error("详细地址必填");

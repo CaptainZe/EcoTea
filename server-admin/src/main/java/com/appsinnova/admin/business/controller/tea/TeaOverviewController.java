@@ -42,9 +42,15 @@ public class TeaOverviewController {
     public String partnerDashboard(Model model) {
         TeaPartnerDashboardVo dash = teaPartnerDashboardService.buildFullDashboard();
         model.addAttribute("partnerDash", dash);
-        model.addAttribute("partnerTrendJson", JsonUtils.writeValueAsString(dash.getGrowthTrendByMonth()));
-        model.addAttribute("partnerStatusJson", JsonUtils.writeValueAsString(dash.getStatusDistribution()));
+        model.addAttribute("partnerProvinceJson", JsonUtils.writeValueAsString(dash.getProvinceStatList()));
         return "/business/tea/teaOverview/partnerDashboard";
+    }
+
+    @GetMapping("/partner/cityStats")
+    @RequiresPermissions("business:tea:teaOverview:partner")
+    @ResponseBody
+    public ResultVo<?> partnerCityStats(@RequestParam("provinceCode") String provinceCode) {
+        return ResultVoUtil.success(teaPartnerDashboardService.loadCityStatsByProvince(provinceCode));
     }
 
     @GetMapping("/quote")

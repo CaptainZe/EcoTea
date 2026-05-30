@@ -78,6 +78,33 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">省</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchProvince" name="province" lay-filter="pcaProvince"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">市</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchCity" name="city" lay-filter="pcaCity"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">区/县</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchDistrict" name="district" lay-filter="pcaDistrict"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
                     </button>
@@ -114,8 +141,9 @@
                     <th width="160">合作方名称</th>
                     <th width="100">联系人</th>
                     <th width="120">联系电话</th>
-                    <th width="80" class="sortable" data-field="province">省</th>
-                    <th width="80" class="sortable" data-field="city">市</th>
+                    <th width="90" class="sortable" data-field="province">省</th>
+                    <th width="90" class="sortable" data-field="city">市</th>
+                    <th width="90" class="sortable" data-field="district">区/县</th>
                     <th width="200">详细地址</th>
                     <th width="180">对接客服</th>
                     <th width="180">关联登录账号</th>
@@ -144,8 +172,9 @@
                     <td th:text="${item.partnerName}" th:title="${item.partnerName}"></td>
                     <td th:text="${item.contactName}"></td>
                     <td th:text="${item.contactPhone}"></td>
-                    <td th:text="${item.province}"></td>
-                    <td th:text="${item.city}"></td>
+                    <td th:text="${item.provinceName}" th:title="${item.provinceName}"></td>
+                    <td th:text="${item.cityName}" th:title="${item.cityName}"></td>
+                    <td th:text="${item.districtName}" th:title="${item.districtName}"></td>
                     <td th:text="${item.address}" th:title="${item.address}"></td>
                     <td th:text="${item.liaisonUserShow}">-</td>
                     <td th:text="${item.linkedUserShow}">-</td>
@@ -160,5 +189,29 @@
     </div>
 </div>
 <script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/sys/pca-cascade.js}"></script>
+<script th:inline="javascript">
+    var partnerSearchPcaInitial = {
+        province: /*[[${param.province != null and !#lists.isEmpty(param.province) ? param.province[0] : ''}]]*/ '',
+        city: /*[[${param.city != null and !#lists.isEmpty(param.city) ? param.city[0] : ''}]]*/ '',
+        district: /*[[${param.district != null and !#lists.isEmpty(param.district) ? param.district[0] : ''}]]*/ ''
+    };
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        new PcaCascade({
+            $: $,
+            province: '#searchProvince',
+            city: '#searchCity',
+            district: '#searchDistrict',
+            layForm: form,
+            allowEmpty: true,
+            initial: partnerSearchPcaInitial
+        }).init();
+    });
+</script>
 </body>
 </html>

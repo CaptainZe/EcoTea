@@ -1,8 +1,8 @@
 package com.appsinnova.admin.business.service.tea;
 
 import com.appsinnova.admin.business.common.enums.tea.TeaPartnerStatus;
+import com.appsinnova.admin.business.common.pca.PcaCodeService;
 import com.appsinnova.admin.business.vo.tea.TeaPartnerDashboardVo;
-import com.appsinnova.admin.common.utils.DictUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -20,16 +20,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TeaPartnerDashboardService {
 
-    private static final int TREND_MONTH_RANGE_MONTHS = 13;
     private static final int LIAISON_RANK_LIMIT = 30;
 
     private final EntityManager entityManager;
+    private final PcaCodeService pcaCodeService;
 
     public TeaPartnerDashboardVo buildFullDashboard() {
         TeaPartnerDashboardVo vo = new TeaPartnerDashboardVo();
         fillCoreMetrics(vo);
-        vo.setGrowthTrendByMonth(loadGrowthTrendByMonth());
-        vo.setStatusDistribution(loadStatusDistribution());
+        vo.setProvinceStatList(loadProvinceStats());
         vo.setLiaisonPartnerRankList(loadLiaisonPartnerRank(LIAISON_RANK_LIMIT));
         return vo;
     }
@@ -52,48 +51,27 @@ public class TeaPartnerDashboardService {
         }
     }
 
-    public List<TeaPartnerDashboardVo.MonthTrendPoint> loadGrowthTrendByMonth() {
-        long now = System.currentTimeMillis();
-        long fromMs = now - (long) TREND_MONTH_RANGE_MONTHS * 31L * 24 * 3600 * 1000;
-        String sql = "SELECT DATE_FORMAT(FROM_UNIXTIME(p.create_time/1000), '%Y-%m') AS bucket, COUNT(*) AS cnt "
-                + "FROM tea_partner p WHERE p.create_time >= :fromMs "
-                + "GROUP BY bucket ORDER BY bucket";
+    public List<TeaPartnerDashboardVo.RegionStatRow> loadProvinceStats() {
+        String sql = "SELECT p.province, COUNT(*) AS cnt "
+                + "FROM tea_partner p "
+                + "WHERE p.province IS NOT NULL AND p.province <> '' "
+                + "GROUP BY p.province ORDER BY cnt DESC, p.province";
         Query q = entityManager.createNativeQuery(sql);
-        q.setParameter("fromMs", fromMs);
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = q.getResultList();
-        List<TeaPartnerDashboardVo.MonthTrendPoint> list = new ArrayList<>();
-        if (CollectionUtils.isEmpty(rows)) {
-            return list;
-        }
-        for (Object[] r : rows) {
-            if (r == null || r.length < 2 || r[0] == null) {
-                continue;
-            }
-            list.add(new TeaPartnerDashboardVo.MonthTrendPoint(String.valueOf(r[0]), toLong(r[1])));
-        }
-        return list;
+        return mapRegionRows(q.getResultList());
     }
 
-    public List<TeaPartnerDashboardVo.StatusSlice> loadStatusDistribution() {
-        String sql = "SELECT p.status, COUNT(*) FROM tea_partner p GROUP BY p.status ORDER BY p.status";
-        Query q = entityManager.createNativeQuery(sql);
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = q.getResultList();
-        List<TeaPartnerDashboardVo.StatusSlice> list = new ArrayList<>();
-        for (Object[] r : rows) {
-            if (r == null || r.length < 2) {
-                continue;
-            }
-            Integer st = r[0] == null ? null : ((Number) r[0]).intValue();
-            String label = "-";
-            if (st != null) {
-                String dv = DictUtils.keyValue("TEA_PARTNER_STATUS", String.valueOf(st));
-                label = StringUtils.hasText(dv) ? dv : String.valueOf(st);
-            }
-            list.add(new TeaPartnerDashboardVo.StatusSlice(st, toLong(r[1]), label));
+    public List<TeaPartnerDashboardVo.RegionStatRow> loadCityStatsByProvince(String provinceCode) {
+        if (!StringUtils.hasText(provinceCode)) {
+            return new ArrayList<>();
         }
-        return list;
+        String sql = "SELECT p.city, COUNT(*) AS cnt "
+                + "FROM tea_partner p "
+                + "WHERE p.province = :provinceCode "
+                + "AND p.city IS NOT NULL AND p.city <> '' "
+                + "GROUP BY p.city ORDER BY cnt DESC, p.city";
+        Query q = entityManager.createNativeQuery(sql);
+        q.setParameter("provinceCode", provinceCode.trim());
+        return mapRegionRows(q.getResultList());
     }
 
     public List<TeaPartnerDashboardVo.LiaisonRankRow> loadLiaisonPartnerRank(int limit) {
@@ -123,6 +101,29 @@ public class TeaPartnerDashboardService {
                 display = "用户ID " + uid;
             }
             list.add(new TeaPartnerDashboardVo.LiaisonRankRow(uid, display, toLong(r[3])));
+        }
+        return list;
+    }
+
+    private List<TeaPartnerDashboardVo.RegionStatRow> mapRegionRows(List<?> rows) {
+        List<TeaPartnerDashboardVo.RegionStatRow> list = new ArrayList<>();
+        if (CollectionUtils.isEmpty(rows)) {
+            return list;
+        }
+        for (Object row : rows) {
+            if (!(row instanceof Object[])) {
+                continue;
+            }
+            Object[] r = (Object[]) row;
+            if (r.length < 2 || r[0] == null) {
+                continue;
+            }
+            String code = String.valueOf(r[0]).trim();
+            if (!StringUtils.hasText(code)) {
+                continue;
+            }
+            list.add(new TeaPartnerDashboardVo.RegionStatRow(
+                    code, pcaCodeService.resolveName(code), toLong(r[1])));
         }
         return list;
     }
