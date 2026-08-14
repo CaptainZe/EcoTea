@@ -1,7 +1,7 @@
 package com.appsinnova.admin.business.controller.tea;
 
-import com.appsinnova.admin.business.common.enums.AppNoticeType;
-import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
+import com.appsinnova.admin.business.common.enums.sys.AppNoticeType;
+import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
 import com.appsinnova.admin.business.common.enums.tea.AppearanceCondition;
 import com.appsinnova.admin.business.common.enums.tea.HasBag;

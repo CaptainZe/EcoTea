@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.service.sys;
 
-import com.appsinnova.admin.business.common.enums.DailySeqType;
+import com.appsinnova.admin.business.common.enums.base.DailySeqType;
 import com.appsinnova.admin.business.common.utils.TimeUtils;
 import com.appsinnova.admin.business.domain.sys.DailySequence;
 import com.appsinnova.admin.business.repository.sys.DailySequenceRepository;

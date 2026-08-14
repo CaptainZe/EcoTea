@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.service.base;
 
-import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
+import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.lark.oapi.Client;

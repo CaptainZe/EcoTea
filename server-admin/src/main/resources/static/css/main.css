@@ -991,3 +991,12 @@ a{
 .upload-show .upload-item .upload-item-close:hover{
     background-color: #009688;
 }
+
+/* 列表图片预览 */
+.preview-image {
+	cursor: pointer;
+	vertical-align: middle;
+}
+.preview-image:hover {
+	opacity: 0.85;
+}

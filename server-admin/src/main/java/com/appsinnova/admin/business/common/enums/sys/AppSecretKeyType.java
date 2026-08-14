@@ -1,4 +1,4 @@
-package com.appsinnova.admin.business.common.enums;
+package com.appsinnova.admin.business.common.enums.sys;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

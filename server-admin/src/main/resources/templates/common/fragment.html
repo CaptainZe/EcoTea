@@ -49,3 +49,24 @@
         </tbody>
     </table>
 </th:block>
+
+<!-- 单张列表预览图（缩略与大图同一地址） -->
+<th:block th:fragment="previewImg(src)">
+    <img th:if="${src != null and src != ''}"
+         class="preview-image"
+         style="width:60px;"
+         th:src="${src}"
+         th:attr="data-preview-src=${src}"/>
+</th:block>
+
+<!-- 多张列表预览图（同单元格内可左右翻页） -->
+<th:block th:fragment="previewImgList(urls, group)">
+    <th:block th:if="${urls != null}" th:each="url,iterStat : ${urls}">
+        <img th:if="${url != null and url != ''}"
+             class="preview-image"
+             style="width:60px;"
+             th:src="${url}"
+             th:attr="data-preview-src=${url}, data-preview-group=${group}"/>
+        <span th:if="${!iterStat.last}">&nbsp;&nbsp;</span>
+    </th:block>
+</th:block>

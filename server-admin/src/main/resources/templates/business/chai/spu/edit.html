@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑SPU</title>
+    <style>
+        .spu-form .layui-form-label {
+            width: 110px;
+        }
+        .spu-form .layui-input-inline {
+            width: 260px;
+        }
+        .spu-form .spec-inline {
+            width: 78px;
+        }
+        .spu-form .spec-unit-inline {
+            width: 100px;
+        }
+        .spu-form .spec-mid {
+            float: left;
+            display: block;
+            padding: 9px 4px !important;
+            line-height: 20px;
+            color: #666;
+        }
+        .spu-form .layui-input-block {
+            margin-left: 140px;
+        }
+        .spu-form .spu-row-name .layui-input-block {
+            margin-left: 140px;
+            max-width: none;
+        }
+        .spu-form .spu-row-name .layui-input-block .layui-input {
+            width: 680px;
+            max-width: 100%;
+        }
+        .spu-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+        .upload-box {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .upload-item {
+            width: 120px;
+            height: 120px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px dashed #ddd;
+            position: relative;
+            cursor: move;
+        }
+        .upload-item.dragging {
+            opacity: .6;
+            border-color: #5FB878;
+        }
+        .upload-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .delete-img {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .6);
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform" class="layui-form spu-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item spu-row-name">
+            <label class="layui-form-label required">商品名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                       required lay-verify="required" maxlength="255" placeholder="如: 斑竹窠肉桂">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">星级</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="starLevel" mo:dict="STAR_LEVEL"
+                        mo-selected="${editItem.starLevel}" lay-verify="required"></select>
+            </div>
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-inline">
+                <th:block th:if="${hasSku == null or !hasSku}">
+                    <input type="hidden" name="status" th:value="0"/>
+                    <input type="text" class="layui-input" value="下架" disabled>
+                    <div class="field-tip">尚无 SKU 时状态固定为下架</div>
+                </th:block>
+                <th:block th:if="${hasSku != null and hasSku}">
+                    <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"
+                            mo-selected="${editItem.status}" lay-verify="required"></select>
+                    <div class="field-tip">上下架为总开关，会同步该SPU下全部SKU；不需要的半年请删除SKU</div>
+                </th:block>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">品牌</label>
+            <div class="layui-input-inline">
+                <select name="brand" class="layui-input timo-search-select" lay-search lay-verify="required">
+                    <option value="">请选择品牌</option>
+                    <option th:each="b : ${brandList}" th:value="${b.id}"
+                            th:selected="${editItem.brand != null and editItem.brand == b.id}"
+                            th:text="${b.name}"></option>
+                </select>
+            </div>
+            <label class="layui-form-label required">茶类</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="type" mo:dict="CHAI_TYPE"
+                        mo-selected="${editItem.type}" lay-verify="required"></select>
+            </div>
+            <label class="layui-form-label required">等级</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="grade" mo:dict="CHAI_GRADE"
+                        mo-selected="${editItem.grade}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">年份</label>
+            <div class="layui-input-inline">
+                <input type="number" name="year" class="layui-input" list="yearDatalist"
+                       th:value="${editItem?.year}" required lay-verify="required" placeholder="可输入或选择">
+                <datalist id="yearDatalist">
+                    <option th:each="y : ${yearOptions}" th:value="${y}"></option>
+                </datalist>
+                <div class="field-tip">可手输，也可选当前年及近5年</div>
+            </div>
+            <label class="layui-form-label required">生产批次</label>
+            <div class="layui-input-inline">
+                <select class="timo-search-select" name="prodBatch" mo:dict="CHAI_PROD_BATCH"
+                        mo-selected="${editItem.prodBatch}" lay-verify="required"></select>
+            </div>
+            <label class="layui-form-label required">保质期</label>
+            <div class="layui-input-inline">
+                <select name="expiration" class="layui-input timo-search-select" lay-search lay-verify="required">
+                    <option value="">请选择</option>
+                    <option th:each="e : ${expirationList}" th:value="${e.id}"
+                            th:selected="${editItem.expiration != null and editItem.expiration == e.id}"
+                            th:text="${e.name}"></option>
+                </select>
+            </div>
+        </div>
+
+        <fieldset class="layui-elem-field layui-field-title">
+            <legend>规格</legend>
+        </fieldset>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">规格</label>
+            <div class="layui-input-inline spec-inline">
+                <input type="number" step="0.01" min="0.01" name="totalNetWeight" class="layui-input"
+                       th:value="${editItem?.totalNetWeight}" required lay-verify="required|number"
+                       placeholder="总净重">
+            </div>
+            <div class="spec-mid">g (</div>
+            <div class="layui-input-inline spec-inline">
+                <input type="number" step="0.01" min="0.01" name="unitWeight" class="layui-input"
+                       th:value="${editItem?.unitWeight}" required lay-verify="required|number"
+                       placeholder="单份">
+            </div>
+            <div class="spec-mid">g *</div>
+            <div class="layui-input-inline spec-inline">
+                <input type="number" name="unitCount" class="layui-input"
+                       th:value="${editItem?.unitCount}" required lay-verify="required|number" min="1"
+                       placeholder="份数">
+            </div>
+            <div class="layui-input-inline spec-unit-inline">
+                <select class="timo-search-select" name="unitLabel" mo:dict="CHAI_SPEC_LABEL"
+                        mo-selected="${editItem.unitLabel}" lay-verify="required"></select>
+            </div>
+            <div class="spec-mid">)</div>
+            <div class="layui-form-mid layui-word-aux" style="margin-left:8px;">示例：136g(4g*34泡)</div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">官方展示图</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn image-upload">
+                    <i class="layui-icon">&#xe67c;</i> 上传官方展示图
+                </button>
+                <div class="upload-box" id="imagePreviewBox"></div>
+                <input type="hidden" id="showImageUrls" name="showImageUrls" th:value="${editItem.showImageUrls}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">实物鉴定图</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn real-image-upload">
+                    <i class="layui-icon">&#xe67c;</i> 上传实物鉴定图
+                </button>
+                <div class="upload-box" id="realImagePreviewBox"></div>
+                <input type="hidden" id="realImageUrls" name="realImageUrls" th:value="${editItem.realImageUrls}">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="submitNext">
+                <i class="fa fa-arrow-right"></i> 下一步（维护SKU）
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['upload', 'form', 'layer'], function () {
+        var upload = layui.upload;
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.jquery;
+        var draggingEl = null;
+        var imageList = [];
+        var realImageList = [];
+
+        form.render('select');
+
+        initImageGroup({
+            uploadElem: '.image-upload',
+            inputId: '#showImageUrls',
+            boxId: '#imagePreviewBox',
+            imageListRef: function () { return imageList; },
+            setImageList: function (list) { imageList = list; }
+        });
+        initImageGroup({
+            uploadElem: '.real-image-upload',
+            inputId: '#realImageUrls',
+            boxId: '#realImagePreviewBox',
+            imageListRef: function () { return realImageList; },
+            setImageList: function (list) { realImageList = list; }
+        });
+
+        $(document).on('click', '.delete-img', function () {
+            var $item = $(this).closest('.upload-item');
+            var url = $item.data('url');
+            var inputId = $item.data('input-id');
+            var list = getImageListByInputId(inputId).filter(function (item) {
+                return item !== url;
+            });
+            setImageListByInputId(inputId, list);
+            $item.remove();
+            syncInput(inputId);
+        });
+
+        $(document).on('dragstart', '.upload-item', function (e) {
+            draggingEl = this;
+            $(this).addClass('dragging');
+            if (e.originalEvent && e.originalEvent.dataTransfer) {
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        $(document).on('dragend', '.upload-item', function () {
+            $(this).removeClass('dragging');
+            draggingEl = null;
+        });
+        $(document).on('dragover', '.upload-item', function (e) {
+            e.preventDefault();
+            if (!draggingEl || draggingEl === this) {
+                return;
+            }
+            if ($(draggingEl).data('input-id') !== $(this).data('input-id')) {
+                return;
+            }
+            var rect = this.getBoundingClientRect();
+            var insertBefore = (e.originalEvent.clientX - rect.left) < rect.width / 2;
+            if (insertBefore) {
+                this.parentNode.insertBefore(draggingEl, this);
+            } else {
+                this.parentNode.insertBefore(draggingEl, this.nextSibling);
+            }
+        });
+        $(document).on('drop', '.upload-item', function (e) {
+            e.preventDefault();
+            rebuildImageListFromDom($(this).data('input-id'));
+        });
+
+        form.on('submit(submitForm)', function () {
+            saveSpu(false, false);
+            return false;
+        });
+        form.on('submit(submitNext)', function () {
+            saveSpu(true, false);
+            return false;
+        });
+
+        function saveSpu(goNext, confirmDuplicate) {
+            var data = $('#editform').serialize();
+            if (confirmDuplicate) {
+                data += '&confirmDuplicate=true';
+            }
+            $.ajax({
+                url: '/business/chai/spu/save',
+                type: 'POST',
+                data: data,
+                success: function (res) {
+                    if (res.code == 200) {
+                        if (goNext && res.data) {
+                            window.location.href = '/business/chai/sku/editBySpu/' + res.data;
+                        } else {
+                            window.parent.location.reload();
+                        }
+                    } else if (res.code == 409) {
+                        layer.confirm(res.msg || '同品牌下已存在同名商品，是否仍要继续保存？', {
+                            icon: 3,
+                            title: '重复提醒'
+                        }, function (index) {
+                            layer.close(index);
+                            saveSpu(goNext, true);
+                        });
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+        }
+
+        function initImageGroup(config) {
+            var imageUrlsStr = $(config.inputId).val();
+            if (imageUrlsStr) {
+                try {
+                    var imageListTemp = JSON.parse(imageUrlsStr);
+                    config.setImageList(imageListTemp);
+                    imageListTemp.forEach(function (url) {
+                        renderImage(url, config.boxId, config.inputId);
+                    });
+                } catch (e) {
+                    console.error(config.inputId + ' is not valid json');
+                }
+            }
+            syncInput(config.inputId);
+
+            upload.render({
+                elem: config.uploadElem,
+                url: '/business/upload/file',
+                field: 'file',
+                multiple: true,
+                number: 9,
+                acceptMime: 'image/*',
+                exts: 'jpg|jpeg|png|gif|webp',
+                done: function (res) {
+                    if (res.code !== 0) {
+                        layer.msg('上传失败');
+                        return;
+                    }
+                    var imageListTemp = config.imageListRef();
+                    imageListTemp.push(res.data.src);
+                    renderImage(res.data.src, config.boxId, config.inputId);
+                    syncInput(config.inputId);
+                    layer.msg('上传成功');
+                }
+            });
+        }
+
+        function renderImage(url, boxId, inputId) {
+            $(boxId).append(
+                '<div class="upload-item" draggable="true" data-url="' + url + '" data-input-id="' + inputId + '">' +
+                '   <img src="' + url + '">' +
+                '   <div class="delete-img" data-url="' + url + '">×</div>' +
+                '</div>'
+            );
+        }
+
+        function rebuildImageListFromDom(inputId) {
+            var imageListTemp = [];
+            $(getBoxIdByInputId(inputId) + ' .upload-item').each(function () {
+                var url = $(this).data('url');
+                if (url) {
+                    imageListTemp.push(url);
+                }
+            });
+            setImageListByInputId(inputId, imageListTemp);
+            syncInput(inputId);
+        }
+
+        function syncInput(inputId) {
+            $(inputId).val(JSON.stringify(getImageListByInputId(inputId)));
+        }
+
+        function getImageListByInputId(inputId) {
+            return inputId === '#realImageUrls' ? realImageList : imageList;
+        }
+
+        function setImageListByInputId(inputId, list) {
+            if (inputId === '#realImageUrls') {
+                realImageList = list;
+                return;
+            }
+            imageList = list;
+        }
+
+        function getBoxIdByInputId(inputId) {
+            return inputId === '#realImageUrls' ? '#realImagePreviewBox' : '#imagePreviewBox';
+        }
+    });
+</script>
+</body>
+</html>

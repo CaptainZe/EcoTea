@@ -228,7 +228,7 @@
 		<repository>
 			<id>nexus-releases</id>
 			<name>maven-releases</name>
-			<url>http://10.0.3.184:8081/repository/maven-group/</url>
+			<url>http://10.15.2.32:8081/repository/maven-group/</url>
 			<releases>
 				<enabled>true</enabled>
 			</releases>

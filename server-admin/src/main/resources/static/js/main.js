@@ -97,22 +97,9 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
         location.hash = this.getAttribute('lay-id');
     });
 
-    var firstLoadRouting = true;
-    /* 监听hash来切换选项卡*/
+    /* 监听hash来切换选项卡（F5 保留当前 hash 对应 tab；无 hash 时优先 /index） */
     window.onhashchange = function (e) {
         var url = normalizeUrl(location.hash);
-        if (firstLoadRouting) {
-            firstLoadRouting = false;
-            var indexItem = resolveMenuItem("/index");
-            if (indexItem.length > 0) {
-                var indexUrl = indexItem.attr("lay-url");
-                if (normalizeUrl(location.hash) !== normalizeUrl(indexUrl)) {
-                    location.hash = indexUrl;
-                    return;
-                }
-                url = normalizeUrl(indexUrl);
-            }
-        }
         if (url === "") {
             var defaultUrl = null;
             var firstUrl = null;
@@ -441,6 +428,51 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
     // 删除上传图片展示项
     $(document).on("click", ".upload-item-close", function () {
         $(this).parent('.upload-item').remove();
+    });
+
+    /* 列表图片点击查看大图（配合 fragment :: previewImg / previewImgList） */
+    $(document).on('click', '.preview-image', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $img = $(this);
+        var src = $img.attr('data-preview-src') || $img.attr('src');
+        if (!src) {
+            return;
+        }
+
+        var group = $img.attr('data-preview-group');
+        var data = [];
+        var start = 0;
+
+        if (group) {
+            $('[data-preview-group="' + group + '"]').each(function (i, el) {
+                var url = $(el).attr('data-preview-src') || $(el).attr('src');
+                if (!url) {
+                    return;
+                }
+                if (el === $img[0]) {
+                    start = data.length;
+                }
+                data.push({alt: '', pid: data.length + 1, src: url});
+            });
+        } else {
+            data.push({alt: '', pid: 1, src: src});
+        }
+
+        if (data.length === 0) {
+            return;
+        }
+
+        layer.photos({
+            photos: {
+                title: '',
+                id: group || ('preview-' + Date.now()),
+                start: start,
+                data: data
+            },
+            anim: 5
+        });
     });
 
 });

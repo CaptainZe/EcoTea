@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑品牌</title>
+    <style>
+        /* 少字段：一行一项，输入区加宽 */
+        .brand-form .layui-form-label {
+            width: 120px;
+        }
+        .brand-form .layui-input-block {
+            margin-left: 150px;
+            max-width: 420px;
+        }
+        .brand-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+        .logo-preview {
+            margin-top: 10px;
+            width: 120px;
+            height: 120px;
+            border: 1px dashed #ddd;
+            position: relative;
+            display: none;
+        }
+        .logo-preview.has-img {
+            display: block;
+        }
+        .logo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .logo-preview .delete-img {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .6);
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form brand-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">品牌名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                       required lay-verify="required" maxlength="255" placeholder="如: 瑞泉">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"
+                        mo-selected="${editItem.status}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">排序号（大到小）</label>
+            <div class="layui-input-block">
+                <input type="number" name="orderNum" class="layui-input" th:value="${editItem?.orderNum}"
+                       required lay-verify="required|number" placeholder="如: 100">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">Logo</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn" id="logoUploadBtn">
+                    <i class="layui-icon">&#xe67c;</i> 上传图片
+                </button>
+                <div class="logo-preview" id="logoPreview"
+                     th:classappend="${editItem != null and editItem.logo != null and !#strings.isEmpty(editItem.logo)} ? ' has-img' : ''">
+                    <img id="logoImg" th:src="${editItem?.logo}" alt="logo"
+                         th:if="${editItem != null and editItem.logo != null and !#strings.isEmpty(editItem.logo)}">
+                    <span class="delete-img" id="logoDelete" title="删除">×</span>
+                </div>
+                <input type="hidden" id="logo" name="logo" th:value="${editItem?.logo}">
+                <div class="field-tip">选填，建议正方形图片</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['form', 'upload'], function () {
+        var form = layui.form;
+        var upload = layui.upload;
+        var $ = layui.jquery;
+
+        form.render('select');
+
+        function setLogo(url) {
+            $('#logo').val(url || '');
+            if (url) {
+                if ($('#logoImg').length === 0) {
+                    $('#logoPreview').prepend('<img id="logoImg" alt="logo">');
+                }
+                $('#logoImg').attr('src', url);
+                $('#logoPreview').addClass('has-img');
+            } else {
+                $('#logoImg').remove();
+                $('#logoPreview').removeClass('has-img');
+            }
+        }
+
+        upload.render({
+            elem: '#logoUploadBtn',
+            url: '/business/upload/file',
+            accept: 'images',
+            done: function (res) {
+                if (res && res.code === 0 && res.data && res.data.src) {
+                    setLogo(res.data.src);
+                } else {
+                    layer.msg((res && res.msg) ? res.msg : '上传失败');
+                }
+            },
+            error: function () {
+                layer.msg('上传失败');
+            }
+        });
+
+        $('#logoDelete').on('click', function () {
+            setLogo('');
+        });
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/chai/brand/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

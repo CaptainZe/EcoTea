@@ -3,10 +3,41 @@
       xmlns:mo="https://gitee.com/aun/Timo">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
     <style>
+        .timo-compile,
+        .timo-compile form {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .timo-compile {
+            padding-bottom: 0;
+        }
+
+        .dict-form-body {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .timo-compile .timo-finally {
+            flex-shrink: 0;
+            margin: 0 20px 20px;
+            padding-top: 14px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            z-index: 10;
+        }
+
         .dict-value {
-            max-width: 358px;
-            height: 130px;
+            max-width: 100%;
+            width: 560px;
+            min-height: 180px;
             border: 1px solid #e6e6e6;
+            display: flex;
+            flex-direction: column;
         }
 
         .dict-value:hover,
@@ -15,6 +46,10 @@
         }
 
         .dict-value .control {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 1;
             padding: 4px 8px;
             border-bottom: 1px solid #e6e6e6;
         }
@@ -42,9 +77,10 @@
         }
 
         .dict-value .content {
-            height: 95px;
+            flex: 1;
+            min-height: 120px;
             padding: 2px 0;
-            overflow: auto;
+            overflow-y: auto;
         }
 
         .dict-value .content .dict-option {
@@ -75,60 +111,62 @@
 <body>
 <div class="layui-form timo-compile">
     <form th:action="@{/system/dict/add}">
-        <input type="hidden" name="id" th:if="${dict}" th:value="${dict.id}"/>
-        <div class="layui-form-item">
-            <label class="layui-form-label required">字典标识</label>
-            <div class="layui-input-inline">
-                <input class="layui-input" type="text" name="name" placeholder="请输入字典键名" th:value="${dict?.name}">
-            </div>
-        </div>
-        <div class="layui-form-item">
-            <label class="layui-form-label required">字典标题</label>
-            <div class="layui-input-inline">
-                <input class="layui-input" type="text" name="title" placeholder="请输入字典标题" th:value="${dict?.title}">
-            </div>
-        </div>
-        <div class="layui-form-item">
-            <label class="layui-form-label">字典类型</label>
-            <div class="layui-input-inline">
-                <select name="type" mo:dict="DICT_TYPE" mo-selected="${dict} ? ${dict.type} : 2" lay-verify="type" lay-filter="dictTypeFilter"></select>
-            </div>
-        </div>
-        <div class="layui-form-item layui-form-text static-dict">
-            <label class="layui-form-label required">字典值</label>
-            <div class="layui-input-block">
-                <input id="dictValue" name="value" type="hidden" th:value="${dict?.value}">
-                <div class="dict-value">
-                    <div class="control">
-                        <button class="field-add layui-btn layui-btn-primary layui-btn-xs">
-                            <i class="fa fa-plus-circle"></i>添加
-                        </button>
-                        <button class="field-del layui-btn layui-btn-primary layui-btn-xs">
-                            <i class="fa fa-minus-circle"></i>删除
-                        </button>
-                        <button class="field-up layui-btn layui-btn-primary layui-btn-xs">
-                            <i class="fa fa-arrow-up"></i>向上
-                        </button>
-                        <button class="field-down layui-btn layui-btn-primary layui-btn-xs">
-                            <i class="fa fa-arrow-down"></i>向下
-                        </button>
-                        <button class="field-order pull-right layui-btn layui-btn-primary layui-btn-xs"><!--
-                        --><i class="fa fa-list-ol" aria-hidden="true"></i></button>
-                    </div>
-                    <div class="content"></div>
+        <div class="dict-form-body">
+            <input type="hidden" name="id" th:if="${dict}" th:value="${dict.id}"/>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">字典标识</label>
+                <div class="layui-input-inline">
+                    <input class="layui-input" type="text" name="name" placeholder="请输入字典键名" th:value="${dict?.name}">
                 </div>
             </div>
-        </div>
-        <div class="layui-form-item layui-form-text dynamic-dict">
-            <label class="layui-form-label required">SQL</label>
-            <div class="layui-input-block">
-                <textarea id="textValue" placeholder="请输入SQL" class="layui-textarea" name="value">[[${dict?.value}]]</textarea>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">字典标题</label>
+                <div class="layui-input-inline">
+                    <input class="layui-input" type="text" name="title" placeholder="请输入字典标题" th:value="${dict?.title}">
+                </div>
             </div>
-        </div>
-        <div class="layui-form-item layui-form-text">
-            <label class="layui-form-label">备注</label>
-            <div class="layui-input-block">
-                <textarea placeholder="请输入内容" class="layui-textarea" name="remark">[[${dict?.remark}]]</textarea>
+            <div class="layui-form-item">
+                <label class="layui-form-label">字典类型</label>
+                <div class="layui-input-inline">
+                    <select name="type" mo:dict="DICT_TYPE" mo-selected="${dict} ? ${dict.type} : 2" lay-verify="type" lay-filter="dictTypeFilter"></select>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text static-dict">
+                <label class="layui-form-label required">字典值</label>
+                <div class="layui-input-block">
+                    <input id="dictValue" name="value" type="hidden" th:value="${dict?.value}">
+                    <div class="dict-value">
+                        <div class="control">
+                            <button class="field-add layui-btn layui-btn-primary layui-btn-xs">
+                                <i class="fa fa-plus-circle"></i>添加
+                            </button>
+                            <button class="field-del layui-btn layui-btn-primary layui-btn-xs">
+                                <i class="fa fa-minus-circle"></i>删除
+                            </button>
+                            <button class="field-up layui-btn layui-btn-primary layui-btn-xs">
+                                <i class="fa fa-arrow-up"></i>向上
+                            </button>
+                            <button class="field-down layui-btn layui-btn-primary layui-btn-xs">
+                                <i class="fa fa-arrow-down"></i>向下
+                            </button>
+                            <button class="field-order pull-right layui-btn layui-btn-primary layui-btn-xs"><!--
+                            --><i class="fa fa-list-ol" aria-hidden="true"></i></button>
+                        </div>
+                        <div class="content"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text dynamic-dict">
+                <label class="layui-form-label required">SQL</label>
+                <div class="layui-input-block">
+                    <textarea id="textValue" placeholder="请输入SQL" class="layui-textarea" name="value">[[${dict?.value}]]</textarea>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea placeholder="请输入内容" class="layui-textarea textarea-fill" name="remark">[[${dict?.remark}]]</textarea>
+                </div>
             </div>
         </div>
         <div class="layui-form-item timo-finally">
@@ -152,6 +190,9 @@
             $(".dynamic-dict").hide();
             $("#textValue").val("");
             $("#textValue").attr("disabled", "disabled");
+        }
+        if (typeof window.resizeDictValueArea === 'function') {
+            window.resizeDictValueArea();
         }
     }
 
@@ -300,6 +341,28 @@
             }
             dictValue.val(value);
         }
+
+        var resizeDictValueArea = function () {
+            if (!$('.static-dict').is(':visible')) {
+                return;
+            }
+            var winH = $(window).height();
+            var footerH = $('.timo-finally').outerHeight(true) || 70;
+            var otherH = 0;
+            $('.dict-form-body').children().each(function () {
+                if (!$(this).hasClass('static-dict')) {
+                    otherH += $(this).outerHeight(true);
+                }
+            });
+            var staticDictH = $('.static-dict').outerHeight(true) || 0;
+            var dictValueH = $('.dict-value').outerHeight(true) || 0;
+            otherH += staticDictH - dictValueH;
+            var dictHeight = Math.max(180, winH - footerH - otherH - 24);
+            $('.dict-value').height(dictHeight);
+        };
+        window.resizeDictValueArea = resizeDictValueArea;
+        resizeDictValueArea();
+        $(window).on('resize', resizeDictValueArea);
 
     });
 </script>

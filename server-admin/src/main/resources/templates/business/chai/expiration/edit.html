@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑保质期</title>
+    <style>
+        /* 少字段：一行一项，输入区加宽 */
+        .expiration-form .layui-form-label {
+            width: 120px;
+        }
+        .expiration-form .layui-input-block {
+            margin-left: 150px;
+            max-width: 420px;
+        }
+        .expiration-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form expiration-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">显示名</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                       required lay-verify="required" maxlength="255"
+                       placeholder="如: 36个月 / 三年 / 自生产日期起36个月">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">月数</label>
+            <div class="layui-input-block">
+                <input type="number" name="months" class="layui-input" th:value="${editItem?.months}"
+                       required lay-verify="required|number" min="0" placeholder="如: 36">
+                <div class="field-tip">0 表示长期；同月数可对应不同显示名</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"
+                        mo-selected="${editItem.status}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">排序号（大到小）</label>
+            <div class="layui-input-block">
+                <input type="number" name="orderNum" class="layui-input" th:value="${editItem?.orderNum}"
+                       required lay-verify="required|number" placeholder="如: 100">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.render('select');
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/chai/expiration/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

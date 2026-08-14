@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.controller.tea;
 
-import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
+import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
 import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.domain.tea.TeaSku;

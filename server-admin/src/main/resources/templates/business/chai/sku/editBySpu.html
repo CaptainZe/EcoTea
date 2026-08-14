@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>维护SKU</title>
+    <style>
+        .sku-spu-card {
+            background: #F8FAFC;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+        }
+        .sku-spu-card-hd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .sku-spu-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.4;
+        }
+        .sku-spu-status {
+            flex-shrink: 0;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .sku-spu-status.is-online {
+            color: #166534;
+            background: #DCFCE7;
+        }
+        .sku-spu-status.is-offline {
+            color: #6B7280;
+            background: #F3F4F6;
+        }
+        .sku-spu-meta {
+            margin-top: 6px;
+            color: #6B7280;
+            font-size: 13px;
+        }
+        .sku-spu-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .sku-spu-tags span {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 12px;
+        }
+        .sku-spu-tags b {
+            margin-left: 4px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .sku-spu-hint {
+            margin-top: 8px;
+            color: #6B7280;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .sku-card {
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            background: #fff;
+        }
+        .sku-card-hd {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+        }
+        .sku-card-bd {
+            padding: 12px 14px 4px;
+        }
+        .sku-field-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 4px;
+            margin-bottom: 8px;
+        }
+        .sku-field {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+        .sku-field > label {
+            width: 108px;
+            flex-shrink: 0;
+            text-align: right;
+            padding-right: 8px;
+            color: #555;
+            font-size: 13px;
+            line-height: 1.3;
+        }
+        .sku-field .layui-input,
+        .sku-field select.layui-input {
+            width: 120px;
+        }
+        .sku-field .layui-form-select {
+            width: 120px;
+        }
+        .sku-card .layui-form-label {
+            width: 90px;
+            padding: 9px 8px;
+        }
+        .sku-card .layui-input-inline {
+            width: 140px;
+            margin-right: 8px;
+        }
+        .sku-card .sku-name-inline {
+            width: 460px;
+        }
+        .sku-card .spec-inline {
+            width: 72px;
+        }
+        .sku-card .spec-unit-inline {
+            width: 90px;
+        }
+        .sku-card .spec-mid {
+            float: left;
+            display: block;
+            padding: 9px 3px !important;
+            line-height: 20px;
+            color: #666;
+        }
+        .sku-card-more {
+            margin-top: 4px;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .sku-card-more-toggle {
+            display: block;
+            text-align: center;
+            color: #1D4ED8;
+            cursor: pointer;
+            padding: 10px 0 8px;
+            font-size: 13px;
+            user-select: none;
+        }
+        .sku-card-more-toggle:hover {
+            color: #1E40AF;
+        }
+        .sku-card-more-body {
+            display: none;
+            padding-top: 4px;
+        }
+        .sku-card.expanded .sku-card-more-body {
+            display: block;
+        }
+        .sku-card .upload-box {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .sku-card .upload-item {
+            width: 90px;
+            height: 90px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border: 1px dashed #ddd;
+            position: relative;
+            cursor: move;
+        }
+        .sku-card .upload-item.dragging {
+            opacity: .6;
+            border-color: #5FB878;
+        }
+        .sku-card .upload-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .sku-card .delete-img {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .55);
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .sku-dict-warn {
+            color: #B45309;
+            margin: 0 0 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form timo-compile" style="padding: 12px 16px;" id="skuWizardForm">
+    <th:block th:if="${errorMsg != null}">
+        <div class="layui-bg-red" style="padding:12px;" th:text="${errorMsg}"></div>
+    </th:block>
+    <th:block th:if="${errorMsg == null}">
+        <script type="application/json" id="skuListJson" th:utext="${skuListJson}">[]</script>
+        <script type="application/json" id="prodBatchDictJson" th:utext="${prodBatchDictJson}">{}</script>
+        <script type="application/json" id="starLevelDictJson" th:utext="${starLevelDictJson}">{}</script>
+        <script type="application/json" id="gradeDictJson" th:utext="${gradeDictJson}">{}</script>
+        <script type="application/json" id="specLabelDictJson" th:utext="${specLabelDictJson}">{}</script>
+
+        <div class="sku-spu-card">
+            <div class="sku-spu-card-hd">
+                <div class="sku-spu-name" th:text="${spu.name}"></div>
+                <span class="sku-spu-status"
+                      th:classappend="${spu.status == 1} ? ' is-online' : ' is-offline'"
+                      th:text="${#dicts.keyValue('CHAI_STATUS', spu.status)}"></span>
+            </div>
+            <div class="sku-spu-meta">
+                <span th:text="${spu.spuCode}"></span>
+                · 锚点
+                <span th:text="${spu.year}"></span>
+                <span th:text="${#dicts.keyValue('CHAI_PROD_BATCH', spu.prodBatch)}"></span>
+            </div>
+            <div class="sku-spu-tags">
+                <span>品牌 <b th:text="${spu.brandName != null ? spu.brandName : '-'}">-</b></span>
+                <span>保质期 <b th:text="${spu.expirationName != null ? spu.expirationName : '-'}">-</b></span>
+                <span>茶类 <b th:text="${#dicts.keyValue('CHAI_TYPE', spu.type)}">-</b></span>
+            </div>
+            <div class="sku-spu-hint">
+                <span th:if="${generated}">已按锚点预填最近 6 个半年。不需要的半年删除卡片后保存。</span>
+                <span th:if="${!generated}">不需要的半年，删除对应卡片即可。</span>
+                品牌、保质期、茶类随 SPU 带入。名称、规格、图片需要时再展开调整。
+            </div>
+        </div>
+        <div id="dictWarn" class="sku-dict-warn" style="display:none;"></div>
+
+        <div style="margin-bottom: 10px;">
+            <button type="button" class="layui-btn layui-btn-sm" id="btnAddRow">
+                <i class="layui-icon">&#xe654;</i> 添加SKU
+            </button>
+        </div>
+
+        <div id="skuCardList"></div>
+
+        <div class="layui-form-item timo-finally" style="margin-top: 16px;">
+            <button type="button" class="layui-btn" id="btnSaveBatch">
+                <i class="fa fa-check-circle"></i> 保存SKU
+            </button>
+            <button type="button" class="layui-btn btn-secondary" id="btnBackSpu">
+                <i class="fa fa-arrow-left"></i> 返回SPU
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </th:block>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    var spuId = /*[[${spu != null ? spu.id : null}]]*/ null;
+    var spuEditUrl = /*[[${spu != null ? '/business/chai/spu/edit/' + spu.id : ''}]]*/ '';
+</script>
+<script>
+    layui.use(['form', 'layer', 'upload'], function () {
+        var form = layui.form;
+        var layer = layui.layer;
+        var upload = layui.upload;
+        var $ = layui.jquery;
+        var draggingEl = null;
+
+        if (!spuId) {
+            return;
+        }
+
+        function parseJsonEl(id, fallback) {
+            try {
+                var el = document.getElementById(id);
+                return JSON.parse((el && el.textContent) ? el.textContent.trim() : (fallback || '{}'));
+            } catch (e) {
+                return fallback === undefined ? {} : fallback;
+            }
+        }
+
+        var rows = parseJsonEl('skuListJson', []);
+        if (!Array.isArray(rows)) {
+            rows = [];
+        }
+        // 规范化预填：保证规格拆分字段与图片列表可用
+        rows = rows.map(normalizeRow);
+
+        var prodBatchDict = parseJsonEl('prodBatchDictJson', {});
+        var starLevelDict = parseJsonEl('starLevelDictJson', {});
+        var gradeDict = parseJsonEl('gradeDictJson', {});
+        var specLabelDict = parseJsonEl('specLabelDictJson', {});
+
+        var missing = [];
+        if (!prodBatchDict || Object.keys(prodBatchDict).length === 0) missing.push('CHAI_PROD_BATCH');
+        if (!starLevelDict || Object.keys(starLevelDict).length === 0) missing.push('STAR_LEVEL');
+        if (!gradeDict || Object.keys(gradeDict).length === 0) missing.push('CHAI_GRADE');
+        if (!specLabelDict || Object.keys(specLabelDict).length === 0) missing.push('CHAI_SPEC_LABEL');
+        if (missing.length) {
+            $('#dictWarn').text('字典未加载：' + missing.join('、') + '，请检查系统字典配置').show();
+        }
+
+        function normalizeRow(row) {
+            row = row || {};
+            // 兼容 JsonUtils SNAKE_CASE 历史数据 / 误用
+            if (row.starLevel == null && row.star_level != null) row.starLevel = row.star_level;
+            if (row.prodBatch == null && row.prod_batch != null) row.prodBatch = row.prod_batch;
+            if (row.showImageUrls == null && row.show_image_urls != null) row.showImageUrls = row.show_image_urls;
+            if (row.realImageUrls == null && row.real_image_urls != null) row.realImageUrls = row.real_image_urls;
+            if (row.totalNetWeight == null && row.total_net_weight != null) row.totalNetWeight = row.total_net_weight;
+            if (row.unitWeight == null && row.unit_weight != null) row.unitWeight = row.unit_weight;
+            if (row.unitCount == null && row.unit_count != null) row.unitCount = row.unit_count;
+            if (row.unitLabel == null && row.unit_label != null) row.unitLabel = row.unit_label;
+            if (row.officialPrice == null && row.official_price != null) row.officialPrice = row.official_price;
+            if (row.salePrice == null && row.sale_price != null) row.salePrice = row.sale_price;
+            if (row.recyclePrice == null && row.recycle_price != null) row.recyclePrice = row.recycle_price;
+            if (row.recyclePriceReducePer == null && row.recycle_price_reduce_per != null) {
+                row.recyclePriceReducePer = row.recycle_price_reduce_per;
+            }
+            if (row.recyclePriceReduceNoBag == null && row.recycle_price_reduce_no_bag != null) {
+                row.recyclePriceReduceNoBag = row.recycle_price_reduce_no_bag;
+            }
+            if (row.skuCode == null && row.sku_code != null) row.skuCode = row.sku_code;
+
+            if ((row.totalNetWeight == null || row.unitWeight == null) && row.spec) {
+                try {
+                    var map = typeof row.spec === 'string' ? JSON.parse(row.spec) : row.spec;
+                    if (map) {
+                        if (row.totalNetWeight == null) row.totalNetWeight = map.total_net_weight;
+                        if (row.unitWeight == null) row.unitWeight = map.unit_weight;
+                        if (row.unitCount == null) row.unitCount = map.unit_count;
+                        if (row.unitLabel == null) row.unitLabel = map.unit_label;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+            if (!row.showImageUrls) row.showImageUrls = '[]';
+            if (!row.realImageUrls) row.realImageUrls = '[]';
+            if (Array.isArray(row.showImageUrls)) {
+                row.showImageUrls = JSON.stringify(row.showImageUrls);
+            }
+            if (Array.isArray(row.realImageUrls)) {
+                row.realImageUrls = JSON.stringify(row.realImageUrls);
+            }
+            return row;
+        }
+
+        function buildSelectOptions(dict, selected) {
+            var html = '';
+            var selStr = selected === null || selected === undefined ? '' : String(selected);
+            Object.keys(dict || {}).forEach(function (key) {
+                var sel = selStr !== '' && String(key) === selStr ? ' selected' : '';
+                html += '<option value="' + key + '"' + sel + '>' + escapeHtml(dict[key]) + '</option>';
+            });
+            return html;
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        }
+
+        function escapeAttr(str) {
+            return escapeHtml(str);
+        }
+
+        function nullToEmpty(v) {
+            return v === null || v === undefined ? '' : v;
+        }
+
+        function parseUrlList(jsonStr) {
+            if (!jsonStr) return [];
+            try {
+                var list = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+                return Array.isArray(list) ? list.filter(Boolean) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function renderImageItem(url, kind) {
+            return '<div class="upload-item" draggable="true" data-url="' + escapeAttr(url) + '" data-kind="' + kind + '">' +
+                '<img src="' + escapeAttr(url) + '"/>' +
+                '<span class="delete-img">×</span></div>';
+        }
+
+        function renderImageBox(urls, $box, kind) {
+            var html = '';
+            (urls || []).forEach(function (url) {
+                if (!url) return;
+                html += renderImageItem(url, kind);
+            });
+            $box.html(html);
+        }
+
+        function syncImagesFromDom($card, kind) {
+            var list = [];
+            $card.find('.js-' + kind + '-box .upload-item').each(function () {
+                var url = $(this).attr('data-url');
+                if (url) list.push(url);
+            });
+            $card.find('.js-' + kind + '-urls').val(JSON.stringify(list));
+            return list;
+        }
+
+        function bindUpload($card, kind) {
+            var $btn = $card.find('.js-' + kind + '-upload');
+            if (!$btn.length) return;
+            upload.render({
+                elem: $btn[0],
+                url: '/business/upload/file',
+                field: 'file',
+                multiple: true,
+                number: 9,
+                acceptMime: 'image/*',
+                exts: 'jpg|jpeg|png|gif|webp',
+                done: function (res) {
+                    if (res.code !== 0 || !res.data || !res.data.src) {
+                        layer.msg((res && res.msg) || '上传失败');
+                        return;
+                    }
+                    $card.find('.js-' + kind + '-box').append(renderImageItem(res.data.src, kind));
+                    syncImagesFromDom($card, kind);
+                    layer.msg('上传成功');
+                }
+            });
+        }
+
+        function applySelectValues($card, row) {
+            setSelectVal($card.find('.js-star'), row.starLevel);
+            setSelectVal($card.find('.js-grade'), row.grade);
+            setSelectVal($card.find('.js-batch'), row.prodBatch);
+            setSelectVal($card.find('.js-unit-label'), row.unitLabel);
+        }
+
+        function setSelectVal($sel, val) {
+            if (!$sel.length) return;
+            if (val === null || val === undefined || val === '') {
+                return;
+            }
+            $sel.val(String(val));
+        }
+
+        function renderCards() {
+            var html = '';
+            rows.forEach(function (row, idx) {
+                row = normalizeRow(row);
+                var expanded = !!row._expanded;
+                html += '<div class="sku-card' + (expanded ? ' expanded' : '') + '" data-idx="' + idx + '">';
+                html += '<div class="sku-card-hd"><span>SKU #' + (idx + 1);
+                if (row.skuCode) html += ' · ' + escapeHtml(row.skuCode);
+                html += '</span><a href="javascript:;" class="js-del" style="color:#DC2626;">删除</a></div>';
+                html += '<div class="sku-card-bd">';
+
+                html += '<div class="sku-field-row">';
+                html += '<div class="sku-field"><label>年份</label>';
+                html += '<input type="number" class="layui-input js-year" placeholder="请输入年份" value="' + nullToEmpty(row.year) + '"></div>';
+                html += '<div class="sku-field"><label>生产批次</label>';
+                html += '<select class="layui-input js-batch">' + buildSelectOptions(prodBatchDict, row.prodBatch) + '</select></div>';
+                html += '</div>';
+
+                html += '<div class="sku-field-row">';
+                html += '<div class="sku-field"><label>官方价（元）</label>';
+                html += '<input type="number" step="0.01" class="layui-input js-official" value="' + nullToEmpty(row.officialPrice) + '"></div>';
+                html += '<div class="sku-field"><label>销售价（元）</label>';
+                html += '<input type="number" step="0.01" class="layui-input js-sale" value="' + nullToEmpty(row.salePrice) + '"></div>';
+                html += '<div class="sku-field"><label>回收价（元）</label>';
+                html += '<input type="number" step="0.01" class="layui-input js-recycle" value="' + nullToEmpty(row.recyclePrice) + '"></div>';
+                html += '<div class="sku-field"><label>破损压价%</label>';
+                html += '<input type="number" class="layui-input js-reduce-per" value="' + nullToEmpty(row.recyclePriceReducePer) + '"></div>';
+                html += '<div class="sku-field"><label>无提袋扣减（元）</label>';
+                html += '<input type="number" step="0.01" class="layui-input js-reduce-bag" value="' + nullToEmpty(row.recyclePriceReduceNoBag) + '"></div>';
+                html += '</div>';
+
+                html += '<div class="sku-card-more">';
+                html += '<a href="javascript:;" class="sku-card-more-toggle js-toggle-more">';
+                html += expanded ? '收起名称 / 规格 / 图片' : '名称 / 规格 / 图片已从 SPU 带入，如需调整请展开';
+                html += '</a>';
+                html += '<div class="sku-card-more-body">';
+
+                html += '<div class="layui-form-item">';
+                html += '<label class="layui-form-label">商品名称</label><div class="layui-input-inline sku-name-inline">';
+                html += '<input type="text" class="layui-input js-name" value="' + escapeAttr(row.name || '') + '"></div>';
+                html += '<label class="layui-form-label">星级</label><div class="layui-input-inline">';
+                html += '<select class="layui-input js-star">' + buildSelectOptions(starLevelDict, row.starLevel) + '</select></div>';
+                html += '<label class="layui-form-label">等级</label><div class="layui-input-inline">';
+                html += '<select class="layui-input js-grade">' + buildSelectOptions(gradeDict, row.grade) + '</select></div>';
+                html += '</div>';
+
+                html += '<div class="layui-form-item">';
+                html += '<label class="layui-form-label">规格</label>';
+                html += '<div class="layui-input-inline spec-inline"><input type="number" step="0.01" min="0.01" class="layui-input js-total" placeholder="总净重" value="' + nullToEmpty(row.totalNetWeight) + '"></div>';
+                html += '<div class="spec-mid">g (</div>';
+                html += '<div class="layui-input-inline spec-inline"><input type="number" step="0.01" min="0.01" class="layui-input js-unit-w" placeholder="单份" value="' + nullToEmpty(row.unitWeight) + '"></div>';
+                html += '<div class="spec-mid">g *</div>';
+                html += '<div class="layui-input-inline spec-inline"><input type="number" class="layui-input js-unit-c" placeholder="份数" value="' + nullToEmpty(row.unitCount) + '"></div>';
+                html += '<div class="layui-input-inline spec-unit-inline"><select class="layui-input js-unit-label">' + buildSelectOptions(specLabelDict, row.unitLabel) + '</select></div>';
+                html += '<div class="spec-mid">)</div></div>';
+
+                html += '<div class="layui-form-item">';
+                html += '<label class="layui-form-label">官方展示图</label><div class="layui-input-block" style="margin-left:120px;">';
+                html += '<button type="button" class="layui-btn layui-btn-sm js-show-upload">上传官方展示图</button>';
+                html += '<div class="upload-box js-show-box"></div>';
+                html += '<input type="hidden" class="js-show-urls">';
+                html += '</div></div>';
+
+                html += '<div class="layui-form-item">';
+                html += '<label class="layui-form-label">实物鉴定图</label><div class="layui-input-block" style="margin-left:120px;">';
+                html += '<button type="button" class="layui-btn layui-btn-sm js-real-upload">上传实物鉴定图</button>';
+                html += '<div class="upload-box js-real-box"></div>';
+                html += '<input type="hidden" class="js-real-urls">';
+                html += '</div></div>';
+
+                html += '</div></div>';
+                html += '</div></div>';
+            });
+            $('#skuCardList').html(html);
+
+            $('#skuCardList .sku-card').each(function () {
+                var $card = $(this);
+                var idx = $card.data('idx');
+                var row = rows[idx] || {};
+                var showUrls = parseUrlList(row.showImageUrls);
+                var realUrls = parseUrlList(row.realImageUrls);
+                renderImageBox(showUrls, $card.find('.js-show-box'), 'show');
+                renderImageBox(realUrls, $card.find('.js-real-box'), 'real');
+                $card.find('.js-show-urls').val(JSON.stringify(showUrls));
+                $card.find('.js-real-urls').val(JSON.stringify(realUrls));
+                bindUpload($card, 'show');
+                bindUpload($card, 'real');
+                applySelectValues($card, row);
+            });
+            // 先赋值再 render，避免 Layui 动态 select 落成第一项
+            form.render('select');
+            $('#skuCardList .sku-card').each(function () {
+                applySelectValues($(this), rows[$(this).data('idx')] || {});
+            });
+            form.render('select');
+        }
+
+        function toDecimal(v) {
+            if (v === '' || v === null || v === undefined) return null;
+            var n = Number(v);
+            return isNaN(n) ? null : n;
+        }
+
+        function toInt(v) {
+            if (v === '' || v === null || v === undefined) return null;
+            var n = parseInt(v, 10);
+            return isNaN(n) ? null : n;
+        }
+
+        function syncRowsFromDom() {
+            $('#skuCardList .sku-card').each(function () {
+                var $card = $(this);
+                var idx = $card.data('idx');
+                var row = rows[idx] || {};
+                row.year = toInt($card.find('.js-year').val());
+                row.prodBatch = toInt($card.find('.js-batch').val());
+                row.starLevel = toInt($card.find('.js-star').val());
+                row.grade = toInt($card.find('.js-grade').val());
+                row.name = $.trim($card.find('.js-name').val());
+                row.totalNetWeight = toDecimal($card.find('.js-total').val());
+                row.unitWeight = toDecimal($card.find('.js-unit-w').val());
+                row.unitCount = toInt($card.find('.js-unit-c').val());
+                row.unitLabel = toInt($card.find('.js-unit-label').val());
+                row.officialPrice = toDecimal($card.find('.js-official').val());
+                row.salePrice = toDecimal($card.find('.js-sale').val());
+                row.recyclePrice = toDecimal($card.find('.js-recycle').val());
+                row.recyclePriceReducePer = toInt($card.find('.js-reduce-per').val());
+                row.recyclePriceReduceNoBag = toDecimal($card.find('.js-reduce-bag').val());
+                syncImagesFromDom($card, 'show');
+                syncImagesFromDom($card, 'real');
+                row.showImageUrls = $card.find('.js-show-urls').val() || '[]';
+                row.realImageUrls = $card.find('.js-real-urls').val() || '[]';
+                rows[idx] = row;
+            });
+        }
+
+        $('#skuCardList').on('click', '.delete-img', function () {
+            var $item = $(this).closest('.upload-item');
+            var $card = $(this).closest('.sku-card');
+            var kind = $item.data('kind') || ($item.closest('.js-show-box').length ? 'show' : 'real');
+            $item.remove();
+            syncImagesFromDom($card, kind);
+        });
+
+        $('#skuCardList').on('dragstart', '.upload-item', function (e) {
+            draggingEl = this;
+            $(this).addClass('dragging');
+            if (e.originalEvent && e.originalEvent.dataTransfer) {
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        $('#skuCardList').on('dragend', '.upload-item', function () {
+            $(this).removeClass('dragging');
+            draggingEl = null;
+        });
+        $('#skuCardList').on('dragover', '.upload-item', function (e) {
+            e.preventDefault();
+            if (!draggingEl || draggingEl === this) return;
+            if ($(draggingEl).data('kind') !== $(this).data('kind')) return;
+            if ($(draggingEl).closest('.sku-card')[0] !== $(this).closest('.sku-card')[0]) return;
+            var rect = this.getBoundingClientRect();
+            var insertBefore = (e.originalEvent.clientX - rect.left) < rect.width / 2;
+            if (insertBefore) {
+                this.parentNode.insertBefore(draggingEl, this);
+            } else {
+                this.parentNode.insertBefore(draggingEl, this.nextSibling);
+            }
+        });
+        $('#skuCardList').on('drop', '.upload-item', function (e) {
+            e.preventDefault();
+            var $card = $(this).closest('.sku-card');
+            var kind = $(this).data('kind');
+            syncImagesFromDom($card, kind);
+        });
+
+        $('#btnAddRow').on('click', function () {
+            syncRowsFromDom();
+            $.getJSON('/business/chai/sku/templateFromSpu/' + spuId, function (res) {
+                if (res.code != 200 || !res.data || !res.data.sku) {
+                    layer.msg((res && res.msg) || '添加失败');
+                    return;
+                }
+                rows.push(normalizeRow(res.data.sku));
+                renderCards();
+            });
+        });
+
+        $('#skuCardList').on('click', '.js-toggle-more', function () {
+            var $card = $(this).closest('.sku-card');
+            var idx = $card.data('idx');
+            $card.toggleClass('expanded');
+            var expanded = $card.hasClass('expanded');
+            if (rows[idx]) {
+                rows[idx]._expanded = expanded;
+            }
+            $(this).text(expanded
+                ? '收起名称 / 规格 / 图片'
+                : '名称 / 规格 / 图片已从 SPU 带入，如需调整请展开');
+        });
+
+        $('#skuCardList').on('click', '.js-del', function () {
+            syncRowsFromDom();
+            var idx = $(this).closest('.sku-card').data('idx');
+            rows.splice(idx, 1);
+            renderCards();
+        });
+
+        $('#btnSaveBatch').on('click', function () {
+            syncRowsFromDom();
+            if (!rows.length) {
+                layer.msg('请至少保留一条SKU');
+                return;
+            }
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r.year || !r.prodBatch) {
+                    layer.msg('第' + (i + 1) + '张：年份与生产批次必填');
+                    return;
+                }
+                if (!r.name) {
+                    layer.msg('第' + (i + 1) + '张：商品名称必填');
+                    return;
+                }
+                if (r.starLevel == null || r.grade == null) {
+                    layer.msg('第' + (i + 1) + '张：星级与等级必选');
+                    return;
+                }
+                if (!r.totalNetWeight || !r.unitWeight || !r.unitCount || r.unitLabel == null) {
+                    layer.msg('第' + (i + 1) + '张：规格信息不完整');
+                    return;
+                }
+                if (r.salePrice === null || r.recyclePrice === null
+                    || r.recyclePriceReducePer === null || r.recyclePriceReduceNoBag === null) {
+                    layer.msg('第' + (i + 1) + '张：销售价/回收价/压价%/无提袋扣减均必填');
+                    return;
+                }
+            }
+            $.ajax({
+                url: '/business/chai/sku/saveBatch',
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({
+                    spuId: spuId,
+                    itemList: rows.map(function (r) {
+                        var copy = $.extend({}, r);
+                        delete copy._expanded;
+                        return copy;
+                    })
+                }),
+                success: function (res) {
+                    if (res.code != 200) {
+                        layer.msg(res.msg || '保存失败');
+                        return;
+                    }
+                    var data = res.data || {};
+                    if (data.needOnlineConfirm) {
+                        layer.confirm('SKU已保存，是否同时上架本SPU？（将同步全部SKU为上架）', {
+                            btn: ['上架', '仅保存']
+                        }, function (index) {
+                            layer.close(index);
+                            $.post('/business/chai/spu/status/1', {ids: spuId}, function (st) {
+                                if (st.code != 200) {
+                                    layer.msg(st.msg || '上架失败');
+                                    return;
+                                }
+                                reloadParent();
+                            });
+                        }, function () {
+                            reloadParent();
+                        });
+                    } else {
+                        reloadParent();
+                    }
+                }
+            });
+        });
+
+        function reloadParent() {
+            if (window.parent && window.parent.location) {
+                window.parent.location.reload();
+            } else {
+                layer.msg('保存成功');
+            }
+        }
+
+        $('#btnBackSpu').on('click', function () {
+            if (spuEditUrl) {
+                window.location.href = spuEditUrl;
+            }
+        });
+
+        renderCards();
+    });
+</script>
+</body>
+</html>

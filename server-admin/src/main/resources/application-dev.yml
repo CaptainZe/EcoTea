@@ -7,7 +7,7 @@ spring:
   ## 数据库配置
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    jdbc-url: jdbc:mysql://10.0.2.194:3307/tea?useSSL=false&characterEncoding=utf-8
+    jdbc-url: jdbc:mysql://10.15.2.14:3307/tea?useSSL=false&characterEncoding=utf-8
     username: igguser
     password: forconnect
 

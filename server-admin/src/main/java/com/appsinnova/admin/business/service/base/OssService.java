@@ -2,7 +2,7 @@ package com.appsinnova.admin.business.service.base;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
-import com.appsinnova.admin.business.common.enums.AppSecretKeyType;
+import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.service.tea;
 
-import com.appsinnova.admin.business.common.enums.DailySeqType;
+import com.appsinnova.admin.business.common.enums.base.DailySeqType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
 import com.appsinnova.admin.business.common.enums.tea.AppearanceCondition;
 import com.appsinnova.admin.business.common.enums.tea.HasBag;
