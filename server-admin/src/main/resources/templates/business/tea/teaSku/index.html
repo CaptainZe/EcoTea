@@ -62,6 +62,13 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">是否已同步</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="syncFlag" mo:dict="YES_OR_NO"
+                                mo-selected="${param.syncFlag}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">星级</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="starLevel" mo:dict="STAR_LEVEL"
@@ -115,6 +122,8 @@
                         </dd>
                         <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/status/2}">下架</a>
                         </dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/syncFlag/1}">标已同步</a></dd>
+                        <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/syncFlag/0}">标未同步</a></dd>
                         <dd><a class="ajax-status" th:href="@{/business/tea/teaSku/delete}">删除</a></dd>
                     </dl>
                 </div>
@@ -129,7 +138,7 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="120">操作</th>
+                    <th width="260">操作</th>
                     <th width="90" class="sortable" data-field="status">状态</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
                     <th width="90" class="sortable" data-field="brand">品牌</th>
@@ -162,6 +171,16 @@
                            th:href="@{/business/tea/teaSku/status/2(ids=${item.id})}">下架</a>
                         <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;" data-msg="您是否确认上架"
                            th:href="@{/business/tea/teaSku/status/1(ids=${item.id})}">上架</a>
+                        <a th:if="${item.syncFlag == null or item.syncFlag != 1}" class="open-popup"
+                           style="color: #0F766E; font-weight: 600;" data-title="同步到chai"
+                           th:attr="data-url=@{'/business/tea/teaSku/sync/'+${item.id}}" data-size="1300,800">同步</a>
+                        <span th:if="${item.syncFlag == 1}" style="color: #9CA3AF; font-weight: 600;">已同步</span>
+                        <a th:if="${item.syncFlag == null or item.syncFlag != 1}" class="ajax-get"
+                           style="color: #0369A1; font-weight: 600;" data-msg="您是否确认标记为已同步"
+                           th:href="@{/business/tea/teaSku/syncFlag/1(ids=${item.id})}">标已同步</a>
+                        <a th:if="${item.syncFlag == 1}" class="ajax-get"
+                           style="color: #6B7280; font-weight: 600;" data-msg="您是否确认标记为未同步"
+                           th:href="@{/business/tea/teaSku/syncFlag/0(ids=${item.id})}">标未同步</a>
                         <!--                        <a class="ajax-get" style="color: #DC2626; font-weight: 600;" data-msg="您是否确认删除"-->
                         <!--                           th:href="@{/business/tea/teaSku/delete(ids=${item.id})}">删除</a>-->
                     </td>

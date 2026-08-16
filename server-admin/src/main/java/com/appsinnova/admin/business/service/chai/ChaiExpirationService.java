@@ -40,6 +40,13 @@ public class ChaiExpirationService {
         }, page);
     }
 
+    public ChaiExpiration getByName(String name) {
+        if (!StringUtils.hasText(name)) {
+            return null;
+        }
+        return chaiExpirationRepository.findFirstByName(name.trim()).orElse(null);
+    }
+
     /**
      * 显示名是否已被其他记录占用
      */

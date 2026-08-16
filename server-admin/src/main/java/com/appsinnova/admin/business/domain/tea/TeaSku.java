@@ -38,6 +38,8 @@ public class TeaSku implements Serializable {
     private Integer recyclePriceReducePer;
     private BigDecimal recyclePriceReduceNoBag;
     private Integer status;
+    /** 是否已同步到 chai：0否 1是；不进编辑/上下架主流程 */
+    private Integer syncFlag;
     private String operator;
     private Long updateTime;
     private Long createTime;

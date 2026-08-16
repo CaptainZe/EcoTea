@@ -24,6 +24,12 @@
 - [ ] `chai_expiration` — 保质期；`months=0` 表示长期
 - [ ] `chai_spu` — SPU；编码运行时生成 `CHAI-%08d`（spuId）
 - [ ] `chai_sku` — SKU；编码 `CHAI-%08d-%08d`（spuId-skuId）；含 `UNIQUE(spu_id, year, prod_batch)`、`KEY(spu_id)`
+- [ ] 旧表 `tea_sku` 已加 `sync_flag`（tea→chai 同步标记）
+
+```sql
+ALTER TABLE `tea`.`tea_sku`
+ADD COLUMN `sync_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '是否已同步' AFTER `status`;
+```
 
 说明：品牌 / 保质期走业务表 id，不走字典。
 
@@ -86,9 +92,10 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 | [ ] | 茶叶保质期 | 删除 | `business:chai:expiration:delete` |
 | [ ] | 茶叶SPU | 添加/编辑/上下架 | `business:chai:spu:edit` |
 | [ ] | 茶叶SPU | 删除 | `business:chai:spu:delete` |
-| [ ] | 茶叶SKU | 维护 | `business:chai:sku:edit` |
+| [ ] | 茶叶SKU | 维护SKU（向导） | `business:chai:sku:edit` |
 
-不要再配 `business:chai:sku:delete`。SKU 不在列表删除；不需要的半年在维护页删卡片后保存。若环境已配该按钮，删掉即可。
+不要再配 `business:chai:sku:delete`。SKU 不在列表删除；不需要的半年在 SPU 列表点「SKU」进入向导后删卡片保存。若环境已配该按钮，删掉即可。  
+`sku:edit` 的入口在 **SPU 列表「SKU」** 和 SPU 编辑页「下一步」，不在 SKU 列表。
 
 ### 3.4 权限用途速查
 
@@ -100,11 +107,11 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 | `business:chai:expiration:index` | 保质期列表、打开编辑页 |
 | `business:chai:expiration:edit` | 保存、上下架 |
 | `business:chai:expiration:delete` | 删除 |
-| `business:chai:spu:index` | SPU 列表、打开编辑页 |
+| `business:chai:spu:index` | SPU 列表、打开编辑页；SKU 列表「SPU」也会打开编辑页 |
 | `business:chai:spu:edit` | 保存 SPU、上下架（级联全部 SKU）；无 SKU 不可上架 |
 | `business:chai:spu:delete` | 删除 SPU（级联删 SKU） |
-| `business:chai:sku:index` | 独立 SKU 列表（只读浏览 +「维护」入口） |
-| `business:chai:sku:edit` | SKU 向导、批量保存；SPU 页「SKU / 下一步」也依赖此权限 |
+| `business:chai:sku:index` | 独立 SKU 列表（只读浏览 +「SPU」「同SPU」） |
+| `business:chai:sku:edit` | SKU 向导、批量保存；SPU 页「SKU / 下一步」依赖此权限 |
 
 ---
 
@@ -125,12 +132,15 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 - [ ] SPU：仅保存 → 无 SKU、状态为下架；列表可见
 - [ ] SPU：「下一步（维护SKU）」→ 无 SKU 时预填 6 个半年；填价后保存
 - [ ] SPU 列表「SKU」可打开同一向导；已有 SKU 时加载已有、不重新生成
-- [ ] SKU 独立列表：筛选、「维护」进向导（无列表上下架/删除）
-- [ ] 不需要的半年：维护页删除对应卡片后保存
+- [ ] SKU 独立列表：筛选、「SPU」「同SPU」（无列表上下架/删除/维护）
+- [ ] 不需要的半年：从 SPU 列表进向导，删除对应卡片后保存
 - [ ] SPU 上下架会同步其下全部 SKU；无 SKU 时不可上架
 - [ ] 维护页保存后若 SPU 仍下架，可选择是否同时上架
 - [ ] 删除 SPU 时级联删除其下 SKU
 - [ ] 旧 `tea` 菜单与功能不受影响
+- [ ] 旧茶叶SKU列表：「同步」打开预填页；规格/生产批次手填；提交后新建下架 SPU + 6 个半年 SKU
+- [ ] 同步成功后该行变为「已同步」，不可再点同步；「标未同步」后可再同步（会再新建一套）
+- [ ] 行内/批量「标已同步」「标未同步」只改标记，不创建 chai
 
 ---
 

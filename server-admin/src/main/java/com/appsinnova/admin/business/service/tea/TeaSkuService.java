@@ -57,12 +57,31 @@ public class TeaSkuService {
         entity.setUpdateTime(System.currentTimeMillis());
         entity = teaSkuRepository.save(entity);
 
-        // 创建时，生成SKU编码
         if (isCreate) {
             entity.setSkuCode(SkuUtil.genTeaSkuCode(entity.getBrand(), entity.getId()));
+            if (entity.getSyncFlag() == null) {
+                entity.setSyncFlag(0);
+            }
         }
         entity = teaSkuRepository.save(entity);
         return entity;
+    }
+
+    @Transactional
+    public void updateSyncFlag(List<Long> idList, Integer syncFlag, String operator) {
+        if (CollectionUtils.isEmpty(idList) || syncFlag == null) {
+            return;
+        }
+        for (Long id : idList) {
+            TeaSku entity = getById(id);
+            if (entity == null || syncFlag.equals(entity.getSyncFlag())) {
+                continue;
+            }
+            entity.setSyncFlag(syncFlag);
+            entity.setOperator(operator);
+            entity.setUpdateTime(System.currentTimeMillis());
+            teaSkuRepository.save(entity);
+        }
     }
 
     @Transactional
@@ -99,6 +118,9 @@ public class TeaSkuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getSyncFlag() != null) {
+            preList.add(cb.equal(root.get("syncFlag").as(Integer.class), param.getSyncFlag()));
         }
         if (param.getStarLevel() != null) {
             preList.add(cb.equal(root.get("starLevel").as(Integer.class), param.getStarLevel()));

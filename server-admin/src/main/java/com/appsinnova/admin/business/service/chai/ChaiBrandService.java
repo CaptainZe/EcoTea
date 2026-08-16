@@ -41,6 +41,13 @@ public class ChaiBrandService {
         }, page);
     }
 
+    public ChaiBrand getByName(String name) {
+        if (!StringUtils.hasText(name)) {
+            return null;
+        }
+        return chaiBrandRepository.findFirstByName(name.trim()).orElse(null);
+    }
+
     /**
      * 品牌名称是否已被其他记录占用
      */

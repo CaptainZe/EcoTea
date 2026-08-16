@@ -2,11 +2,18 @@ package com.appsinnova.admin.business.controller.tea;
 
 import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
+import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
+import com.appsinnova.admin.business.domain.chai.ChaiBrand;
+import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
+import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.business.domain.sys.AppSecretKey;
 import com.appsinnova.admin.business.domain.tea.TeaSku;
 import com.appsinnova.admin.business.service.base.FeiShuWebhookService;
+import com.appsinnova.admin.business.service.chai.ChaiBrandService;
+import com.appsinnova.admin.business.service.chai.ChaiExpirationService;
 import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
+import com.appsinnova.admin.business.service.tea.TeaSkuToChaiSyncService;
 import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.JsonUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
@@ -34,6 +41,9 @@ import java.util.concurrent.CompletableFuture;
 public class TeaSkuController {
 
     private final TeaSkuService teaSkuService;
+    private final TeaSkuToChaiSyncService teaSkuToChaiSyncService;
+    private final ChaiBrandService chaiBrandService;
+    private final ChaiExpirationService chaiExpirationService;
     private final AppSecretKeyService appSecretKeyService;
     private final FeiShuWebhookService feiShuWebhookService;
 
@@ -134,8 +144,9 @@ public class TeaSkuController {
     @GetMapping("/copy/{id}")
     @RequiresPermissions("business:tea:teaSku:edit")
     public String toCopy(@PathVariable(value = "id") TeaSku editItem, Model model) {
-        editItem.setId(null);
-        model.addAttribute("editItem", editItem);
+            editItem.setId(null);
+            editItem.setSyncFlag(0);
+            model.addAttribute("editItem", editItem);
         return "/business/tea/teaSku/edit";
     }
 
@@ -154,6 +165,7 @@ public class TeaSkuController {
             saveItem.setId(oldEntity.getId());
             saveItem.setSkuCode(oldEntity.getSkuCode());
             saveItem.setCreateTime(oldEntity.getCreateTime());
+            saveItem.setSyncFlag(oldEntity.getSyncFlag());
         }
 
         // 有效性校验
@@ -217,6 +229,107 @@ public class TeaSkuController {
         }
 
         return ResultVoUtil.success("操作成功");
+    }
+
+    @GetMapping("/sync/{id}")
+    @RequiresPermissions("business:tea:teaSku:edit")
+    public String toSync(@PathVariable("id") Long id, Model model) {
+        TeaSku teaSku = teaSkuService.getById(id);
+        if (teaSku == null) {
+            model.addAttribute("errorMsg", "茶叶SKU不存在");
+            return "/business/tea/teaSku/sync";
+        }
+        if (Integer.valueOf(1).equals(teaSku.getSyncFlag())) {
+            model.addAttribute("errorMsg", "该记录已同步，请先标记为未同步后再操作");
+            return "/business/tea/teaSku/sync";
+        }
+
+        ChaiSpu editItem = new ChaiSpu();
+        editItem.setName(teaSku.getName());
+        editItem.setStarLevel(teaSku.getStarLevel());
+        editItem.setType(teaSku.getType());
+        editItem.setGrade(teaSku.getGrade());
+        editItem.setYear(teaSku.getYear());
+        editItem.setShowImageUrls(teaSku.getImageUrls());
+        editItem.setRealImageUrls(teaSku.getRealImageUrls());
+        editItem.setStatus(0);
+
+        String brandMatchTip = null;
+        String brandName = resolveTeaBrandName(teaSku.getBrand());
+        if (teaSku.getBrand() != null && !"-".equals(brandName)) {
+            ChaiBrand chaiBrand = chaiBrandService.getByName(brandName);
+            if (chaiBrand != null && Integer.valueOf(1).equals(chaiBrand.getStatus())) {
+                editItem.setBrand(chaiBrand.getId());
+            } else if (chaiBrand != null) {
+                brandMatchTip = "chai品牌「" + brandName + "」已下架，请先上架或手工选择";
+            } else {
+                brandMatchTip = "未匹配到chai品牌「" + brandName + "」，请先创建或手工选择";
+            }
+        } else {
+            brandMatchTip = "原SKU无品牌或字典无名称，请手工选择chai品牌";
+        }
+
+        String expirationMatchTip = null;
+        String expirationName = resolveTeaExpirationName(teaSku.getExpiration());
+        if (teaSku.getExpiration() != null && !"-".equals(expirationName)) {
+            ChaiExpiration chaiExpiration = chaiExpirationService.getByName(expirationName);
+            if (chaiExpiration != null && Integer.valueOf(1).equals(chaiExpiration.getStatus())) {
+                editItem.setExpiration(chaiExpiration.getId());
+            } else if (chaiExpiration != null) {
+                expirationMatchTip = "chai保质期「" + expirationName + "」已下架，请先上架或手工选择";
+            } else {
+                expirationMatchTip = "未匹配到chai保质期「" + expirationName + "」，请先创建或手工选择";
+            }
+        } else {
+            expirationMatchTip = "原SKU无保质期或字典无名称，请手工选择chai保质期";
+        }
+
+        model.addAttribute("teaSku", teaSku);
+        model.addAttribute("editItem", editItem);
+        model.addAttribute("brandMatchTip", brandMatchTip);
+        model.addAttribute("expirationMatchTip", expirationMatchTip);
+        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
+        model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
+        model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        return "/business/tea/teaSku/sync";
+    }
+
+    @PostMapping("/sync/{id}")
+    @RequiresPermissions("business:tea:teaSku:edit")
+    @ResponseBody
+    public ResultVo<?> doSync(@PathVariable("id") Long id, ChaiSpu form) {
+        User user = ShiroUtil.getSubject();
+        try {
+            Long spuId = teaSkuToChaiSyncService.sync(id, form, user.getNickname());
+            return ResultVoUtil.success("同步成功", spuId);
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    @RequestMapping("/syncFlag/{param}")
+    @RequiresPermissions("business:tea:teaSku:edit")
+    @ResponseBody
+    public ResultVo<?> syncFlag(
+            @PathVariable("param") Integer syncFlag,
+            @RequestParam(value = "ids", required = false) List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return ResultVoUtil.error("请选择一条记录");
+        }
+        if (!Integer.valueOf(0).equals(syncFlag) && !Integer.valueOf(1).equals(syncFlag)) {
+            return ResultVoUtil.error("标记参数无效");
+        }
+        User user = ShiroUtil.getSubject();
+        teaSkuService.updateSyncFlag(ids, syncFlag, user.getNickname());
+        return ResultVoUtil.success("操作成功");
+    }
+
+    private String resolveTeaExpirationName(Integer expiration) {
+        if (expiration == null) {
+            return "-";
+        }
+        String name = DictUtils.keyValue("TEA_EXPIRATION", String.valueOf(expiration));
+        return StringUtils.isNotBlank(name) ? name : String.valueOf(expiration);
     }
 
     private static boolean saleOrRecyclePriceChanged(BigDecimal prevSalePrice, BigDecimal prevRecyclePrice, TeaSku saved) {
