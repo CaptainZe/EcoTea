@@ -204,6 +204,24 @@
             color: #B45309;
             margin: 0 0 10px;
         }
+        .sku-anchor-warn {
+            display: none;
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            background: #FFFBEB;
+            border: 1px solid #F59E0B;
+            border-radius: 4px;
+            color: #92400E;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .sku-anchor-warn.is-show {
+            display: block;
+        }
+        .sku-anchor-warn .layui-btn {
+            margin-left: 8px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -243,6 +261,13 @@
             </div>
         </div>
         <div id="dictWarn" class="sku-dict-warn" style="display:none;"></div>
+        <div id="anchorWarn" class="sku-anchor-warn"
+             th:classappend="${anchorSkuMissing} ? ' is-show' : ''">
+            <span class="js-anchor-text">当前SKU中缺少SPU锚点半年，可一键添加后再改价保存。</span>
+            <button type="button" class="layui-btn layui-btn-xs layui-btn-warm" id="btnAddAnchor">
+                添加锚点半年
+            </button>
+        </div>
 
         <div style="margin-bottom: 10px;">
             <button type="button" class="layui-btn layui-btn-sm" id="btnAddRow">
@@ -270,6 +295,8 @@
 <script th:inline="javascript">
     var spuId = /*[[${spu != null ? spu.id : null}]]*/ null;
     var spuEditUrl = /*[[${spu != null ? '/business/chai/spu/edit/' + spu.id : ''}]]*/ '';
+    var anchorYear = /*[[${spu != null ? spu.year : null}]]*/ null;
+    var anchorProdBatch = /*[[${spu != null ? spu.prodBatch : null}]]*/ null;
 </script>
 <script>
     layui.use(['form', 'layer', 'upload'], function () {
@@ -358,7 +385,7 @@
         }
 
         function buildSelectOptions(dict, selected) {
-            var html = '';
+            var html = '<option value="">请选择</option>';
             var selStr = selected === null || selected === undefined ? '' : String(selected);
             Object.keys(dict || {}).forEach(function (key) {
                 var sel = selStr !== '' && String(key) === selStr ? ' selected' : '';
@@ -629,15 +656,17 @@
         });
 
         $('#btnAddRow').on('click', function () {
+            appendTemplateSku();
+        });
+
+        $('#btnAddAnchor').on('click', function () {
             syncRowsFromDom();
-            $.getJSON('/business/chai/sku/templateFromSpu/' + spuId, function (res) {
-                if (res.code != 200 || !res.data || !res.data.sku) {
-                    layer.msg((res && res.msg) || '添加失败');
-                    return;
-                }
-                rows.push(normalizeRow(res.data.sku));
-                renderCards();
-            });
+            if (rowsHasAnchor(rows)) {
+                layer.msg('已存在锚点半年（' + anchorLabel() + '）');
+                syncAnchorWarnVisibility();
+                return;
+            }
+            appendTemplateSku('已添加锚点半年，请核对价格后保存', true);
         });
 
         $('#skuCardList').on('click', '.js-toggle-more', function () {
@@ -658,38 +687,10 @@
             var idx = $(this).closest('.sku-card').data('idx');
             rows.splice(idx, 1);
             renderCards();
+            syncAnchorWarnVisibility();
         });
 
-        $('#btnSaveBatch').on('click', function () {
-            syncRowsFromDom();
-            if (!rows.length) {
-                layer.msg('请至少保留一条SKU');
-                return;
-            }
-            for (var i = 0; i < rows.length; i++) {
-                var r = rows[i];
-                if (!r.year || !r.prodBatch) {
-                    layer.msg('第' + (i + 1) + '张：年份与生产批次必填');
-                    return;
-                }
-                if (!r.name) {
-                    layer.msg('第' + (i + 1) + '张：商品名称必填');
-                    return;
-                }
-                if (r.starLevel == null || r.grade == null) {
-                    layer.msg('第' + (i + 1) + '张：星级与等级必选');
-                    return;
-                }
-                if (!r.totalNetWeight || !r.unitWeight || !r.unitCount || r.unitLabel == null) {
-                    layer.msg('第' + (i + 1) + '张：规格信息不完整');
-                    return;
-                }
-                if (r.salePrice === null || r.recyclePrice === null
-                    || r.recyclePriceReducePer === null || r.recyclePriceReduceNoBag === null) {
-                    layer.msg('第' + (i + 1) + '张：销售价/回收价/压价%/无提袋扣减均必填');
-                    return;
-                }
-            }
+        function postSaveBatch() {
             $.ajax({
                 url: '/business/chai/sku/saveBatch',
                 type: 'POST',
@@ -728,6 +729,127 @@
                     }
                 }
             });
+        }
+
+        function rowsHasAnchor(list) {
+            if (anchorYear == null || anchorProdBatch == null) {
+                return true;
+            }
+            var ay = Number(anchorYear);
+            var ab = Number(anchorProdBatch);
+            for (var i = 0; i < list.length; i++) {
+                var r = list[i];
+                if (r && Number(r.year) === ay && Number(r.prodBatch) === ab) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function anchorLabel() {
+            var batchName = (prodBatchDict && anchorProdBatch != null)
+                ? (prodBatchDict[String(anchorProdBatch)] || prodBatchDict[anchorProdBatch] || anchorProdBatch)
+                : anchorProdBatch;
+            return (anchorYear != null ? anchorYear : '') + ' ' + (batchName != null ? batchName : '');
+        }
+
+        function syncAnchorWarnVisibility() {
+            var $warn = $('#anchorWarn');
+            if (!$warn.length) {
+                return;
+            }
+            if (anchorYear == null || anchorProdBatch == null) {
+                $warn.removeClass('is-show');
+                return;
+            }
+            if (rowsHasAnchor(rows)) {
+                $warn.removeClass('is-show');
+            } else {
+                $warn.find('.js-anchor-text').text(
+                    '当前SKU中缺少SPU锚点半年（' + anchorLabel() + '），可一键添加后再改价保存。'
+                );
+                $warn.addClass('is-show');
+            }
+        }
+
+        function appendTemplateSku(doneMsg, toFront) {
+            syncRowsFromDom();
+            // 普通添加：年/批留空；添加锚点半年：带 SPU 锚点
+            var url = '/business/chai/sku/templateFromSpu/' + spuId
+                + (toFront ? '' : '?blankHalfYear=1');
+            $.getJSON(url, function (res) {
+                if (res.code != 200 || !res.data || !res.data.sku) {
+                    layer.msg((res && res.msg) || '添加失败');
+                    return;
+                }
+                var row = normalizeRow(res.data.sku);
+                if (toFront) {
+                    rows.unshift(row);
+                } else {
+                    rows.push(row);
+                }
+                renderCards();
+                syncAnchorWarnVisibility();
+                if (doneMsg) {
+                    layer.msg(doneMsg);
+                }
+            });
+        }
+
+        function confirmMissingAnchorThenSave() {
+            if (rowsHasAnchor(rows)) {
+                postSaveBatch();
+                return;
+            }
+            layer.confirm(
+                '当前保存的SKU不包含SPU锚点（' + anchorLabel() + '），SPU仍将指向该锚点。是否继续保存？',
+                {icon: 3, title: '锚点提醒'},
+                function (index) {
+                    layer.close(index);
+                    postSaveBatch();
+                }
+            );
+        }
+
+        $('#btnSaveBatch').on('click', function () {
+            syncRowsFromDom();
+            if (!rows.length) {
+                var emptyMsg = '将删除本SPU下全部SKU';
+                if (anchorYear != null && anchorProdBatch != null) {
+                    emptyMsg += '，且与SPU锚点（' + anchorLabel() + '）不一致';
+                }
+                emptyMsg += '，是否继续？';
+                layer.confirm(emptyMsg, function (index) {
+                    layer.close(index);
+                    postSaveBatch();
+                });
+                return;
+            }
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                if (!r.year || !r.prodBatch) {
+                    layer.msg('第' + (i + 1) + '张：年份与生产批次必填');
+                    return;
+                }
+                if (!r.name) {
+                    layer.msg('第' + (i + 1) + '张：商品名称必填');
+                    return;
+                }
+                if (r.starLevel == null || r.grade == null) {
+                    layer.msg('第' + (i + 1) + '张：星级与等级必选');
+                    return;
+                }
+                if (!r.totalNetWeight || !r.unitWeight || !r.unitCount || r.unitLabel == null) {
+                    layer.msg('第' + (i + 1) + '张：规格信息不完整');
+                    return;
+                }
+                if (r.salePrice === null || r.recyclePrice === null
+                    || r.recyclePriceReducePer === null || r.recyclePriceReduceNoBag === null) {
+                    layer.msg('第' + (i + 1) + '张：销售价/回收价/压价%/无提袋扣减均必填');
+                    return;
+                }
+            }
+            confirmMissingAnchorThenSave();
         });
 
         function reloadParent() {
@@ -744,7 +866,13 @@
             }
         });
 
+        $('#skuCardList').on('change', '.js-year, .js-batch', function () {
+            syncRowsFromDom();
+            syncAnchorWarnVisibility();
+        });
+
         renderCards();
+        syncAnchorWarnVisibility();
     });
 </script>
 </body>

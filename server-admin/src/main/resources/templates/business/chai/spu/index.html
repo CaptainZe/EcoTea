@@ -67,6 +67,16 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">是否删除</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="deleted">
+                            <option value="-1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '-1'}">全部</option>
+                            <option value="0" th:selected="${param.deleted == null or #lists.isEmpty(param.deleted) or param.deleted[0] == '0'}">否</option>
+                            <option value="1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '1'}">是</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">SPU编码</label>
                     <div class="layui-input-block">
                         <input type="text" name="spuCode" th:value="${param.spuCode}" placeholder="精确查询"
@@ -88,9 +98,14 @@
                 <div class="btn-group">
                     <button class="layui-btn">操作<span class="caret"></span></button>
                     <dl class="layui-nav-child layui-anim layui-anim-upbit">
-                        <dd><a class="ajax-status" th:href="@{/business/chai/spu/status/1}">上架</a></dd>
-                        <dd><a class="ajax-status" th:href="@{/business/chai/spu/status/0}">下架</a></dd>
-                        <dd><a class="ajax-status" th:href="@{/business/chai/spu/delete}">删除</a></dd>
+                        <dd><a class="ajax-status" data-msg="上架将同时上架选中SPU下全部SKU，是否确认"
+                               th:href="@{/business/chai/spu/status/1}">上架</a></dd>
+                        <dd><a class="ajax-status" data-msg="下架将同时下架选中SPU下全部SKU，是否确认"
+                               th:href="@{/business/chai/spu/status/0}">下架</a></dd>
+                        <dd><a class="ajax-status" data-msg="删除后将下架并标记删除，下属SKU一并删除，是否确认"
+                               th:href="@{/business/chai/spu/delete}">删除</a></dd>
+                        <dd><a class="ajax-status" data-msg="恢复后为下架状态，是否确认"
+                               th:href="@{/business/chai/spu/restore}">恢复</a></dd>
                     </dl>
                 </div>
             </div>
@@ -104,18 +119,18 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="140">操作</th>
+                    <th width="160">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="80">SKU数</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
                     <th width="100" class="sortable" data-field="brand">品牌</th>
-                    <th width="160">商品名称</th>
+                    <th width="200">商品名称</th>
                     <th width="120">规格</th>
                     <th width="80" class="sortable" data-field="year">年份</th>
                     <th width="90" class="sortable" data-field="prodBatch">生产批次</th>
+                    <th width="100" class="sortable" data-field="officialPrice">官方价 / 元</th>
                     <th width="120">展示图</th>
                     <th width="120">实物图</th>
-                    <th width="140">SPU编码</th>
                     <th width="90">操作人</th>
                     <th width="140" class="sortable" data-field="updateTime">更新时间</th>
                 </tr>
@@ -125,33 +140,46 @@
                     <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
                         <i class="layui-icon layui-icon-ok"></i></label></td>
                     <td>
+                        <th:block th:if="${item.deleted == null or item.deleted != 1}">
                         <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑SPU"
                            th:attr="data-url=@{'/business/chai/spu/edit/'+${item.id}}" data-size="1500,800">编辑</a>
                         <a class="open-popup" style="color: #047857; font-weight: 600;" data-title="维护SKU"
                            th:attr="data-url=@{'/business/chai/sku/editBySpu/'+${item.id}}" data-size="1500,800">SKU</a>
                         <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
-                           data-msg="下架将同时下架该SPU下全部SKU，是否确认？"
+                           data-msg="下架将同时下架该SPU下全部SKU，是否确认"
                            th:href="@{/business/chai/spu/status/0(ids=${item.id})}">下架</a>
                         <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;"
-                           data-msg="上架将同时上架该SPU下全部SKU，是否确认？"
+                           data-msg="上架将同时上架该SPU下全部SKU，是否确认"
                            th:href="@{/business/chai/spu/status/1(ids=${item.id})}">上架</a>
+                        </th:block>
+                        <a th:if="${item.deleted == 1}" class="ajax-get" style="color: #0369A1; font-weight: 600;"
+                           data-msg="恢复后为下架状态，是否确认"
+                           th:href="@{/business/chai/spu/restore(ids=${item.id})}">恢复</a>
                     </td>
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${item.skuCount != null ? item.skuCount : 0}"></td>
                     <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
                     <td th:text="${item.brandName}"></td>
-                    <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td>
+                        <div th:title="${item.name}">
+                            <span th:text="${item.name}"></span>
+                            <span th:if="${item.deleted == 1}" style="color: #9CA3AF; margin-left: 6px; font-weight: 600;">已删除</span>
+                        </div>
+                        <div th:if="${item.spuCode != null and !#strings.isEmpty(item.spuCode)}"
+                             th:text="${item.spuCode}" th:title="${item.spuCode}"
+                             style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
+                    </td>
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
+                    <td th:text="${item.officialPriceShow}"></td>
                     <td>
                         <th:block th:replace="/common/fragment :: previewImgList(${item.showImageList}, ${'spu-show-' + item.id})"></th:block>
                     </td>
                     <td>
                         <th:block th:replace="/common/fragment :: previewImgList(${item.realImageList}, ${'spu-real-' + item.id})"></th:block>
                     </td>
-                    <td th:text="${item.spuCode}"></td>
                     <td th:text="${item.operator}"></td>
                     <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
                 </tr>

@@ -334,21 +334,37 @@
         });
 
         form.on('submit(submitSync)', function () {
+            submitSync(false);
+            return false;
+        });
+
+        function submitSync(confirmDuplicate) {
             var teaSkuId = $('#teaSkuId').val();
+            var data = $('#editform').serialize();
+            if (confirmDuplicate) {
+                data += '&confirmDuplicate=true';
+            }
             $.ajax({
                 url: '/business/tea/teaSku/sync/' + teaSkuId,
                 type: 'POST',
-                data: $('#editform').serialize(),
+                data: data,
                 success: function (res) {
                     if (res.code == 200) {
                         window.parent.location.reload();
+                    } else if (res.code == 409) {
+                        layer.confirm(res.msg || '同品牌下已存在同名商品，是否仍要继续保存？', {
+                            icon: 3,
+                            title: '重复提醒'
+                        }, function (index) {
+                            layer.close(index);
+                            submitSync(true);
+                        });
                     } else {
                         alert(res.msg || '同步失败');
                     }
                 }
             });
-            return false;
-        });
+        }
 
         function initImageGroup(config) {
             var imageUrlsStr = $(config.inputId).val();

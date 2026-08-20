@@ -24,11 +24,20 @@
 - [ ] `chai_expiration` — 保质期；`months=0` 表示长期
 - [ ] `chai_spu` — SPU；编码运行时生成 `CHAI-%08d`（spuId）
 - [ ] `chai_sku` — SKU；编码 `CHAI-%08d-%08d`（spuId-skuId）；含 `UNIQUE(spu_id, year, prod_batch)`、`KEY(spu_id)`
+- [ ] `chai_spu` / `chai_sku` 已加 `deleted`（软删，默认 0）
 - [ ] 旧表 `tea_sku` 已加 `sync_flag`（tea→chai 同步标记）
 
 ```sql
 ALTER TABLE `tea`.`tea_sku`
 ADD COLUMN `sync_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '是否已同步' AFTER `status`;
+
+ALTER TABLE `chai_spu`
+  ADD COLUMN `deleted` tinyint(2) NOT NULL DEFAULT 0 COMMENT '0有效 1已删除' AFTER `status`,
+  ADD KEY `idx_deleted` (`deleted`);
+
+ALTER TABLE `chai_sku`
+  ADD COLUMN `deleted` tinyint(2) NOT NULL DEFAULT 0 COMMENT '0有效 1已删除' AFTER `status`,
+  ADD KEY `idx_deleted` (`deleted`);
 ```
 
 说明：品牌 / 保质期走业务表 id，不走字典。

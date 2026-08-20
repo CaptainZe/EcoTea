@@ -42,9 +42,12 @@
                 <div class="btn-group">
                     <button class="layui-btn">操作<span class="caret"></span></button>
                     <dl class="layui-nav-child layui-anim layui-anim-upbit">
-                        <dd><a class="ajax-status" th:href="@{/business/chai/brand/status/1}">上架</a></dd>
-                        <dd><a class="ajax-status" th:href="@{/business/chai/brand/status/0}">下架</a></dd>
-                        <dd><a class="ajax-status" th:href="@{/business/chai/brand/delete}">删除</a></dd>
+                        <dd><a class="ajax-status" data-msg="是否确认上架选中品牌"
+                               th:href="@{/business/chai/brand/status/1}">上架</a></dd>
+                        <dd><a class="ajax-status" data-msg="下架后新建商品将无法选择该品牌，是否确认"
+                               th:href="@{/business/chai/brand/status/0}">下架</a></dd>
+                        <dd><a class="ajax-status" data-msg="已被商品引用的品牌无法删除，未引用的将物理删除，是否确认"
+                               th:href="@{/business/chai/brand/delete}">删除</a></dd>
                     </dl>
                 </div>
             </div>

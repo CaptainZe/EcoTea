@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>该SPU下SKU</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span th:if="${errorMsg != null}" th:text="${errorMsg}"></span>
+        <th:block th:if="${errorMsg == null and spu != null}">
+            <span th:text="${spu.name}"></span>
+            <span th:if="${spu.deleted == 1}" style="color: #9CA3AF; margin-left: 6px; font-weight: 600;">已删除</span>
+            <span th:if="${spu.spuCode != null and !#strings.isEmpty(spu.spuCode)}"
+                  th:text="${spu.spuCode}"
+                  style="color: #9CA3AF; font-size: 12px; margin-left: 8px;"></span>
+        </th:block>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body" th:if="${errorMsg == null}">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">是否删除</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="deleted">
+                            <option value="-1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '-1'}">全部</option>
+                            <option value="0" th:selected="${param.deleted == null or #lists.isEmpty(param.deleted) or param.deleted[0] == '0'}">否</option>
+                            <option value="1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '1'}">是</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="80">状态</th>
+                    <th width="90">星级</th>
+                    <th width="100">品牌</th>
+                    <th width="220">商品名称</th>
+                    <th width="120">规格</th>
+                    <th width="80">年份</th>
+                    <th width="90">生产批次</th>
+                    <th width="100">官方价 / 元</th>
+                    <th width="110">销售价 / 元</th>
+                    <th width="110">回收价 / 元</th>
+                    <th width="100">破损回收价 / 元</th>
+                    <th width="100">无提袋扣减 / 元</th>
+                    <th width="120">展示图</th>
+                    <th width="120">实物图</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
+                    <td th:text="${item.brandName}"></td>
+                    <td>
+                        <div th:title="${item.name}">
+                            <span th:text="${item.name}"></span>
+                            <span th:if="${item.deleted == 1}" style="color: #9CA3AF; margin-left: 6px; font-weight: 600;">已删除</span>
+                        </div>
+                        <div th:if="${item.skuCode != null and !#strings.isEmpty(item.skuCode)}"
+                             th:text="${item.skuCode}" th:title="${item.skuCode}"
+                             style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
+                    </td>
+                    <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${item.year}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
+                    <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPriceShow}"></td>
+                    <td style="background-color: #ECFDF5; color: #047857;" th:text="${item.salePriceShow}"></td>
+                    <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePriceShow}"></td>
+                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
+                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recyclePriceReduceNoBagShow}"></td>
+                    <td>
+                        <th:block th:replace="/common/fragment :: previewImgList(${item.showImageList}, ${'spu-sku-show-' + item.id})"></th:block>
+                    </td>
+                    <td>
+                        <th:block th:replace="/common/fragment :: previewImgList(${item.realImageList}, ${'spu-sku-real-' + item.id})"></th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

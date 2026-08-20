@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiHalfYearUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
@@ -13,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -35,17 +35,37 @@ public class ChaiSkuService {
     }
 
     public List<ChaiSku> listBySpuId(Long spuId) {
+        return listBySpuId(spuId, 0);
+    }
+
+    /**
+     * @param deleted 0未删除 1已删除 null全部
+     */
+    public List<ChaiSku> listBySpuId(Long spuId, Integer deleted) {
         if (spuId == null) {
             return new ArrayList<>();
         }
-        return chaiSkuRepository.findBySpuIdOrderByYearDescProdBatchDesc(spuId);
+        if (deleted == null) {
+            return chaiSkuRepository.findBySpuIdOrderByYearDescProdBatchDesc(spuId);
+        }
+        return chaiSkuRepository.findBySpuIdAndDeletedOrderByYearDescProdBatchDesc(spuId, deleted);
     }
 
     public long countBySpuId(Long spuId) {
         if (spuId == null) {
             return 0;
         }
-        return chaiSkuRepository.countBySpuId(spuId);
+        return chaiSkuRepository.countBySpuIdAndDeleted(spuId, 0);
+    }
+
+    /**
+     * 是否存在未删除的锚点半年 SKU
+     */
+    public boolean existsActiveBySpuAndHalfYear(Long spuId, Integer year, Integer prodBatch) {
+        if (spuId == null || year == null || prodBatch == null) {
+            return false;
+        }
+        return chaiSkuRepository.existsBySpuIdAndYearAndProdBatchAndDeleted(spuId, year, prodBatch, 0);
     }
 
     public Page<ChaiSku> getPageList(ChaiSku param) {
@@ -90,7 +110,8 @@ public class ChaiSkuService {
         sku.setShowImageUrls(spu.getShowImageUrls());
         sku.setRealImageUrls(spu.getRealImageUrls());
         sku.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
-        sku.setOfficialPrice(BigDecimal.ONE);
+        sku.setDeleted(0);
+        sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
         sku.setSalePrice(BigDecimal.ONE);
         sku.setRecyclePrice(BigDecimal.ONE);
         sku.setRecyclePriceReducePer(5);
@@ -105,6 +126,9 @@ public class ChaiSkuService {
             // 不可用空串：sku_code 有唯一约束，批量创建时多个 '' 会撞 unique_key1
             entity.setSkuCode("TMP-" + UUID.randomUUID().toString().replace("-", ""));
             entity.setCreateTime(System.currentTimeMillis());
+            if (entity.getDeleted() == null) {
+                entity.setDeleted(0);
+            }
             isCreate = true;
         }
         entity.setUpdateTime(System.currentTimeMillis());
@@ -117,8 +141,9 @@ public class ChaiSkuService {
     }
 
     /**
-     * 批量保存某 SPU 下 SKU：提交列表全量覆盖（保留仍存在的 id/编码）。
-     * brand / expiration / type 强制继承 SPU，不允许前端篡改。
+     * 批量保存某 SPU 下 SKU：提交列表全量覆盖。
+     * 未出现的有效 SKU 软删；无 id 但命中已删 (year, prodBatch) 则恢复原 id/编码。
+     * 空列表视为全部有效 SKU 软删。brand / expiration / type 强制继承 SPU。
      */
     @Transactional
     public void saveBatchForSpu(ChaiSpu spu, List<ChaiSku> itemList, String operator) {
@@ -126,9 +151,8 @@ public class ChaiSkuService {
             throw new IllegalArgumentException("SPU不能为空");
         }
         Long spuId = spu.getId();
-        if (CollectionUtils.isEmpty(itemList)) {
-            chaiSkuRepository.deleteBySpuId(spuId);
-            return;
+        if (itemList == null) {
+            itemList = new ArrayList<>();
         }
 
         Set<String> batchKeys = new HashSet<>();
@@ -156,6 +180,7 @@ public class ChaiSkuService {
                 throw new IllegalArgumentException("规格信息不完整");
             }
             validatePrice(item);
+            resolveExistingSku(item, spuId);
         }
 
         List<ChaiSku> oldList = listBySpuId(spuId);
@@ -163,12 +188,14 @@ public class ChaiSkuService {
                 .map(ChaiSku::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        List<Long> deleteIds = oldList.stream()
-                .map(ChaiSku::getId)
-                .filter(id -> !keepIds.contains(id))
-                .collect(Collectors.toList());
-        if (!deleteIds.isEmpty()) {
-            chaiSkuRepository.deleteByIdIn(deleteIds);
+        for (ChaiSku old : oldList) {
+            if (keepIds.contains(old.getId())) {
+                continue;
+            }
+            old.setDeleted(1);
+            old.setStatus(ChaiStatus.OFFLINE.getCode());
+            old.setOperator(operator);
+            save(old);
         }
 
         for (ChaiSku item : itemList) {
@@ -177,6 +204,7 @@ public class ChaiSkuService {
             item.setExpiration(spu.getExpiration());
             item.setType(spu.getType());
             item.setOperator(operator);
+            item.setDeleted(0);
             if (item.getId() != null) {
                 ChaiSku old = getById(item.getId());
                 if (old == null || !spuId.equals(old.getSpuId())) {
@@ -194,12 +222,30 @@ public class ChaiSkuService {
             if (!StringUtils.hasText(item.getRealImageUrls())) {
                 item.setRealImageUrls("[]");
             }
-            // SKU 状态跟随 SPU，不允许单独设置
             item.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
             save(item);
         }
-        // 再刷一遍，防止遗漏
         syncStatusFromSpu(spuId, spu.getStatus() != null ? spu.getStatus() : 0, operator);
+    }
+
+    /**
+     * 无 id 时按 (spuId, year, prodBatch) 找回已有行（含已删），沿用原 id/编码。
+     * 有效行同键且提交了另一个 id 则拒绝。
+     */
+    private void resolveExistingSku(ChaiSku item, Long spuId) {
+        ChaiSku byKey = chaiSkuRepository
+                .findFirstBySpuIdAndYearAndProdBatch(spuId, item.getYear(), item.getProdBatch())
+                .orElse(null);
+        if (item.getId() == null) {
+            if (byKey != null) {
+                item.setId(byKey.getId());
+            }
+            return;
+        }
+        if (byKey != null && !byKey.getId().equals(item.getId())) {
+            throw new IllegalArgumentException("存在重复的年份+生产批次：" + item.getYear()
+                    + " / " + item.getProdBatch());
+        }
     }
 
     /**
@@ -211,6 +257,24 @@ public class ChaiSkuService {
             return;
         }
         chaiSkuRepository.updateStatusBySpuId(spuId, status, operator, System.currentTimeMillis());
+    }
+
+    @Transactional
+    public void markDeletedBySpuId(Long spuId, String operator) {
+        if (spuId == null) {
+            return;
+        }
+        chaiSkuRepository.softDeleteBySpuId(spuId, ChaiStatus.OFFLINE.getCode(),
+                operator, System.currentTimeMillis());
+    }
+
+    @Transactional
+    public void restoreBySpuId(Long spuId, String operator) {
+        if (spuId == null) {
+            return;
+        }
+        chaiSkuRepository.restoreBySpuId(spuId, ChaiStatus.OFFLINE.getCode(),
+                operator, System.currentTimeMillis());
     }
 
     private void validatePrice(ChaiSku item) {
@@ -226,22 +290,6 @@ public class ChaiSkuService {
         if (item.getRecyclePriceReduceNoBag() == null) {
             throw new IllegalArgumentException("无提袋扣减必填");
         }
-    }
-
-    @Transactional
-    public void deleteBySpuId(Long spuId) {
-        if (spuId == null) {
-            return;
-        }
-        chaiSkuRepository.deleteBySpuId(spuId);
-    }
-
-    @Transactional
-    public void deleteByIdIn(List<Long> idList) {
-        if (CollectionUtils.isEmpty(idList)) {
-            return;
-        }
-        chaiSkuRepository.deleteByIdIn(idList);
     }
 
     private List<Predicate> genCondition(Root<ChaiSku> root, CriteriaBuilder cb, ChaiSku param) {
@@ -278,6 +326,9 @@ public class ChaiSkuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getDeleted() != null) {
+            preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));
         }
         return preList;
     }

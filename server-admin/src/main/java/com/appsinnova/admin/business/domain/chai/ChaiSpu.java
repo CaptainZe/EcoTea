@@ -34,7 +34,10 @@ public class ChaiSpu implements Serializable {
     private String spec;
     private String showImageUrls;
     private String realImageUrls;
+    private BigDecimal officialPrice;
     private Integer status;
+    /** 0有效 1已删除；不与 status（上下架）混用 */
+    private Integer deleted;
     private String operator;
     private Long updateTime;
     private Long createTime;
@@ -56,6 +59,8 @@ public class ChaiSpu implements Serializable {
     private String expirationName;
     @Transient
     private String specShow;
+    @Transient
+    private String officialPriceShow;
     @Transient
     private List<String> showImageList;
     @Transient

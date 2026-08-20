@@ -16,13 +16,16 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ChaiBrandService {
 
     private final ChaiBrandRepository chaiBrandRepository;
+    private final ChaiSpuService chaiSpuService;
 
     public ChaiBrand getById(Long id) {
         return chaiBrandRepository.findById(id).orElse(null);
@@ -81,12 +84,48 @@ public class ChaiBrandService {
                 cb.equal(root.get("status").as(Integer.class), 1), Sort.by(orders));
     }
 
+    /**
+     * 未被商品引用的才物理删。
+     *
+     * @return 被引用而未删除的名称；空表示全部已删
+     * @throws IllegalArgumentException 全部被引用，一条都未删
+     */
     @Transactional
-    public void deleteByIdIn(List<Long> idList) {
+    public List<String> deleteByIdIn(List<Long> idList) {
         if (idList == null || idList.isEmpty()) {
-            return;
+            return new ArrayList<>();
         }
-        chaiBrandRepository.deleteByIdIn(idList);
+        Set<Long> seen = new LinkedHashSet<>();
+        List<Long> toDelete = new ArrayList<>();
+        List<String> blockedNames = new ArrayList<>();
+        for (Long id : idList) {
+            if (id == null || !seen.add(id)) {
+                continue;
+            }
+            ChaiBrand brand = chaiBrandRepository.findById(id).orElse(null);
+            if (brand == null) {
+                continue;
+            }
+            if (chaiSpuService.isBrandInUse(id)) {
+                blockedNames.add(brand.getName());
+            } else {
+                toDelete.add(id);
+            }
+        }
+        if (toDelete.isEmpty() && !blockedNames.isEmpty()) {
+            throw new IllegalArgumentException(formatAllBlocked(blockedNames));
+        }
+        if (!toDelete.isEmpty()) {
+            chaiBrandRepository.deleteByIdIn(toDelete);
+        }
+        return blockedNames;
+    }
+
+    private static String formatAllBlocked(List<String> names) {
+        if (names.size() == 1) {
+            return "「" + names.get(0) + "」已被商品引用，无法删除，请先下架";
+        }
+        return "以下已被商品引用，无法删除，请先下架：" + String.join("、", names);
     }
 
     private List<Predicate> genCondition(Root<ChaiBrand> root, CriteriaBuilder cb, ChaiBrand param) {

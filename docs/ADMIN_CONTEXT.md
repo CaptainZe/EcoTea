@@ -11,7 +11,7 @@
 | 原则 | 说明 |
 |------|------|
 | **业务 vs 框架** | 与产品/领域相关的**后端与前端**代码，一律放在 `business`；其余为 **TIMO 自带模块**，迭代中**默认不修改**，除非需求明确说明 |
-| **最小改动** | 优先在 `business` 内扩展；不重构 `common` / `component` / `system` / `devtools` |
+| **最小改动** | 优先在 `business` 内扩展；不重构 `common` / `component` / `system` |
 | **沿用 TIMO 约定** | 分层、权限、字典、页面结构、响应格式与现有 `system` 模块保持一致 |
 | **文档分工** | 本文 = 结构与规范；具体业务流程、状态机、字段含义 → 各业务 MD |
 
@@ -28,7 +28,6 @@ EcoTea/
         │   ├── common/          # TIMO — 勿改
         │   ├── component/       # TIMO — 勿改
         │   ├── system/          # TIMO — 通用后台（用户/角色/菜单等）
-        │   ├── devtools/        # TIMO — 代码生成器
         │   └── business/        # ★ 业务代码（后端）
         └── resources/
             ├── templates/
@@ -46,7 +45,6 @@ EcoTea/
 | 新产品功能、领域模型、业务页 | `business` + `templates/business` |
 | 用户/角色/菜单/字典/部门/操作日志 | `system`（仅配置性扩展，非重写） |
 | 登录、Shiro、JWT、XSS、全局异常 | `common` / `component` — **禁止改** |
-| 脚手架生成 | `devtools` — **禁止改** |
 
 ---
 
@@ -69,7 +67,6 @@ EcoTea/
 | `common` | — | 工具类、全局配置、异常、XSS、数据源 |
 | `component` | — | Shiro、JWT、Thymeleaf 方言、操作日志、Excel、本地上传 |
 | `system` | `templates/system/` | RBAC、字典、部门、操作日志、系统文件 |
-| `devtools` | `templates/devtools/` | 在线代码生成 |
 | — | `templates/common/`、`static/` | 公共布局与静态资源 |
 
 **例外**：需求文档明确要求调整框架行为（如全局过滤器、登录流程）时，方可动上述模块，且改动范围应最小化。
@@ -190,7 +187,7 @@ templates/business/
 
 **编码时**
 
-- [ ] 不修改 `common` / `component` / `devtools`，不改 `system` 除非明确为后台配置能力
+- [ ] 不修改 `common` / `component`，不改 `system` 除非明确为后台配置能力
 - [ ] 新 Controller：`@RequestMapping` + `@RequiresPermissions` 与菜单权限字符串一致
 - [ ] 新页面：放 `templates/business/...`，沿用 TIMO/Layui 结构
 - [ ] Ajax 返回 `ResultVo`；不引入新的全局响应格式

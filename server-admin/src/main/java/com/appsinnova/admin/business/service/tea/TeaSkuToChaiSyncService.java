@@ -67,6 +67,7 @@ public class TeaSkuToChaiSyncService {
                 form.getUnitCount(), form.getUnitLabel()));
         spu.setShowImageUrls(blankToEmptyJson(form.getShowImageUrls()));
         spu.setRealImageUrls(blankToEmptyJson(form.getRealImageUrls()));
+        spu.setOfficialPrice(defaultOne(teaSku.getOfficialPrice()));
         spu.setStatus(ChaiStatus.OFFLINE.getCode());
         spu.setOperator(operator);
         ChaiSpu savedSpu = chaiSpuService.save(spu);

@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.controller.chai;
 import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
+import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -42,12 +44,22 @@ public class ChaiSpuController {
 
     @GetMapping("/index")
     @RequiresPermissions("business:chai:spu:index")
-    public String index(Model model, ChaiSpu queryParam) {
+    public String index(Model model, ChaiSpu queryParam, HttpServletRequest request) {
+        if (queryParam == null) {
+            queryParam = new ChaiSpu();
+        }
+        String deletedParam = request.getParameter("deleted");
+        if (deletedParam == null) {
+            queryParam.setDeleted(0);
+        } else if ("-1".equals(deletedParam)) {
+            queryParam.setDeleted(null);
+        }
         Page<ChaiSpu> page = chaiSpuService.getPageList(queryParam);
         Map<Long, String> brandNameMap = buildBrandNameMap();
         Map<Long, String> expirationNameMap = buildExpirationNameMap();
         page.forEach(item -> {
             fillShowFields(item, brandNameMap, expirationNameMap);
+            ChaiPriceUtil.fillSpuListShow(item);
             item.setSkuCount(chaiSkuService.countBySpuId(item.getId()));
         });
         model.addAttribute("list", page.getContent());
@@ -66,8 +78,13 @@ public class ChaiSpuController {
             editItem.setStatus(ChaiStatus.OFFLINE.getCode());
             editItem.setProdBatch(ChaiProdBatch.FIRST_HALF.getCode());
             editItem.setGrade(0);
+            editItem.setOfficialPrice(BigDecimal.ONE);
         } else {
             ChaiSpecUtil.fillSpecFields(editItem);
+            if (Integer.valueOf(1).equals(editItem.getDeleted())) {
+                model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再编辑");
+                return "/business/chai/spu/edit";
+            }
         }
         // 尚无 SKU 时仅允许下架
         if (editItem.getId() == null || chaiSkuService.countBySpuId(editItem.getId()) == 0) {
@@ -87,6 +104,9 @@ public class ChaiSpuController {
     public ResultVo<?> save(ChaiSpu saveItem,
                             @RequestParam(value = "confirmDuplicate", required = false, defaultValue = "false")
                             boolean confirmDuplicate) {
+        Integer oldYear = null;
+        Integer oldProdBatch = null;
+        boolean isCreate = saveItem.getId() == null;
         if (saveItem.getId() != null) {
             ChaiSpu oldEntity = chaiSpuService.getById(saveItem.getId());
             if (oldEntity == null) {
@@ -95,6 +115,12 @@ public class ChaiSpuController {
             saveItem.setId(oldEntity.getId());
             saveItem.setSpuCode(oldEntity.getSpuCode());
             saveItem.setCreateTime(oldEntity.getCreateTime());
+            saveItem.setDeleted(oldEntity.getDeleted());
+            if (Integer.valueOf(1).equals(oldEntity.getDeleted())) {
+                return ResultVoUtil.error("已删除的SPU不能编辑，请先恢复");
+            }
+            oldYear = oldEntity.getYear();
+            oldProdBatch = oldEntity.getProdBatch();
         }
 
         if (StringUtils.isBlank(saveItem.getName())) {
@@ -128,6 +154,12 @@ public class ChaiSpuController {
         }
         if (saveItem.getProdBatch() == null) {
             return ResultVoUtil.error("生产批次必选");
+        }
+        if (saveItem.getOfficialPrice() == null) {
+            return ResultVoUtil.error("官方价必填");
+        }
+        if (saveItem.getOfficialPrice().compareTo(BigDecimal.ZERO) < 0) {
+            return ResultVoUtil.error("官方价不能为负数");
         }
         if (saveItem.getTotalNetWeight() == null || saveItem.getTotalNetWeight().compareTo(BigDecimal.ZERO) <= 0) {
             return ResultVoUtil.error("总净重必填且大于0");
@@ -175,7 +207,21 @@ public class ChaiSpuController {
         if (saved.getId() != null && saved.getStatus() != null && !noSku) {
             chaiSkuService.syncStatusFromSpu(saved.getId(), saved.getStatus(), user.getNickname());
         }
-        return ResultVoUtil.success("保存成功", saved.getId());
+
+        boolean anchorChanged = isCreate
+                || !java.util.Objects.equals(oldYear, saved.getYear())
+                || !java.util.Objects.equals(oldProdBatch, saved.getProdBatch());
+        boolean needSkuForAnchor = false;
+        if (anchorChanged && saved.getYear() != null && saved.getProdBatch() != null) {
+            needSkuForAnchor = !chaiSkuService.existsActiveBySpuAndHalfYear(
+                    saved.getId(), saved.getYear(), saved.getProdBatch());
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("spuId", saved.getId());
+        data.put("anchorChanged", anchorChanged);
+        data.put("needSkuForAnchor", needSkuForAnchor);
+        return ResultVoUtil.success("保存成功", data);
     }
 
     @RequestMapping("/delete")
@@ -185,11 +231,21 @@ public class ChaiSpuController {
         if (CollectionUtils.isEmpty(ids)) {
             return ResultVoUtil.error("请选择一条记录");
         }
-        for (Long id : ids) {
-            chaiSkuService.deleteBySpuId(id);
-        }
-        chaiSpuService.deleteByIdIn(ids);
+        User user = ShiroUtil.getSubject();
+        chaiSpuService.softDeleteByIdIn(ids, user.getNickname());
         return ResultVoUtil.success("删除成功");
+    }
+
+    @RequestMapping("/restore")
+    @RequiresPermissions("business:chai:spu:delete")
+    @ResponseBody
+    public ResultVo<?> restore(@RequestParam(value = "ids", required = false) List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return ResultVoUtil.error("请选择一条记录");
+        }
+        User user = ShiroUtil.getSubject();
+        chaiSpuService.restoreByIdIn(ids, user.getNickname());
+        return ResultVoUtil.success("恢复成功");
     }
 
     /**
@@ -212,6 +268,9 @@ public class ChaiSpuController {
             ChaiSpu entity = chaiSpuService.getById(id);
             if (entity == null) {
                 continue;
+            }
+            if (Integer.valueOf(1).equals(entity.getDeleted())) {
+                return ResultVoUtil.error("SPU「" + entity.getName() + "」已删除，请先恢复");
             }
             if (ChaiStatus.ONLINE.getCode().equals(status) && chaiSkuService.countBySpuId(id) == 0) {
                 return ResultVoUtil.error("SPU「" + entity.getName() + "」尚无SKU，不能上架");

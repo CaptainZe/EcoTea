@@ -40,6 +40,8 @@ public class ChaiSku implements Serializable {
     private Integer recyclePriceReducePer;
     private BigDecimal recyclePriceReduceNoBag;
     private Integer status;
+    /** 0有效 1已删除；不与 status（上下架）混用 */
+    private Integer deleted;
     private String operator;
     private Long updateTime;
     private Long createTime;

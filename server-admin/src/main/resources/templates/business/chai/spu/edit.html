@@ -80,7 +80,15 @@
     </style>
 </head>
 <body>
-<div class="layui-form timo-compile">
+<div th:if="${errorMsg != null}" class="layui-form timo-compile" style="padding: 24px;">
+    <p style="color: #B91C1C; font-size: 14px;" th:text="${errorMsg}"></p>
+    <div class="layui-form-item timo-finally">
+        <button type="button" class="layui-btn btn-secondary close-popup">
+            <i class="fa fa-times-circle"></i> 关闭
+        </button>
+    </div>
+</div>
+<div th:if="${errorMsg == null}" class="layui-form timo-compile">
     <form id="editform" class="layui-form spu-form" method="POST">
         <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
 
@@ -161,9 +169,14 @@
             </div>
         </div>
 
-        <fieldset class="layui-elem-field layui-field-title">
-            <legend>规格</legend>
-        </fieldset>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">官方价(元)</label>
+            <div class="layui-input-inline">
+                <input type="number" step="0.01" min="0" name="officialPrice" class="layui-input"
+                       th:value="${editItem?.officialPrice != null ? editItem.officialPrice : 1}"
+                       required lay-verify="required|number" placeholder="官方价">
+            </div>
+        </div>
 
         <div class="layui-form-item">
             <label class="layui-form-label required">规格</label>
@@ -234,6 +247,9 @@
         var form = layui.form;
         var layer = layui.layer;
         var $ = layui.jquery;
+        if (!$('#editform').length) {
+            return;
+        }
         var draggingEl = null;
         var imageList = [];
         var realImageList = [];
@@ -319,11 +335,33 @@
                 data: data,
                 success: function (res) {
                     if (res.code == 200) {
-                        if (goNext && res.data) {
-                            window.location.href = '/business/chai/sku/editBySpu/' + res.data;
-                        } else {
+                        var payload = res.data || {};
+                        var spuId = (payload && typeof payload === 'object')
+                            ? payload.spuId
+                            : payload;
+                        if (!spuId) {
                             window.parent.location.reload();
+                            return;
                         }
+                        var skuUrl = '/business/chai/sku/editBySpu/' + spuId;
+                        if (goNext) {
+                            window.location.href = skuUrl;
+                            return;
+                        }
+                        if (payload.needSkuForAnchor) {
+                            layer.confirm('当前锚点半年尚无SKU，是否前往维护？', {
+                                icon: 3,
+                                title: '维护SKU',
+                                btn: ['前往维护', '稍后']
+                            }, function (index) {
+                                layer.close(index);
+                                window.location.href = skuUrl;
+                            }, function () {
+                                window.parent.location.reload();
+                            });
+                            return;
+                        }
+                        window.parent.location.reload();
                     } else if (res.code == 409) {
                         layer.confirm(res.msg || '同品牌下已存在同名商品，是否仍要继续保存？', {
                             icon: 3,

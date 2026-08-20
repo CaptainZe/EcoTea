@@ -11,6 +11,7 @@ import com.appsinnova.admin.business.domain.tea.TeaSku;
 import com.appsinnova.admin.business.service.base.FeiShuWebhookService;
 import com.appsinnova.admin.business.service.chai.ChaiBrandService;
 import com.appsinnova.admin.business.service.chai.ChaiExpirationService;
+import com.appsinnova.admin.business.service.chai.ChaiSpuService;
 import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
 import com.appsinnova.admin.business.service.tea.TeaSkuToChaiSyncService;
@@ -44,6 +45,7 @@ public class TeaSkuController {
     private final TeaSkuToChaiSyncService teaSkuToChaiSyncService;
     private final ChaiBrandService chaiBrandService;
     private final ChaiExpirationService chaiExpirationService;
+    private final ChaiSpuService chaiSpuService;
     private final AppSecretKeyService appSecretKeyService;
     private final FeiShuWebhookService feiShuWebhookService;
 
@@ -297,7 +299,15 @@ public class TeaSkuController {
     @PostMapping("/sync/{id}")
     @RequiresPermissions("business:tea:teaSku:edit")
     @ResponseBody
-    public ResultVo<?> doSync(@PathVariable("id") Long id, ChaiSpu form) {
+    public ResultVo<?> doSync(@PathVariable("id") Long id, ChaiSpu form,
+                              @RequestParam(value = "confirmDuplicate", required = false, defaultValue = "false")
+                              boolean confirmDuplicate) {
+        // 同品牌同名：未确认时返回 409，前端二次确认后带 confirmDuplicate=true 再同步（仍新建，不合并）
+        if (!confirmDuplicate
+                && chaiSpuService.isNameTakenByOtherInBrand(form.getBrand(), form.getName(), null)) {
+            return ResultVoUtil.error(409,
+                    "同品牌下已存在同名商品「" + form.getName() + "」，是否仍要继续保存？");
+        }
         User user = ShiroUtil.getSubject();
         try {
             Long spuId = teaSkuToChaiSyncService.sync(id, form, user.getNickname());

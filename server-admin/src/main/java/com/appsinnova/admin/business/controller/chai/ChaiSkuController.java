@@ -28,6 +28,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -45,13 +46,19 @@ public class ChaiSkuController {
 
     @GetMapping("/index")
     @RequiresPermissions("business:chai:sku:index")
-    public String index(Model model, ChaiSku queryParam) {
+    public String index(Model model, ChaiSku queryParam, HttpServletRequest request) {
         if (queryParam == null) {
             queryParam = new ChaiSku();
         }
-        // 按父 SPU 编码筛选 → 转为 spuId
+        String deletedParam = request.getParameter("deleted");
+        if (deletedParam == null) {
+            queryParam.setDeleted(0);
+        } else if ("-1".equals(deletedParam)) {
+            queryParam.setDeleted(null);
+        }
+        // 按父 SPU 编码筛选 → 转为 spuId（含已删除 SPU）
         if (StringUtils.hasText(queryParam.getQuerySpuCode())) {
-            ChaiSpu parent = chaiSpuService.getBySpuCode(queryParam.getQuerySpuCode());
+            ChaiSpu parent = chaiSpuService.getBySpuCodeIncludeDeleted(queryParam.getQuerySpuCode());
             if (parent == null) {
                 queryParam.setSpuId(-1L);
             } else {
@@ -72,6 +79,33 @@ public class ChaiSkuController {
     }
 
     /**
+     * 只读：某 SPU 下 SKU 列表（弹窗，不锁定主列表搜索）
+     */
+    @GetMapping("/listBySpu/{spuId}")
+    @RequiresPermissions("business:chai:sku:index")
+    public String listBySpu(@PathVariable("spuId") Long spuId, HttpServletRequest request, Model model) {
+        ChaiSpu spu = chaiSpuService.getById(spuId);
+        if (spu == null) {
+            model.addAttribute("errorMsg", "SPU不存在");
+            return "/business/chai/sku/listBySpu";
+        }
+        String deletedParam = request.getParameter("deleted");
+        Integer deleted = 0;
+        if ("-1".equals(deletedParam)) {
+            deleted = null;
+        } else if ("1".equals(deletedParam)) {
+            deleted = 1;
+        }
+        List<ChaiSku> list = chaiSkuService.listBySpuId(spuId, deleted);
+        Map<Long, String> brandNameMap = buildBrandNameMap();
+        Map<Long, String> expirationNameMap = buildExpirationNameMap();
+        list.forEach(item -> fillShowFields(item, brandNameMap, expirationNameMap));
+        model.addAttribute("spu", spu);
+        model.addAttribute("list", list);
+        return "/business/chai/sku/listBySpu";
+    }
+
+    /**
      * 按 SPU 维护 SKU：无数据则按锚点预填 6 条；已有则加载已有
      */
     @GetMapping("/editBySpu/{spuId}")
@@ -80,6 +114,10 @@ public class ChaiSkuController {
         ChaiSpu spu = chaiSpuService.getById(spuId);
         if (spu == null) {
             model.addAttribute("errorMsg", "SPU不存在");
+            return "/business/chai/sku/editBySpu";
+        }
+        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+            model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再维护SKU");
             return "/business/chai/sku/editBySpu";
         }
         ChaiSpecUtil.fillSpecFields(spu);
@@ -101,10 +139,25 @@ public class ChaiSkuController {
             skuList.forEach(ChaiSpecUtil::fillSpecFields);
         }
 
+        // 当前向导卡片是否含锚点半年（含未落库预填）；无 year/batch 时不提示
+        boolean anchorSkuMissing = false;
+        if (spu.getYear() != null && spu.getProdBatch() != null) {
+            boolean hasAnchorInList = skuList.stream().anyMatch(s ->
+                    spu.getYear().equals(s.getYear()) && spu.getProdBatch().equals(s.getProdBatch()));
+            // 已落库时以库为准更稳；预填未保存则以列表为准
+            if (generated) {
+                anchorSkuMissing = !hasAnchorInList;
+            } else {
+                anchorSkuMissing = !chaiSkuService.existsActiveBySpuAndHalfYear(
+                        spuId, spu.getYear(), spu.getProdBatch());
+            }
+        }
+
         model.addAttribute("spu", spu);
         model.addAttribute("skuList", skuList);
         model.addAttribute("skuListJson", ChaiFormHelper.toCamelJson(skuList));
         model.addAttribute("generated", generated);
+        model.addAttribute("anchorSkuMissing", anchorSkuMissing);
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
         model.addAttribute("prodBatchDictJson", dictJson("CHAI_PROD_BATCH"));
         model.addAttribute("starLevelDictJson", dictJson("STAR_LEVEL"));
@@ -124,20 +177,31 @@ public class ChaiSkuController {
         if (spu == null) {
             return ResultVoUtil.error("SPU不存在");
         }
-        if (CollectionUtils.isEmpty(saveVo.getItemList())) {
-            return ResultVoUtil.error("请至少保留一条SKU");
+        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+            return ResultVoUtil.error("已删除的SPU不能维护SKU，请先恢复");
         }
 
         User user = ShiroUtil.getSubject();
+        boolean hasSku;
         try {
-            // 可选：保存后直接上架 SPU（并级联 SKU）
-            if (Boolean.TRUE.equals(saveVo.getOnlineSpu())
+            chaiSkuService.saveBatchForSpu(spu, saveVo.getItemList(), user.getNickname());
+            hasSku = chaiSkuService.countBySpuId(spu.getId()) > 0;
+            if (!hasSku) {
+                if (Boolean.TRUE.equals(saveVo.getOnlineSpu())) {
+                    return ResultVoUtil.error("尚无SKU，不能上架");
+                }
+                if (!ChaiStatus.OFFLINE.getCode().equals(spu.getStatus())) {
+                    spu.setStatus(ChaiStatus.OFFLINE.getCode());
+                    spu.setOperator(user.getNickname());
+                    chaiSpuService.save(spu);
+                }
+            } else if (Boolean.TRUE.equals(saveVo.getOnlineSpu())
                     && !ChaiStatus.ONLINE.getCode().equals(spu.getStatus())) {
                 spu.setStatus(ChaiStatus.ONLINE.getCode());
                 spu.setOperator(user.getNickname());
                 chaiSpuService.save(spu);
+                chaiSkuService.syncStatusFromSpu(spu.getId(), spu.getStatus(), user.getNickname());
             }
-            chaiSkuService.saveBatchForSpu(spu, saveVo.getItemList(), user.getNickname());
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
         }
@@ -145,24 +209,30 @@ public class ChaiSkuController {
         Map<String, Object> data = new HashMap<>();
         data.put("spuId", spu.getId());
         data.put("spuStatus", spu.getStatus());
-        boolean needOnlineConfirm = ChaiStatus.OFFLINE.getCode().equals(spu.getStatus());
-        data.put("needOnlineConfirm", needOnlineConfirm);
+        data.put("needOnlineConfirm", hasSku && ChaiStatus.OFFLINE.getCode().equals(spu.getStatus()));
         return ResultVoUtil.success("保存成功", data);
     }
 
     /**
-     * 提供给前端「添加一行」的 SPU 模板数据
+     * 提供给前端「添加一行」的 SPU 模板数据。
+     * blankHalfYear=true：年份/生产批次留空（普通添加）；默认带 SPU 锚点（添加锚点半年）。
      */
     @GetMapping("/templateFromSpu/{spuId}")
     @RequiresPermissions("business:chai:sku:edit")
     @ResponseBody
-    public ResultVo<?> templateFromSpu(@PathVariable("spuId") Long spuId) {
+    public ResultVo<?> templateFromSpu(@PathVariable("spuId") Long spuId,
+                                       @RequestParam(value = "blankHalfYear", required = false) Boolean blankHalfYear) {
         ChaiSpu spu = chaiSpuService.getById(spuId);
         if (spu == null) {
             return ResultVoUtil.error("SPU不存在");
         }
+        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+            return ResultVoUtil.error("已删除的SPU不能维护SKU，请先恢复");
+        }
         ChaiSpecUtil.fillSpecFields(spu);
-        ChaiSku sku = chaiSkuService.copyFromSpu(spu, spu.getYear(), spu.getProdBatch());
+        Integer year = Boolean.TRUE.equals(blankHalfYear) ? null : spu.getYear();
+        Integer prodBatch = Boolean.TRUE.equals(blankHalfYear) ? null : spu.getProdBatch();
+        ChaiSku sku = chaiSkuService.copyFromSpu(spu, year, prodBatch);
         Map<String, Object> data = new HashMap<>();
         data.put("sku", sku);
         return ResultVoUtil.success(data);

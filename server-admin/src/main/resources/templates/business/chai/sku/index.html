@@ -67,13 +67,29 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">是否删除</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="deleted">
+                            <option value="-1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '-1'}">全部</option>
+                            <option value="0" th:selected="${param.deleted == null or #lists.isEmpty(param.deleted) or param.deleted[0] == '0'}">否</option>
+                            <option value="1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '1'}">是</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">SKU编码</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="skuCode" th:value="${param.skuCode}" placeholder="精确查询"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">SPU编码</label>
                     <div class="layui-input-block">
                         <input type="text" name="querySpuCode" th:value="${param.querySpuCode}" placeholder="精确查询"
                                autocomplete="off" class="layui-input">
                     </div>
                 </div>
-                <input type="hidden" name="spuId" th:if="${param.spuId != null}" th:value="${param.spuId}">
                 <div class="layui-inline">
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
@@ -91,11 +107,11 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="90">操作</th>
+                    <th width="140">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
                     <th width="100" class="sortable" data-field="brand">品牌</th>
-                    <th width="160">商品名称</th>
+                    <th width="220">商品名称</th>
                     <th width="120">规格</th>
                     <th width="80" class="sortable" data-field="year">年份</th>
                     <th width="90" class="sortable" data-field="prodBatch">生产批次</th>
@@ -116,15 +132,23 @@
                         <i class="layui-icon layui-icon-ok"></i></label></td>
                     <td>
                         <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑SPU"
-                           th:attr="data-url=@{'/business/chai/spu/edit/'+${item.spuId}}" data-size="1500,800">SPU</a>
-                        <a style="color: #7C3AED; font-weight: 600;"
-                           th:href="@{/business/chai/sku/index(spuId=${item.spuId})}">同SPU</a>
+                           th:attr="data-url=@{'/business/chai/spu/edit/'+${item.spuId}}" data-size="1500,800">编辑</a>
+                        <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="该SPU下SKU"
+                           th:attr="data-url=@{'/business/chai/sku/listBySpu/'+${item.spuId}}" data-size="1500,800">仅看该SPU</a>
                     </td>
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
                     <td th:text="${item.brandName}"></td>
-                    <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td>
+                        <div th:title="${item.name}">
+                            <span th:text="${item.name}"></span>
+                            <span th:if="${item.deleted == 1}" style="color: #9CA3AF; margin-left: 6px; font-weight: 600;">已删除</span>
+                        </div>
+                        <div th:if="${item.skuCode != null and !#strings.isEmpty(item.skuCode)}"
+                             th:text="${item.skuCode}" th:title="${item.skuCode}"
+                             style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
+                    </td>
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>

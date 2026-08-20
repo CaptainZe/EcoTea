@@ -1,12 +1,13 @@
 package com.appsinnova.admin.business.common.utils.chai;
 
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
+import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * SKU 价格计算与列表展示
+ * 价格计算与列表展示（SPU / SKU）
  */
 public final class ChaiPriceUtil {
 
@@ -21,6 +22,21 @@ public final class ChaiPriceUtil {
             return "";
         }
         return amount.stripTrailingZeros().toPlainString();
+    }
+
+    /** 列表官方价：去尾零；null 显示 "-" */
+    public static String formatOfficialPrice(BigDecimal officialPrice) {
+        if (officialPrice == null) {
+            return "-";
+        }
+        return plain(officialPrice);
+    }
+
+    public static void fillSpuListShow(ChaiSpu spu) {
+        if (spu == null) {
+            return;
+        }
+        spu.setOfficialPriceShow(formatOfficialPrice(spu.getOfficialPrice()));
     }
 
     /**
@@ -56,7 +72,7 @@ public final class ChaiPriceUtil {
         if (sku == null) {
             return;
         }
-        sku.setOfficialPriceShow(plain(sku.getOfficialPrice()));
+        sku.setOfficialPriceShow(formatOfficialPrice(sku.getOfficialPrice()));
         sku.setSalePriceShow(formatWithDiscount(sku.getSalePrice(), sku.getOfficialPrice()));
         sku.setRecyclePriceShow(formatWithDiscount(sku.getRecyclePrice(), sku.getOfficialPrice()));
         sku.setRecycleReduceAmountShow(plain(recycleAfterDamage(sku.getRecyclePrice(), sku.getRecyclePriceReducePer())));

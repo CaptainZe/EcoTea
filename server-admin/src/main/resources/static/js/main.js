@@ -216,21 +216,29 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
         }
     });
 
-    // post方式异步-操作状态
+    // post方式异步-操作状态（勾选后一律二次确认）
     $(".ajax-status").on("click", function (e) {
         e.preventDefault();
+        var href = this.href;
         var checked = [];
         var tdcheckbox = $(".timo-table td .timo-checkbox :checkbox:checked");
-        if (tdcheckbox.length > 0) {
-            tdcheckbox.each(function (key, val) {
-                checked.push("ids=" + $(val).attr("value"));
-            });
-            $.post(e.target.href, checked.join("&"), function (result) {
+        if (tdcheckbox.length === 0) {
+            layer.msg('请选择一条记录');
+            return;
+        }
+        tdcheckbox.each(function (key, val) {
+            checked.push("ids=" + $(val).attr("value"));
+        });
+        var msg = $(this).data("msg") || "是否确认此操作";
+        layer.confirm(msg + '？', {
+            title: '提示',
+            btn: ['确认', '取消']
+        }, function (index) {
+            layer.close(index);
+            $.post(href, checked.join("&"), function (result) {
                 $.fn.Messager(result);
             });
-        } else {
-            layer.msg('请选择一条记录');
-        }
+        });
     });
 
     /* 添加/修改弹出层 */

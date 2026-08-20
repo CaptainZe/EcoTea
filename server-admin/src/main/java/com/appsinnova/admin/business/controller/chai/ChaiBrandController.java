@@ -94,8 +94,15 @@ public class ChaiBrandController {
         if (CollectionUtils.isEmpty(ids)) {
             return ResultVoUtil.error("请选择一条记录");
         }
-        chaiBrandService.deleteByIdIn(ids);
-        return ResultVoUtil.success("删除成功");
+        try {
+            List<String> blocked = chaiBrandService.deleteByIdIn(ids);
+            if (blocked.isEmpty()) {
+                return ResultVoUtil.success("删除成功");
+            }
+            return ResultVoUtil.success("以下已被商品引用，未删除：" + String.join("、", blocked));
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
     }
 
     @RequestMapping("/status/{param}")

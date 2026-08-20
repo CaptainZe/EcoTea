@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.business.repository.chai.ChaiSpuRepository;
@@ -16,6 +17,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,12 +26,21 @@ import java.util.List;
 public class ChaiSpuService {
 
     private final ChaiSpuRepository chaiSpuRepository;
+    private final ChaiSkuService chaiSkuService;
 
     public ChaiSpu getById(Long id) {
         return chaiSpuRepository.findById(id).orElse(null);
     }
 
     public ChaiSpu getBySpuCode(String spuCode) {
+        if (!StringUtils.hasText(spuCode)) {
+            return null;
+        }
+        return chaiSpuRepository.findFirstBySpuCodeAndDeleted(spuCode.trim(), 0).orElse(null);
+    }
+
+    /** 列表按编码找父 SPU 时包含已删除 */
+    public ChaiSpu getBySpuCodeIncludeDeleted(String spuCode) {
         if (!StringUtils.hasText(spuCode)) {
             return null;
         }
@@ -43,6 +54,16 @@ public class ChaiSpuService {
         return chaiSpuRepository.findByIdIn(idList);
     }
 
+    /** 任意 SPU（含已软删）是否引用该品牌 */
+    public boolean isBrandInUse(Long brand) {
+        return brand != null && chaiSpuRepository.existsByBrand(brand);
+    }
+
+    /** 任意 SPU（含已软删）是否引用该保质期 */
+    public boolean isExpirationInUse(Long expiration) {
+        return expiration != null && chaiSpuRepository.existsByExpiration(expiration);
+    }
+
     /**
      * 同品牌下是否存在同名商品（可排除当前编辑记录）
      */
@@ -52,9 +73,9 @@ public class ChaiSpuService {
         }
         String trimmed = name.trim();
         if (excludeId == null) {
-            return chaiSpuRepository.existsByBrandAndName(brand, trimmed);
+            return chaiSpuRepository.existsByBrandAndNameAndDeleted(brand, trimmed, 0);
         }
-        return chaiSpuRepository.existsByBrandAndNameAndIdNot(brand, trimmed, excludeId);
+        return chaiSpuRepository.existsByBrandAndNameAndIdNotAndDeleted(brand, trimmed, excludeId, 0);
     }
 
     public Page<ChaiSpu> getPageList(ChaiSpu param) {
@@ -73,6 +94,12 @@ public class ChaiSpuService {
         if (entity.getId() == null) {
             entity.setSpuCode("");
             entity.setCreateTime(System.currentTimeMillis());
+            if (entity.getDeleted() == null) {
+                entity.setDeleted(0);
+            }
+            if (entity.getOfficialPrice() == null) {
+                entity.setOfficialPrice(BigDecimal.ONE);
+            }
             isCreate = true;
         }
         entity.setUpdateTime(System.currentTimeMillis());
@@ -85,11 +112,33 @@ public class ChaiSpuService {
     }
 
     @Transactional
-    public void deleteByIdIn(List<Long> idList) {
+    public void softDeleteByIdIn(List<Long> idList, String operator) {
         if (idList == null || idList.isEmpty()) {
             return;
         }
-        chaiSpuRepository.deleteByIdIn(idList);
+        long now = System.currentTimeMillis();
+        for (Long id : idList) {
+            int updated = chaiSpuRepository.softDeleteById(
+                    id, ChaiStatus.OFFLINE.getCode(), operator, now);
+            if (updated > 0) {
+                chaiSkuService.markDeletedBySpuId(id, operator);
+            }
+        }
+    }
+
+    @Transactional
+    public void restoreByIdIn(List<Long> idList, String operator) {
+        if (idList == null || idList.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (Long id : idList) {
+            int updated = chaiSpuRepository.restoreById(
+                    id, ChaiStatus.OFFLINE.getCode(), operator, now);
+            if (updated > 0) {
+                chaiSkuService.restoreBySpuId(id, operator);
+            }
+        }
     }
 
     private List<Predicate> genCondition(Root<ChaiSpu> root, CriteriaBuilder cb, ChaiSpu param) {
@@ -123,6 +172,9 @@ public class ChaiSpuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getDeleted() != null) {
+            preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));
         }
         return preList;
     }
