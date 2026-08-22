@@ -29,9 +29,17 @@ import java.util.stream.Collectors;
 public class ChaiSkuService {
 
     private final ChaiSkuRepository chaiSkuRepository;
+    private final ChaiStockService chaiStockService;
 
     public ChaiSku getById(Long id) {
         return chaiSkuRepository.findById(id).orElse(null);
+    }
+
+    public List<ChaiSku> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return chaiSkuRepository.findAllById(ids);
     }
 
     public List<ChaiSku> listBySpuId(Long spuId) {
@@ -188,6 +196,16 @@ public class ChaiSkuService {
                 .map(ChaiSku::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        for (ChaiSku old : oldList) {
+            if (keepIds.contains(old.getId())) {
+                continue;
+            }
+            if (chaiStockService.hasPositiveQtyBySkuId(old.getId())) {
+                throw new IllegalArgumentException(
+                        "「" + (old.getSkuCode() != null ? old.getSkuCode() : old.getId())
+                                + "」仍有库存，不能删除；请先出库或调拨至 0");
+            }
+        }
         for (ChaiSku old : oldList) {
             if (keepIds.contains(old.getId())) {
                 continue;

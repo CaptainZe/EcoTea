@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.controller.chai;
 
+import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
@@ -29,7 +30,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +50,7 @@ public class ChaiSkuController {
         if (queryParam == null) {
             queryParam = new ChaiSku();
         }
-        String deletedParam = request.getParameter("deleted");
-        if (deletedParam == null) {
-            queryParam.setDeleted(0);
-        } else if ("-1".equals(deletedParam)) {
-            queryParam.setDeleted(null);
-        }
+        queryParam.setDeleted(ChaiDeletedFilter.parseQueryDeleted(request.getParameter("deleted")));
         // 按父 SPU 编码筛选 → 转为 spuId（含已删除 SPU）
         if (StringUtils.hasText(queryParam.getQuerySpuCode())) {
             ChaiSpu parent = chaiSpuService.getBySpuCodeIncludeDeleted(queryParam.getQuerySpuCode());
@@ -75,6 +70,7 @@ public class ChaiSkuController {
         model.addAttribute("page", page);
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/sku/index";
     }
 
@@ -89,19 +85,14 @@ public class ChaiSkuController {
             model.addAttribute("errorMsg", "SPU不存在");
             return "/business/chai/sku/listBySpu";
         }
-        String deletedParam = request.getParameter("deleted");
-        Integer deleted = 0;
-        if ("-1".equals(deletedParam)) {
-            deleted = null;
-        } else if ("1".equals(deletedParam)) {
-            deleted = 1;
-        }
+        Integer deleted = ChaiDeletedFilter.parseQueryDeleted(request.getParameter("deleted"));
         List<ChaiSku> list = chaiSkuService.listBySpuId(spuId, deleted);
         Map<Long, String> brandNameMap = buildBrandNameMap();
         Map<Long, String> expirationNameMap = buildExpirationNameMap();
         list.forEach(item -> fillShowFields(item, brandNameMap, expirationNameMap));
         model.addAttribute("spu", spu);
         model.addAttribute("list", list);
+        model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/sku/listBySpu";
     }
 
@@ -162,7 +153,7 @@ public class ChaiSkuController {
         model.addAttribute("prodBatchDictJson", dictJson("CHAI_PROD_BATCH"));
         model.addAttribute("starLevelDictJson", dictJson("STAR_LEVEL"));
         model.addAttribute("gradeDictJson", dictJson("CHAI_GRADE"));
-        model.addAttribute("specLabelDictJson", dictJson("CHAI_SPEC_LABEL"));
+        model.addAttribute("specLabelDictJson", dictJson(ChaiSpecUtil.SPEC_LABEL_DICT));
         return "/business/chai/sku/editBySpu";
     }
 
@@ -263,13 +254,7 @@ public class ChaiSkuController {
         } else {
             item.setExpirationName("-");
         }
-        Map<String, Object> map = ChaiSpecUtil.parseSpec(item.getSpec());
-        BigDecimal total = ChaiSpecUtil.getDecimal(map, "total_net_weight");
-        BigDecimal unitWeight = ChaiSpecUtil.getDecimal(map, "unit_weight");
-        Integer unitCount = ChaiSpecUtil.getInt(map, "unit_count");
-        Integer unitLabel = ChaiSpecUtil.getInt(map, "unit_label");
-        String labelText = unitLabel == null ? "" : DictUtils.keyValue("CHAI_SPEC_LABEL", String.valueOf(unitLabel));
-        item.setSpecShow(ChaiSpecUtil.formatShow(total, unitWeight, unitCount, labelText));
+        item.setSpecShow(ChaiSpecUtil.toShow(item.getSpec()));
         item.setShowImageList(ChaiFormHelper.parseUrlList(item.getShowImageUrls()));
         item.setRealImageList(ChaiFormHelper.parseUrlList(item.getRealImageUrls()));
         ChaiPriceUtil.fillListShow(item);

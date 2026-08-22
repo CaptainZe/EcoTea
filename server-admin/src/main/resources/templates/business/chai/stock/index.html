@@ -2,12 +2,34 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:mo="https://gitee.com/aun/Timo">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
-    <title>茶叶SKU</title>
+    <title>茶叶库存</title>
+    <style>
+        .stock-deleted-tag {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 0 6px;
+            font-size: 12px;
+            line-height: 18px;
+            color: #9CA3AF;
+            border: 1px solid #D1D5DB;
+            border-radius: 2px;
+            vertical-align: middle;
+        }
+        .stock-qty {
+            font-weight: 600;
+            color: #111827;
+        }
+        .stock-qty.is-zero {
+            color: #9CA3AF;
+            font-weight: 400;
+        }
+        .col-num { text-align: right; }
+    </style>
 </head>
 <body class="timo-layout-page">
 <div class="layui-card">
     <div class="layui-card-header timo-card-header">
-        <span><i class="fa fa-bars"></i> 茶叶SKU</span>
+        <span><i class="fa fa-bars"></i> 茶叶库存</span>
         <i class="layui-icon layui-icon-refresh refresh-btn"></i>
     </div>
     <div class="layui-card-body">
@@ -60,7 +82,7 @@
                     </div>
                 </div>
                 <div class="layui-inline">
-                    <label class="layui-form-label">状态</label>
+                    <label class="layui-form-label">SKU状态</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="status" mo:dict="CHAI_STATUS"
                                 mo-selected="${param.status}"></select>
@@ -76,6 +98,27 @@
                                     th:selected="${(param.deleted == null or #lists.isEmpty(param.deleted))
                                         ? (opt.code == 0)
                                         : (param.deleted[0] == (opt.code + ''))}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">仓库</label>
+                    <div class="layui-input-block timo-search-status" style="width: 160px;">
+                        <select name="queryWhId" class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="w : ${warehouseList}" th:value="${w.id}"
+                                    th:selected="${param.queryWhId != null and !#lists.isEmpty(param.queryWhId) and param.queryWhId[0] == (w.id + '')}"
+                                    th:text="${w.name}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">有库存</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="queryHasQty">
+                            <option value="" th:selected="${param.queryHasQty == null or #lists.isEmpty(param.queryHasQty) or param.queryHasQty[0] == ''}">全部</option>
+                            <option value="1" th:selected="${param.queryHasQty != null and !#lists.isEmpty(param.queryHasQty) and param.queryHasQty[0] == '1'}">有</option>
+                            <option value="0" th:selected="${param.queryHasQty != null and !#lists.isEmpty(param.queryHasQty) and param.queryHasQty[0] == '0'}">无</option>
                         </select>
                     </div>
                 </div>
@@ -99,54 +142,42 @@
                     </button>
                 </div>
             </div>
-
         </div>
 
         <div class="timo-table-wrap">
             <table class="layui-table timo-table">
                 <thead>
                 <tr>
-                    <th class="timo-table-checkbox">
-                        <label class="timo-checkbox"><input type="checkbox">
-                            <i class="layui-icon layui-icon-ok"></i></label>
-                    </th>
-                    <th width="140">操作</th>
-                    <th width="80" class="sortable" data-field="status">状态</th>
-                    <th width="90" class="sortable" data-field="starLevel">星级</th>
-                    <th width="100" class="sortable" data-field="brand">品牌</th>
+                    <th width="80">操作</th>
+                    <th width="100" class="sortable col-num" data-field="totalQty">合计库存</th>
+                    <th width="90">星级</th>
+                    <th width="100">品牌</th>
                     <th width="220">商品名称</th>
                     <th width="120">规格</th>
-                    <th width="80" class="sortable" data-field="year">年份</th>
-                    <th width="90" class="sortable" data-field="prodBatch">生产批次</th>
-                    <th width="100" class="sortable" data-field="officialPrice">官方价 / 元</th>
-                    <th width="110" class="sortable" data-field="salePrice">销售价 / 元</th>
-                    <th width="110" class="sortable" data-field="recyclePrice">回收价 / 元</th>
-                    <th width="100" title="按破损压价%折算后的回收价">破损回收价 / 元</th>
-                    <th width="100" title="无提袋时从回收价扣减的金额">无提袋扣减 / 元</th>
-                    <th width="120">展示图</th>
-                    <th width="120">实物图</th>
-                    <th width="90">操作人</th>
+                    <th width="80">年份</th>
+                    <th width="90">生产批次</th>
+                    <th width="90">商品状态</th>
+                    <th width="100">过账人</th>
                     <th width="140" class="sortable" data-field="updateTime">更新时间</th>
+                    <th width="140" class="sortable" data-field="createTime">建档时间</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="item : ${list}">
-                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
-                        <i class="layui-icon layui-icon-ok"></i></label></td>
                     <td>
-                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑SPU"
-                           th:attr="data-url=@{'/business/chai/spu/edit/'+${item.spuId}}" data-size="1500,800">编辑</a>
-                        <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="该SPU下SKU"
-                           th:attr="data-url=@{'/business/chai/sku/listBySpu/'+${item.spuId}}" data-size="1500,800">仅看该SPU</a>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="分仓结存"
+                           th:attr="data-url=@{'/business/chai/stock/wh/'+${item.id}}" data-size="860,560">分仓</a>
                     </td>
-                    <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
-                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td class="col-num">
+                        <span class="stock-qty" th:classappend="${item.totalQty == null or item.totalQty == 0} ? ' is-zero' : ''"
+                              th:text="${item.totalQty}"></span>
+                    </td>
                     <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
                     <td th:text="${item.brandName}"></td>
                     <td>
-                        <div th:title="${item.name}">
-                            <span th:text="${item.name}"></span>
-                            <span th:if="${item.deleted == 1}" style="color: #9CA3AF; margin-left: 6px; font-weight: 600;">已删除</span>
+                        <div>
+                            <span th:text="${item.name}" th:title="${item.name}"></span>
+                            <span th:if="${item.deleted != null and item.deleted == 1}" class="stock-deleted-tag">已删除</span>
                         </div>
                         <div th:if="${item.skuCode != null and !#strings.isEmpty(item.skuCode)}"
                              th:text="${item.skuCode}" th:title="${item.skuCode}"
@@ -155,19 +186,11 @@
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
-                    <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPriceShow}"></td>
-                    <td style="background-color: #ECFDF5; color: #047857;" th:text="${item.salePriceShow}"></td>
-                    <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePriceShow}"></td>
-                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recycleReduceAmountShow}"></td>
-                    <td style="background-color: #FEF2F2; color: #B91C1C;" th:text="${item.recyclePriceReduceNoBagShow}"></td>
-                    <td>
-                        <th:block th:replace="/common/fragment :: previewImgList(${item.showImageList}, ${'sku-show-' + item.id})"></th:block>
-                    </td>
-                    <td>
-                        <th:block th:replace="/common/fragment :: previewImgList(${item.realImageList}, ${'sku-real-' + item.id})"></th:block>
-                    </td>
+                    <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${item.operator}"></td>
                     <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
                 </tr>
                 </tbody>
             </table>

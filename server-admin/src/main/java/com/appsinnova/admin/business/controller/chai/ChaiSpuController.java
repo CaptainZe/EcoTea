@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.controller.chai;
 
+import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
@@ -12,7 +13,6 @@ import com.appsinnova.admin.business.service.chai.ChaiBrandService;
 import com.appsinnova.admin.business.service.chai.ChaiExpirationService;
 import com.appsinnova.admin.business.service.chai.ChaiSkuService;
 import com.appsinnova.admin.business.service.chai.ChaiSpuService;
-import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
 import com.appsinnova.admin.component.shiro.ShiroUtil;
@@ -48,12 +48,7 @@ public class ChaiSpuController {
         if (queryParam == null) {
             queryParam = new ChaiSpu();
         }
-        String deletedParam = request.getParameter("deleted");
-        if (deletedParam == null) {
-            queryParam.setDeleted(0);
-        } else if ("-1".equals(deletedParam)) {
-            queryParam.setDeleted(null);
-        }
+        queryParam.setDeleted(ChaiDeletedFilter.parseQueryDeleted(request.getParameter("deleted")));
         Page<ChaiSpu> page = chaiSpuService.getPageList(queryParam);
         Map<Long, String> brandNameMap = buildBrandNameMap();
         Map<Long, String> expirationNameMap = buildExpirationNameMap();
@@ -66,6 +61,7 @@ public class ChaiSpuController {
         model.addAttribute("page", page);
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/spu/index";
     }
 
@@ -232,8 +228,12 @@ public class ChaiSpuController {
             return ResultVoUtil.error("请选择一条记录");
         }
         User user = ShiroUtil.getSubject();
-        chaiSpuService.softDeleteByIdIn(ids, user.getNickname());
-        return ResultVoUtil.success("删除成功");
+        try {
+            chaiSpuService.softDeleteByIdIn(ids, user.getNickname());
+            return ResultVoUtil.success("删除成功");
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
     }
 
     @RequestMapping("/restore")
@@ -308,13 +308,7 @@ public class ChaiSpuController {
         } else {
             item.setExpirationName("-");
         }
-        Map<String, Object> map = ChaiSpecUtil.parseSpec(item.getSpec());
-        BigDecimal total = ChaiSpecUtil.getDecimal(map, "total_net_weight");
-        BigDecimal unitWeight = ChaiSpecUtil.getDecimal(map, "unit_weight");
-        Integer unitCount = ChaiSpecUtil.getInt(map, "unit_count");
-        Integer unitLabel = ChaiSpecUtil.getInt(map, "unit_label");
-        String labelText = unitLabel == null ? "" : DictUtils.keyValue("CHAI_SPEC_LABEL", String.valueOf(unitLabel));
-        item.setSpecShow(ChaiSpecUtil.formatShow(total, unitWeight, unitCount, labelText));
+        item.setSpecShow(ChaiSpecUtil.toShow(item.getSpec()));
         item.setShowImageList(ChaiFormHelper.parseUrlList(item.getShowImageUrls()));
         item.setRealImageList(ChaiFormHelper.parseUrlList(item.getRealImageUrls()));
     }

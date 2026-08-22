@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑仓库</title>
+    <style>
+        .wh-form .layui-form-label {
+            width: 120px;
+        }
+        .wh-form .layui-input-block {
+            margin-left: 150px;
+            max-width: 560px;
+        }
+        .wh-form .wh-pca-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            max-width: 560px;
+        }
+        .wh-form .wh-pca-row .layui-form-select,
+        .wh-form .wh-pca-row select {
+            flex: 1;
+            min-width: 0;
+        }
+        .wh-form .wh-pca-row > .layui-input-inline {
+            float: none;
+            margin: 0;
+            width: auto;
+            flex: 1;
+            min-width: 0;
+        }
+        .wh-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form wh-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">仓库名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                       required lay-verify="required" maxlength="255" placeholder="如: 福州仓">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">省市区</label>
+            <div class="layui-input-block">
+                <div class="wh-pca-row">
+                    <div class="layui-input-inline">
+                        <select id="whProvince" name="province" lay-filter="pcaProvince"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">请选择省</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="whCity" name="city" lay-filter="pcaCity"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">请选择市</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="whDistrict" name="district" lay-filter="pcaDistrict"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">请选择区/县</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-tip">均可空；若选择则省市区需选全</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">详细地址</label>
+            <div class="layui-input-block">
+                <input type="text" name="address" class="layui-input" th:value="${editItem?.address}"
+                       maxlength="500" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"
+                        mo-selected="${editItem.status}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">排序号（大到小）</label>
+            <div class="layui-input-block">
+                <input type="number" name="orderNum" class="layui-input" th:value="${editItem?.orderNum}"
+                       required lay-verify="required|number" placeholder="如: 100">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/sys/pca-cascade.js}"></script>
+<script th:inline="javascript">
+    var whPcaInitial = {
+        province: /*[[${editItem != null ? editItem.province : null}]]*/ null,
+        city: /*[[${editItem != null ? editItem.city : null}]]*/ null,
+        district: /*[[${editItem != null ? editItem.district : null}]]*/ null
+    };
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.render('select');
+
+        new PcaCascade({
+            $: $,
+            province: '#whProvince',
+            city: '#whCity',
+            district: '#whDistrict',
+            layForm: form,
+            allowEmpty: true,
+            initial: whPcaInitial
+        }).init();
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/chai/warehouse/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

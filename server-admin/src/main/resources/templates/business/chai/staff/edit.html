@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑经手人</title>
+    <style>
+        .staff-form .layui-form-label {
+            width: 120px;
+        }
+        .staff-form .layui-input-block {
+            margin-left: 150px;
+            max-width: 420px;
+        }
+        .staff-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form staff-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">花名</label>
+            <div class="layui-input-block">
+                <input type="text" name="nickName" class="layui-input" th:value="${editItem?.nickName}"
+                       required lay-verify="required" maxlength="255" placeholder="唯一，如下拉展示用">
+                <div class="field-tip">单据下拉展示为：真实姓名(花名)</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">真实姓名</label>
+            <div class="layui-input-block">
+                <input type="text" name="realName" class="layui-input" th:value="${editItem?.realName}"
+                       required lay-verify="required" maxlength="255" placeholder="如: 张三">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">手机</label>
+            <div class="layui-input-block">
+                <input type="text" name="mobile" class="layui-input" th:value="${editItem?.mobile}"
+                       maxlength="32" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"
+                        mo-selected="${editItem.status}" lay-verify="required"></select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">排序号（大到小）</label>
+            <div class="layui-input-block">
+                <input type="number" name="orderNum" class="layui-input" th:value="${editItem?.orderNum}"
+                       required lay-verify="required|number" placeholder="如: 100">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.render('select');
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/chai/staff/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

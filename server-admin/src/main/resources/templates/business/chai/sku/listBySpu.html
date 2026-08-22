@@ -24,9 +24,12 @@
                     <label class="layui-form-label">是否删除</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="deleted">
-                            <option value="-1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '-1'}">全部</option>
-                            <option value="0" th:selected="${param.deleted == null or #lists.isEmpty(param.deleted) or param.deleted[0] == '0'}">否</option>
-                            <option value="1" th:selected="${param.deleted != null and !#lists.isEmpty(param.deleted) and param.deleted[0] == '1'}">是</option>
+                            <option th:each="opt : ${deletedFilterOptions}"
+                                    th:value="${opt.code}"
+                                    th:text="${opt.message}"
+                                    th:selected="${(param.deleted == null or #lists.isEmpty(param.deleted))
+                                        ? (opt.code == 0)
+                                        : (param.deleted[0] == (opt.code + ''))}"></option>
                         </select>
                     </div>
                 </div>

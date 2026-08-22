@@ -241,6 +241,50 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
         });
     });
 
+    /**
+     * 解析弹窗尺寸：auto / max / 百分比 / 设计像素（小屏自适应）
+     * 设计像素超过视口约 85% 时改用百分比，否则 clamp 到可视区域
+     */
+    var resolvePopupSize = function (sizeAttr) {
+        if (sizeAttr === undefined || sizeAttr === null || sizeAttr === '' || sizeAttr === 'auto') {
+            return ['50%', '80%'];
+        }
+        if (sizeAttr === 'max') {
+            return ['100%', '100%'];
+        }
+        if (String(sizeAttr).indexOf(',') === -1) {
+            return ['50%', '80%'];
+        }
+        var split = String(sizeAttr).split(',');
+        var w = split[0].trim();
+        var h = split[1].trim();
+        if (w.indexOf('%') >= 0 || h.indexOf('%') >= 0) {
+            return [
+                w.indexOf('%') >= 0 ? w : w + 'px',
+                h.indexOf('%') >= 0 ? h : h + 'px'
+            ];
+        }
+        var wNum = parseInt(w, 10);
+        var hNum = parseInt(h, 10);
+        if (isNaN(wNum) || isNaN(hNum)) {
+            return ['50%', '80%'];
+        }
+        var pad = 24;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var maxW = vw - pad * 2;
+        var maxH = vh - pad * 2;
+        var finalW = Math.min(wNum, maxW);
+        var finalH = Math.min(hNum, maxH);
+        if (wNum > vw * 0.85 || hNum > vh * 0.85) {
+            var wPct = Math.min(95, Math.round(finalW / vw * 100));
+            var hPct = Math.min(92, Math.round(finalH / vh * 100));
+            return [wPct + '%', hPct + '%'];
+        }
+        return [finalW + 'px', finalH + 'px'];
+    };
+    window.resolvePopupSize = resolvePopupSize;
+
     /* 添加/修改弹出层 */
     $(document).on("click", ".open-popup, .open-popup-param", function () {
         var title = $(this).data("title");
@@ -262,24 +306,7 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
             param = param.substr(0, param.length - 1);
             url += "?" + param;
         }
-        var size = $(this).attr("data-size");
-        if (size === undefined || size === "auto") {
-            size = ['50%', '80%'];
-        }else if (size === "max") {
-            size = ['100%', '100%'];
-        }else if (size.indexOf(',') !== -1) {
-            var split = size.split(",");
-            var w = split[0].trim();
-            var h = split[1].trim();
-            if (w.indexOf('%') >= 0 || h.indexOf('%') >= 0) {
-                size = [
-                    w.indexOf('%') >= 0 ? w : w + 'px',
-                    h.indexOf('%') >= 0 ? h : h + 'px'
-                ];
-            } else {
-                size = [w + 'px', h + 'px'];
-            }
-        }
+        var size = resolvePopupSize($(this).attr("data-size"));
         window.layerIndex = layer.open({
             type: 2,
             title: title,

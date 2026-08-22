@@ -27,6 +27,7 @@ public class ChaiSpuService {
 
     private final ChaiSpuRepository chaiSpuRepository;
     private final ChaiSkuService chaiSkuService;
+    private final ChaiStockService chaiStockService;
 
     public ChaiSpu getById(Long id) {
         return chaiSpuRepository.findById(id).orElse(null);
@@ -115,6 +116,18 @@ public class ChaiSpuService {
     public void softDeleteByIdIn(List<Long> idList, String operator) {
         if (idList == null || idList.isEmpty()) {
             return;
+        }
+        for (Long id : idList) {
+            if (id == null) {
+                continue;
+            }
+            if (chaiStockService.hasPositiveQtyBySpuId(id)) {
+                ChaiSpu spu = getById(id);
+                String label = spu != null && StringUtils.hasText(spu.getSpuCode())
+                        ? spu.getSpuCode() : String.valueOf(id);
+                throw new IllegalArgumentException(
+                        "「" + label + "」下仍有库存，不能删除；请先出库或调拨至 0");
+            }
         }
         long now = System.currentTimeMillis();
         for (Long id : idList) {

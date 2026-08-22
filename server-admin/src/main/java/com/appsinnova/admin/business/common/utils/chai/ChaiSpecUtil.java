@@ -2,6 +2,7 @@ package com.appsinnova.admin.business.common.utils.chai;
 
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
+import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,8 @@ import java.util.Map;
  * 结构：total_net_weight / unit_weight / unit_count / unit_label
  */
 public final class ChaiSpecUtil {
+
+    public static final String SPEC_LABEL_DICT = "CHAI_SPEC_LABEL";
 
     private ChaiSpecUtil() {
     }
@@ -90,6 +93,20 @@ public final class ChaiSpecUtil {
         sku.setUnitWeight(getDecimal(map, "unit_weight"));
         sku.setUnitCount(getInt(map, "unit_count"));
         sku.setUnitLabel(getInt(map, "unit_label"));
+    }
+
+    /**
+     * 规格 JSON → 展示串（含字典标签解析）
+     */
+    public static String toShow(String specJson) {
+        Map<String, Object> map = parseSpec(specJson);
+        BigDecimal total = getDecimal(map, "total_net_weight");
+        BigDecimal unitWeight = getDecimal(map, "unit_weight");
+        Integer unitCount = getInt(map, "unit_count");
+        Integer unitLabel = getInt(map, "unit_label");
+        String labelText = unitLabel == null ? ""
+                : DictUtils.keyValue(SPEC_LABEL_DICT, String.valueOf(unitLabel));
+        return formatShow(total, unitWeight, unitCount, labelText);
     }
 
     /**

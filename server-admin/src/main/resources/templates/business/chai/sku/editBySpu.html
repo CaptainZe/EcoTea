@@ -100,7 +100,8 @@
             align-items: center;
             min-width: 0;
         }
-        .sku-field > label {
+        .sku-field > label,
+        .sku-price-group > label {
             width: 108px;
             flex-shrink: 0;
             text-align: right;
@@ -108,6 +109,7 @@
             color: #555;
             font-size: 13px;
             line-height: 1.3;
+            box-sizing: border-box;
         }
         .sku-field .layui-input,
         .sku-field select.layui-input {
@@ -115,6 +117,53 @@
         }
         .sku-field .layui-form-select {
             width: 120px;
+        }
+        .sku-price-row {
+            align-items: center;
+            gap: 8px 16px;
+            flex-wrap: wrap;
+        }
+        .sku-price-group {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 0;
+            min-width: 0;
+        }
+        .sku-price-group .js-official,
+        .sku-price-group .js-sale,
+        .sku-price-group .js-recycle {
+            width: 120px;
+        }
+        .sku-price-group .js-sale-rate,
+        .sku-price-group .js-recycle-rate {
+            width: 96px;
+        }
+        .sku-price-group .js-reduce-per {
+            width: 72px;
+        }
+        .sku-price-group .js-reduce-bag {
+            width: 88px;
+        }
+        .sku-price-group--short > label {
+            width: 88px;
+        }
+        .sku-price-sep {
+            color: #9CA3AF;
+            font-size: 12px;
+            white-space: nowrap;
+            margin: 0 6px;
+        }
+        .sku-price-group.is-invalid .js-sale-rate,
+        .sku-price-group.is-invalid .js-recycle-rate,
+        .sku-price-group.is-invalid .js-sale,
+        .sku-price-group.is-invalid .js-recycle {
+            border-color: #DC2626 !important;
+        }
+        .sku-price-group.is-disabled .js-sale-rate,
+        .sku-price-group.is-disabled .js-recycle-rate {
+            background: #F9FAFB;
+            cursor: not-allowed;
         }
         .sku-card .layui-form-label {
             width: 90px;
@@ -498,16 +547,29 @@
                 html += '<select class="layui-input js-batch">' + buildSelectOptions(prodBatchDict, row.prodBatch) + '</select></div>';
                 html += '</div>';
 
-                html += '<div class="sku-field-row">';
-                html += '<div class="sku-field"><label>官方价（元）</label>';
-                html += '<input type="number" step="0.01" class="layui-input js-official" value="' + nullToEmpty(row.officialPrice) + '"></div>';
-                html += '<div class="sku-field"><label>销售价（元）</label>';
-                html += '<input type="number" step="0.01" class="layui-input js-sale" value="' + nullToEmpty(row.salePrice) + '"></div>';
-                html += '<div class="sku-field"><label>回收价（元）</label>';
-                html += '<input type="number" step="0.01" class="layui-input js-recycle" value="' + nullToEmpty(row.recyclePrice) + '"></div>';
-                html += '<div class="sku-field"><label>破损压价%</label>';
+                html += '<div class="sku-field-row sku-price-row">';
+                html += '<div class="sku-price-group"><label>官方价（元）</label>';
+                html += '<input type="number" step="0.01" min="0.01" class="layui-input js-official" value="' + nullToEmpty(row.officialPrice) + '"></div>';
+                html += '</div>';
+
+                html += '<div class="sku-field-row sku-price-row">';
+                html += '<div class="sku-price-group js-sale-group">';
+                html += '<label>销售价（元）</label>';
+                html += '<input type="number" step="0.01" min="0.01" class="layui-input js-sale" value="' + nullToEmpty(row.salePrice) + '">';
+                html += '<span class="sku-price-sep">折扣</span>';
+                html += '<input type="number" step="0.0001" min="0.0001" max="1" class="layui-input js-sale-rate" placeholder="0.3500" title="相对官方价，0~1">';
+                html += '</div>';
+                html += '<div class="sku-price-group js-recycle-group">';
+                html += '<label>回收价（元）</label>';
+                html += '<input type="number" step="0.01" min="0.01" class="layui-input js-recycle" value="' + nullToEmpty(row.recyclePrice) + '">';
+                html += '<span class="sku-price-sep">折扣</span>';
+                html += '<input type="number" step="0.0001" min="0.0001" max="1" class="layui-input js-recycle-rate" placeholder="0.3500" title="相对官方价，0~1">';
+                html += '</div>';
+                html += '<div class="sku-price-group sku-price-group--short">';
+                html += '<label>破损压价%</label>';
                 html += '<input type="number" class="layui-input js-reduce-per" value="' + nullToEmpty(row.recyclePriceReducePer) + '"></div>';
-                html += '<div class="sku-field"><label>无提袋扣减（元）</label>';
+                html += '<div class="sku-price-group sku-price-group--short">';
+                html += '<label>无提袋（元）</label>';
                 html += '<input type="number" step="0.01" class="layui-input js-reduce-bag" value="' + nullToEmpty(row.recyclePriceReduceNoBag) + '"></div>';
                 html += '</div>';
 
@@ -575,6 +637,72 @@
                 applySelectValues($(this), rows[$(this).data('idx')] || {});
             });
             form.render('select');
+            $('#skuCardList .sku-card').each(function () {
+                refreshPriceRates($(this));
+            });
+        }
+
+        function roundMoney(n) {
+            return Math.round(n * 100) / 100;
+        }
+
+        function roundRate(n) {
+            return Math.round(n * 10000) / 10000;
+        }
+
+        function isValidRate(rate) {
+            return rate != null && rate > 0 && rate <= 1;
+        }
+
+        function calcRate(price, official) {
+            if (!official || official <= 0 || price == null || price <= 0) {
+                return '';
+            }
+            return roundRate(price / official);
+        }
+
+        function calcPrice(rate, official) {
+            if (!isValidRate(rate) || !official || official <= 0) {
+                return null;
+            }
+            return roundMoney(official * rate);
+        }
+
+        function officialPriceOf($card) {
+            return toDecimal($card.find('.js-official').val());
+        }
+
+        function updatePriceGroupState($card) {
+            var official = officialPriceOf($card);
+            var enabled = official != null && official > 0;
+            $card.find('.js-sale-group, .js-recycle-group').each(function () {
+                var $group = $(this);
+                $group.toggleClass('is-disabled', !enabled);
+                $group.find('.js-sale-rate, .js-recycle-rate').prop('disabled', !enabled);
+            });
+        }
+
+        function markPriceGroupInvalid($group, invalid) {
+            $group.toggleClass('is-invalid', !!invalid);
+        }
+
+        function refreshPriceRates($card, skipField) {
+            updatePriceGroupState($card);
+            var official = officialPriceOf($card);
+            if (skipField !== 'sale-rate') {
+                var sale = toDecimal($card.find('.js-sale').val());
+                var saleRate = calcRate(sale, official);
+                $card.find('.js-sale-rate').val(saleRate);
+                markPriceGroupInvalid($card.find('.js-sale-group'),
+                    official > 0 && sale != null && (sale <= 0 || sale > official));
+            }
+            if (skipField !== 'recycle-rate') {
+                var recycle = toDecimal($card.find('.js-recycle').val());
+                var recycleRate = calcRate(recycle, official);
+                $card.find('.js-recycle-rate').val(recycleRate);
+                markPriceGroupInvalid($card.find('.js-recycle-group'),
+                    official > 0 && recycle != null && (recycle <= 0 || recycle > official));
+            }
         }
 
         function toDecimal(v) {
@@ -843,9 +971,21 @@
                     layer.msg('第' + (i + 1) + '张：规格信息不完整');
                     return;
                 }
+                if (r.officialPrice === null || r.officialPrice <= 0) {
+                    layer.msg('第' + (i + 1) + '张：官方价须大于 0');
+                    return;
+                }
                 if (r.salePrice === null || r.recyclePrice === null
                     || r.recyclePriceReducePer === null || r.recyclePriceReduceNoBag === null) {
                     layer.msg('第' + (i + 1) + '张：销售价/回收价/压价%/无提袋扣减均必填');
+                    return;
+                }
+                if (r.salePrice <= 0 || r.salePrice > r.officialPrice) {
+                    layer.msg('第' + (i + 1) + '张：销售价须在 (0, 官方价] 范围内');
+                    return;
+                }
+                if (r.recyclePrice <= 0 || r.recyclePrice > r.officialPrice) {
+                    layer.msg('第' + (i + 1) + '张：回收价须在 (0, 官方价] 范围内');
                     return;
                 }
             }
@@ -864,6 +1004,66 @@
             if (spuEditUrl) {
                 window.location.href = spuEditUrl;
             }
+        });
+
+        $('#skuCardList').on('input', '.js-official', function () {
+            var $card = $(this).closest('.sku-card');
+            var official = officialPriceOf($card);
+            if (official != null && official > 0) {
+                var saleRate = toDecimal($card.find('.js-sale-rate').val());
+                var recycleRate = toDecimal($card.find('.js-recycle-rate').val());
+                if (isValidRate(saleRate)) {
+                    var salePrice = calcPrice(saleRate, official);
+                    if (salePrice != null) {
+                        $card.find('.js-sale').val(salePrice);
+                    }
+                }
+                if (isValidRate(recycleRate)) {
+                    var recyclePrice = calcPrice(recycleRate, official);
+                    if (recyclePrice != null) {
+                        $card.find('.js-recycle').val(recyclePrice);
+                    }
+                }
+            }
+            refreshPriceRates($card);
+        });
+
+        $('#skuCardList').on('input', '.js-sale', function () {
+            refreshPriceRates($(this).closest('.sku-card'));
+        });
+
+        $('#skuCardList').on('input', '.js-recycle', function () {
+            refreshPriceRates($(this).closest('.sku-card'));
+        });
+
+        $('#skuCardList').on('input', '.js-sale-rate', function () {
+            var $card = $(this).closest('.sku-card');
+            var rate = toDecimal($(this).val());
+            var official = officialPriceOf($card);
+            if (!isValidRate(rate)) {
+                markPriceGroupInvalid($card.find('.js-sale-group'), rate !== null);
+                return;
+            }
+            var price = calcPrice(rate, official);
+            if (price != null) {
+                $card.find('.js-sale').val(price);
+            }
+            refreshPriceRates($card, 'sale-rate');
+        });
+
+        $('#skuCardList').on('input', '.js-recycle-rate', function () {
+            var $card = $(this).closest('.sku-card');
+            var rate = toDecimal($(this).val());
+            var official = officialPriceOf($card);
+            if (!isValidRate(rate)) {
+                markPriceGroupInvalid($card.find('.js-recycle-group'), rate !== null);
+                return;
+            }
+            var price = calcPrice(rate, official);
+            if (price != null) {
+                $card.find('.js-recycle').val(price);
+            }
+            refreshPriceRates($card, 'recycle-rate');
         });
 
         $('#skuCardList').on('change', '.js-year, .js-batch', function () {

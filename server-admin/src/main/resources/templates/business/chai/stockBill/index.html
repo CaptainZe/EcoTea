@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>茶叶库存单据</title>
+    <style>
+        .bill-status-1 { color: #D97706; font-weight: 600; }
+        .bill-status-2 { color: #9CA3AF; font-weight: 600; }
+        .bill-status-3 { color: #7C3AED; font-weight: 600; }
+        .bill-type-1 { color: #16A34A; font-weight: 600; }
+        .bill-type-2 { color: #DC2626; font-weight: 600; }
+        .bill-type-3 { color: #2563EB; font-weight: 600; }
+        .bill-qty-in { color: #16A34A; font-weight: 600; }
+        .bill-qty-out { color: #DC2626; font-weight: 600; }
+        .bill-qty-transfer { color: #2563EB; font-weight: 600; }
+        .col-num { text-align: right; }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 茶叶库存单据</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">单据号</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="billNo" th:value="${param.billNo}" placeholder="模糊查询"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="billType">
+                            <option value="">全部</option>
+                            <option th:each="opt : ${billTypeOptions}" th:value="${opt.code}" th:text="${opt.message}"
+                                    th:selected="${param.billType != null and !#lists.isEmpty(param.billType) and param.billType[0] == (opt.code + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="status">
+                            <option value="">全部</option>
+                            <option th:each="opt : ${statusOptions}" th:value="${opt.code}" th:text="${opt.message}"
+                                    th:selected="${param.status != null and !#lists.isEmpty(param.status) and param.status[0] == (opt.code + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">原因</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select class="timo-search-select layui-input" name="reason">
+                            <option value="">全部</option>
+                            <option th:each="opt : ${reasonOptions}" th:value="${opt.code}" th:text="${opt.message}"
+                                    th:selected="${param.reason != null and !#lists.isEmpty(param.reason) and param.reason[0] == (opt.code + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">经手人</label>
+                    <div class="layui-input-block timo-search-status" style="width: 180px;">
+                        <select name="handlerId" class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="s : ${staffList}" th:value="${s.id}"
+                                    th:text="${s.displayName}"
+                                    th:selected="${param.handlerId != null and !#lists.isEmpty(param.handlerId) and param.handlerId[0] == (s.id + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">仓库</label>
+                    <div class="layui-input-block timo-search-status" style="width: 160px;">
+                        <select name="fromWhId" class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="w : ${warehouseList}" th:value="${w.id}" th:text="${w.name}"
+                                    th:selected="${param.fromWhId != null and !#lists.isEmpty(param.fromWhId) and param.fromWhId[0] == (w.id + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <a class="layui-btn" th:href="@{/business/chai/stockBill/create(billType=1)}">
+                    <i class="fa fa-plus"></i> 入库
+                </a>
+                <a class="layui-btn layui-btn-normal" th:href="@{/business/chai/stockBill/create(billType=2)}">
+                    <i class="fa fa-minus"></i> 出库
+                </a>
+                <a class="layui-btn layui-btn-warm" th:href="@{/business/chai/stockBill/create(billType=3)}">
+                    <i class="fa fa-exchange"></i> 调拨
+                </a>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="70">操作</th>
+                    <th width="180" class="sortable" data-field="billNo">单据号</th>
+                    <th width="80">类型</th>
+                    <th width="80">状态</th>
+                    <th width="110">原因</th>
+                    <th width="180">仓库</th>
+                    <th width="120">经手人</th>
+                    <th width="80" class="sortable col-num" data-field="totalQty">件数</th>
+                    <th width="100" class="sortable col-num" data-field="totalAmount">金额</th>
+                    <th width="100">操作人</th>
+                    <th width="150" class="sortable" data-field="createTime">过账时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td>
+                        <a th:href="@{'/business/chai/stockBill/detail/'+${item.id}}"
+                           style="color:#1D4ED8;font-weight:600;">详情</a>
+                    </td>
+                    <td th:text="${item.billNo}"></td>
+                    <td>
+                        <span th:each="opt : ${billTypeOptions}"
+                              th:if="${opt.code == item.billType}" th:text="${opt.message}"
+                              th:class="'bill-type-' + ${item.billType}"></span>
+                    </td>
+                    <td>
+                        <span th:each="opt : ${statusOptions}" th:if="${opt.code == item.status}"
+                              th:text="${opt.message}"
+                              th:class="'bill-status-' + ${item.status}"></span>
+                    </td>
+                    <td>
+                        <span th:each="opt : ${reasonOptions}"
+                              th:if="${opt.code == item.reason}" th:text="${opt.message}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${item.billType != 3}" th:text="${item.fromWhName}"></span>
+                        <th:block th:if="${item.billType == 3}">
+                            <span th:text="${item.fromWhName}"></span>
+                            <span style="color:#9CA3AF;"> → </span>
+                            <span th:text="${item.toWhName}"></span>
+                        </th:block>
+                    </td>
+                    <td th:text="${item.handlerName}"></td>
+                    <td class="col-num">
+                        <span th:if="${item.billType == 1}" class="bill-qty-in"
+                              th:text="'+' + ${item.totalQty}"></span>
+                        <span th:if="${item.billType == 2}" class="bill-qty-out"
+                              th:text="'-' + ${item.totalQty}"></span>
+                        <span th:if="${item.billType == 3}" class="bill-qty-transfer"
+                              th:text="${item.totalQty}"></span>
+                    </td>
+                    <td class="col-num" th:text="${item.totalAmount}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>库存单据详情</title>
+    <style>
+        .module-card {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            background: #fff;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .info-row {
+            margin-bottom: 8px;
+            line-height: 28px;
+        }
+        .info-label {
+            display: inline-block;
+            width: 88px;
+            color: #6B7280;
+        }
+        .bill-sub {
+            color: #9CA3AF;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+        .bill-status-1 { color: #D97706; font-weight: 600; }
+        .bill-status-2 { color: #9CA3AF; font-weight: 600; }
+        .bill-status-3 { color: #7C3AED; font-weight: 600; }
+        .bill-show-cell {
+            line-height: 0;
+        }
+        .bill-show-cell .preview-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 2px;
+            margin: 0 4px 4px 0;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-file-text-o"></i> 库存单据详情</span>
+        <a class="layui-btn layui-btn-normal layui-btn-sm" style="float:right;margin-top:6px;"
+           th:href="@{/business/chai/stockBill/index}">返回列表</a>
+    </div>
+    <div class="layui-card-body">
+        <div th:if="${errorMsg}" style="padding:24px;color:#DC2626;" th:text="${errorMsg}"></div>
+
+        <div th:if="${bill != null}">
+            <div class="module-card">
+                <div class="module-title">单据头</div>
+                <div class="layui-row">
+                    <div class="layui-col-md4">
+                        <div class="info-row"><span class="info-label">单据号</span><span th:text="${bill.billNo}"></span></div>
+                        <div class="info-row"><span class="info-label">类型</span><span th:text="${billTypeName}"></span></div>
+                        <div class="info-row">
+                            <span class="info-label">状态</span>
+                            <span th:text="${statusName}" th:class="'bill-status-' + ${bill.status}"></span>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">
+                        <div class="info-row"><span class="info-label">原因</span><span th:text="${reasonName}"></span></div>
+                        <div class="info-row">
+                            <span class="info-label" th:text="${bill.billType == 3} ? '调出仓' : (${bill.billType == 2} ? '出库仓' : '入库仓')">仓库</span>
+                            <span th:text="${bill.fromWhName}"></span>
+                        </div>
+                        <div class="info-row" th:if="${bill.toWhId != null and bill.toWhId > 0}">
+                            <span class="info-label">调入仓</span><span th:text="${bill.toWhName}"></span>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">
+                        <div class="info-row"><span class="info-label">经手人</span><span th:text="${bill.handlerName}"></span></div>
+                        <div class="info-row"><span class="info-label">件数合计</span><span th:text="${bill.totalQty}"></span></div>
+                        <div class="info-row" th:if="${bill.billType != 3}">
+                            <span class="info-label">金额合计</span><span th:text="${bill.totalAmount}"></span>
+                        </div>
+                        <div class="info-row"><span class="info-label">操作人</span><span th:text="${bill.operator}"></span></div>
+                        <div class="info-row">
+                            <span class="info-label">过账时间</span>
+                            <span th:text="${#dates.format(new java.util.Date(bill.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">更新时间</span>
+                            <span th:text="${#dates.format(new java.util.Date(bill.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></span>
+                        </div>
+                    </div>
+                    <div class="layui-col-md12">
+                        <div class="info-row"><span class="info-label">备注</span><span th:text="${bill.remark}"></span></div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;" th:if="${canOperate}">
+                    <button type="button" class="layui-btn layui-btn-danger" id="btnVoid">作废（冲回库存）</button>
+                    <button type="button" class="layui-btn layui-btn-normal" id="btnArchive">归档（不冲库存）</button>
+                </div>
+            </div>
+
+            <div class="module-card">
+                <div class="module-title">明细</div>
+                <table class="layui-table">
+                    <thead>
+                    <tr>
+                        <th width="90">品牌</th>
+                        <th width="200">商品名称</th>
+                        <th width="110">年份/批次</th>
+                        <th width="220">展示图</th>
+                        <th width="80">件数</th>
+                        <th width="100" th:if="${bill.billType != 3}">单价</th>
+                        <th width="100" th:if="${bill.billType != 3}">金额</th>
+                        <th width="150">行备注</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="it : ${itemList}">
+                        <td th:text="${it.brandName}"></td>
+                        <td>
+                            <div th:text="${it.name}"></div>
+                            <div class="bill-sub" th:text="${it.skuCode}"></div>
+                            <div class="bill-sub" th:text="${it.specShow}"></div>
+                        </td>
+                        <td th:text="${it.halfYearShow}"></td>
+                        <td class="bill-show-cell">
+                            <th:block th:if="${it.showImageList != null and !it.showImageList.isEmpty()}">
+                                <th:block th:replace="/common/fragment :: previewImgList(${it.showImageList}, ${'bill-show-' + it.id})"></th:block>
+                            </th:block>
+                            <span th:if="${it.showImageList == null or it.showImageList.isEmpty()}">-</span>
+                        </td>
+                        <td th:text="${it.qty}"></td>
+                        <td th:if="${bill.billType != 3}" th:text="${it.price}"></td>
+                        <td th:if="${bill.billType != 3}" th:text="${it.amount}"></td>
+                        <td th:text="${it.remark}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="text-align:center;margin-top:8px;">
+                <a class="layui-btn layui-btn-normal" th:href="@{/business/chai/stockBill/index}">返回列表</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var billId = /*[[${bill != null ? bill.id : null}]]*/ null;
+    var canOperate = /*[[${canOperate}]]*/ false;
+    var voidUrl = /*[[@{/business/chai/stockBill/void}]]*/ '';
+    var archiveUrl = /*[[@{/business/chai/stockBill/archive}]]*/ '';
+    /*]]>*/
+
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+        if (!canOperate || !billId) {
+            return;
+        }
+        $('#btnVoid').on('click', function () {
+            layer.confirm('确认作废该单据？作废将冲回库存数量，且不可再操作。', {
+                btn: ['确认作废', '取消']
+            }, function (idx) {
+                layer.close(idx);
+                var loading = layer.load(2);
+                $.post(voidUrl, {id: billId}, function (res) {
+                    layer.close(loading);
+                    if (res.code === 200) {
+                        layer.msg('作废成功', {icon: 1, time: 800}, function () {
+                            location.reload();
+                        });
+                    } else {
+                        layer.msg(res.msg || '作废失败');
+                    }
+                }).fail(function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                });
+            });
+        });
+        $('#btnArchive').on('click', function () {
+            layer.confirm('确认归档该单据？归档不冲库存，且不可再操作。', {
+                btn: ['确认归档', '取消']
+            }, function (idx) {
+                layer.close(idx);
+                var loading = layer.load(2);
+                $.post(archiveUrl, {id: billId}, function (res) {
+                    layer.close(loading);
+                    if (res.code === 200) {
+                        layer.msg('归档成功', {icon: 1, time: 800}, function () {
+                            location.reload();
+                        });
+                    } else {
+                        layer.msg(res.msg || '归档失败');
+                    }
+                }).fail(function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>

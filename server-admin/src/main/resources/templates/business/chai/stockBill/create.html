@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title th:text="'新建' + ${billTypeName}">新建库存单据</title>
+    <style>
+        .module-card {
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            background: #fff;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .bill-item-table input.layui-input {
+            height: 34px;
+        }
+        .bill-sub {
+            color: #9CA3AF;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+        .bill-ref-price {
+            color: #6B7280;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .bill-total-box {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .bill-total-box span {
+            color: #c0392b;
+        }
+        .deleted-tag {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 0 4px;
+            font-size: 12px;
+            color: #9CA3AF;
+            border: 1px solid #D1D5DB;
+            border-radius: 2px;
+        }
+        .bill-wh-hint {
+            color: #6B7280;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 4px;
+        }
+        .bill-wh-hint.warn {
+            color: #DC2626;
+        }
+        .bill-show-cell {
+            line-height: 0;
+        }
+        .bill-show-cell .preview-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 2px;
+            margin: 0 4px 4px 0;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-edit"></i> 新建<span th:text="${billTypeName}">入库</span></span>
+        <a class="layui-btn layui-btn-normal layui-btn-sm" style="float:right;margin-top:6px;"
+           th:href="@{/business/chai/stockBill/index}">返回列表</a>
+    </div>
+    <div class="layui-card-body">
+        <form class="layui-form" id="billForm" lay-filter="billForm">
+            <input type="hidden" id="billType" th:value="${billType}">
+
+            <div class="module-card">
+                <div class="module-title">单据头</div>
+                <div class="layui-row">
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required">原因</label>
+                            <div class="layui-input-block">
+                                <select id="reason" lay-verify="required" lay-search>
+                                    <option value="">请选择</option>
+                                    <option th:each="r : ${reasonOptions}" th:value="${r.code}"
+                                            th:text="${r.message}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required" th:text="${billType == 3} ? '调出仓' : (${billType == 2} ? '出库仓' : '入库仓')">仓库</label>
+                            <div class="layui-input-block">
+                                <select id="fromWhId" lay-filter="fromWhId" lay-verify="required" lay-search>
+                                    <option value="">请选择</option>
+                                    <option th:each="w : ${warehouseList}" th:value="${w.id}" th:text="${w.name}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4" th:if="${billType == 3}">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required">调入仓</label>
+                            <div class="layui-input-block">
+                                <select id="toWhId" lay-filter="toWhId" lay-verify="required" lay-search>
+                                    <option value="">请选择</option>
+                                    <option th:each="w : ${warehouseList}" th:value="${w.id}" th:text="${w.name}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label required">经手人</label>
+                            <div class="layui-input-block">
+                                <select id="handlerId" lay-verify="required" lay-search>
+                                    <option value="">请选择</option>
+                                    <option th:each="s : ${staffList}" th:value="${s.id}"
+                                            th:text="${s.displayName}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md8">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">备注</label>
+                            <div class="layui-input-block">
+                                <input type="text" id="remark" maxlength="500" placeholder="可选"
+                                       autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module-card">
+                <div class="module-title">
+                    明细
+                    <button type="button" class="layui-btn layui-btn-sm" id="btnAddSku" style="margin-left:12px;">
+                        <i class="fa fa-plus"></i> 添加商品
+                    </button>
+                </div>
+                <div class="timo-table-wrap">
+                    <table class="layui-table bill-item-table" id="itemTable">
+                        <thead>
+                        <tr>
+                            <th width="90">品牌</th>
+                            <th width="200">商品名称</th>
+                            <th width="110">年份/批次</th>
+                            <th width="220">展示图</th>
+                            <th width="80">件数</th>
+                            <th width="130" th:if="${billType != 3}">单价</th>
+                            <th width="90" th:if="${billType != 3}">金额</th>
+                            <th width="110" th:if="${billType == 3}">参考</th>
+                            <th width="150">行备注</th>
+                            <th width="60">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="itemBody"></tbody>
+                    </table>
+                </div>
+                <div class="bill-total-box" th:if="${billType != 3}">
+                    合计件数 <span id="sumQty">0</span>　合计金额 <span id="sumAmount">0.00</span>
+                </div>
+                <div class="bill-total-box" th:if="${billType == 3}">
+                    合计件数 <span id="sumQty">0</span>
+                </div>
+            </div>
+
+            <div class="layui-form-item" style="text-align:center;margin-top:8px;">
+                <button type="button" class="layui-btn" id="btnPost">保存并过账</button>
+                <a class="layui-btn layui-btn-normal" th:href="@{/business/chai/stockBill/index}">返回列表</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var billType = /*[[${billType}]]*/ 1;
+    var skuPickUrl = /*[[@{/business/chai/stockBill/skuPick}]]*/ '';
+    var skuByIdsUrl = /*[[@{/business/chai/stockBill/skuByIds}]]*/ '';
+    var whQtyUrl = /*[[@{/business/chai/stockBill/whQty}]]*/ '';
+    var saveUrl = /*[[@{/business/chai/stockBill/save}]]*/ '';
+    /*]]>*/
+
+    layui.use(['form', 'layer'], function () {
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        function money(n) {
+            var v = Number(n || 0);
+            if (isNaN(v)) {
+                v = 0;
+            }
+            return v.toFixed(2);
+        }
+
+        function esc(s) {
+            if (s == null || s === undefined) {
+                return '';
+            }
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function mapGet(map, skuId) {
+            if (!map) {
+                return 0;
+            }
+            var v = map[skuId];
+            if (v == null) {
+                v = map[String(skuId)];
+            }
+            return v == null ? 0 : parseInt(v, 10) || 0;
+        }
+
+        function renderWhHint($tr, fromQty, toQty, fromReady, toReady) {
+            $tr.attr('data-from-qty', fromQty);
+            $tr.attr('data-to-qty', toQty);
+            $tr.attr('data-from-ready', fromReady ? '1' : '0');
+            $tr.attr('data-to-ready', toReady ? '1' : '0');
+            var $hint = $tr.find('.js-wh-hint');
+            var qty = parseInt($tr.find('.js-qty').val(), 10) || 0;
+            var warn = false;
+            if (billType === 1) {
+                $hint.text(fromReady ? ('本仓已有 ' + fromQty + ' 件') : '本仓已有 -')
+                    .toggleClass('warn', false);
+            } else if (billType === 2) {
+                warn = fromReady && qty > fromQty;
+                $hint.text(fromReady ? ('本仓可用 ' + fromQty + ' 件') : '本仓可用 -')
+                    .toggleClass('warn', warn);
+            } else {
+                warn = fromReady && qty > fromQty;
+                var fromPart = fromReady ? ('调出仓可用 ' + fromQty) : '调出仓可用 -';
+                var toPart = toReady ? ('调入仓已有 ' + toQty) : '调入仓已有 -';
+                $hint.html(fromPart + '<br>' + toPart).toggleClass('warn', warn);
+            }
+        }
+
+        function refreshWhHints() {
+            var $rows = $('#itemBody tr');
+            if (!$rows.length) {
+                return;
+            }
+            var fromWhId = parseInt($('#fromWhId').val(), 10) || 0;
+            var toWhId = billType === 3 ? (parseInt($('#toWhId').val(), 10) || 0) : 0;
+            var fromReady = fromWhId > 0;
+            var toReady = toWhId > 0;
+            if (!fromReady && !(billType === 3 && toReady)) {
+                $rows.each(function () {
+                    renderWhHint($(this), 0, 0, false, false);
+                });
+                return;
+            }
+            var skuIds = [];
+            $rows.each(function () {
+                var id = parseInt($(this).attr('data-sku-id'), 10);
+                if (id) {
+                    skuIds.push(id);
+                }
+            });
+            if (!skuIds.length) {
+                return;
+            }
+            var params = {skuIds: skuIds.join(',')};
+            if (fromReady) {
+                params.fromWhId = fromWhId;
+            }
+            if (toReady) {
+                params.toWhId = toWhId;
+            }
+            $.get(whQtyUrl, params, function (res) {
+                if (res.code !== 200) {
+                    return;
+                }
+                var fromMap = (res.data && res.data.fromQtyMap) || {};
+                var toMap = (res.data && res.data.toQtyMap) || {};
+                $rows.each(function () {
+                    var $tr = $(this);
+                    var skuId = parseInt($tr.attr('data-sku-id'), 10);
+                    renderWhHint($tr, mapGet(fromMap, skuId), mapGet(toMap, skuId), fromReady, toReady);
+                });
+            });
+        }
+
+        function recalc() {
+            var qtySum = 0;
+            var amountSum = 0;
+            $('#itemBody tr').each(function () {
+                var $tr = $(this);
+                var qty = parseInt($tr.find('.js-qty').val(), 10) || 0;
+                var price = parseFloat($tr.find('.js-price').val()) || 0;
+                qtySum += qty;
+                if (billType !== 3) {
+                    var amt = qty * price;
+                    $tr.find('.js-amount').text(money(amt));
+                    amountSum += amt;
+                }
+                if ($tr.find('.js-wh-hint').length) {
+                    var fromQty = parseInt($tr.attr('data-from-qty'), 10);
+                    var toQty = parseInt($tr.attr('data-to-qty'), 10);
+                    renderWhHint(
+                        $tr,
+                        isNaN(fromQty) ? 0 : fromQty,
+                        isNaN(toQty) ? 0 : toQty,
+                        $tr.attr('data-from-ready') === '1',
+                        $tr.attr('data-to-ready') === '1'
+                    );
+                }
+            });
+            $('#sumQty').text(qtySum);
+            if (billType !== 3) {
+                $('#sumAmount').text(money(amountSum));
+            }
+        }
+
+        function halfYearText(sku) {
+            var y = sku.year != null ? sku.year : '';
+            var b = sku.prodBatchName || '';
+            if (y && b) {
+                return y + ' / ' + b;
+            }
+            return y || b || '-';
+        }
+
+        function renderShowImages(urls) {
+            var list = [];
+            if (Array.isArray(urls)) {
+                list = urls;
+            } else if (typeof urls === 'string' && urls) {
+                try {
+                    list = JSON.parse(urls);
+                } catch (e) {
+                    list = [];
+                }
+            }
+            if (!list || !list.length) {
+                return '-';
+            }
+            var html = '';
+            list.slice(0, 3).forEach(function (url) {
+                if (!url) {
+                    return;
+                }
+                html += '<img class="preview-image" src="' + esc(url) + '" data-preview-src="' + esc(url) + '">';
+            });
+            return html || '-';
+        }
+
+        function addRow(sku) {
+            if (!sku || !sku.id) {
+                return;
+            }
+            var defaultPrice = 0;
+            var refLabel = '';
+            var refValue = '';
+            if (billType === 1) {
+                defaultPrice = sku.recyclePrice != null ? sku.recyclePrice : 0;
+                refLabel = '参考回收价';
+                refValue = sku.recyclePriceShow || money(defaultPrice);
+            } else if (billType === 2) {
+                defaultPrice = sku.salePrice != null ? sku.salePrice : 0;
+                refLabel = '参考销售价';
+                refValue = sku.salePriceShow || money(defaultPrice);
+            } else {
+                refLabel = '参考销售价';
+                refValue = sku.salePriceShow || money(sku.salePrice != null ? sku.salePrice : 0);
+            }
+            var deletedTag = (sku.deleted === 1)
+                ? '<span class="deleted-tag">已删除</span>' : '';
+            var nameCell = '<div>' + esc(sku.name) + deletedTag + '</div>'
+                + '<div class="bill-sub">' + esc(sku.skuCode) + '</div>'
+                + '<div class="bill-sub">' + esc(sku.specShow || '-') + '</div>';
+            var priceCols = '';
+            if (billType !== 3) {
+                priceCols = '<td><input type="number" min="0" step="0.01" class="layui-input js-price" value="'
+                    + money(defaultPrice) + '">'
+                    + '<div class="bill-ref-price">' + refLabel + ' ' + esc(refValue) + '</div></td>'
+                    + '<td class="js-amount">' + money(defaultPrice) + '</td>';
+            } else {
+                priceCols = '<td><div class="bill-ref-price">' + refLabel + ' ' + esc(refValue) + '</div></td>';
+            }
+            var html = '<tr data-sku-id="' + sku.id + '" data-from-qty="0" data-to-qty="0" data-from-ready="0" data-to-ready="0">'
+                + '<td>' + esc(sku.brandName) + '</td>'
+                + '<td>' + nameCell + '</td>'
+                + '<td>' + esc(halfYearText(sku)) + '</td>'
+                + '<td class="bill-show-cell">' + renderShowImages(sku.showImageUrls) + '</td>'
+                + '<td><input type="number" min="1" step="1" class="layui-input js-qty" value="1">'
+                + '<div class="bill-wh-hint js-wh-hint"></div></td>'
+                + priceCols
+                + '<td><input type="text" maxlength="255" class="layui-input js-remark" placeholder="破损/无提袋等"></td>'
+                + '<td><a href="javascript:;" class="js-remove" style="color:#DC2626;">删除</a></td>'
+                + '</tr>';
+            $('#itemBody').append(html);
+            renderWhHint($('#itemBody tr').last(), 0, 0, false, false);
+            recalc();
+        }
+
+        window.addStockBillSkus = function (idList) {
+            if (!idList || !idList.length) {
+                return;
+            }
+            var loading = layer.load(2);
+            $.get(skuByIdsUrl, {ids: idList.join(',')}, function (res) {
+                layer.close(loading);
+                if (res.code !== 200) {
+                    layer.msg(res.msg || '加载商品失败');
+                    return;
+                }
+                var list = res.data || [];
+                list.forEach(function (sku) {
+                    addRow(sku);
+                });
+                refreshWhHints();
+                if (list.length) {
+                    layer.msg('已添加 ' + list.length + ' 行', {time: 800});
+                }
+            }).fail(function () {
+                layer.close(loading);
+                layer.msg('请求失败');
+            });
+        };
+
+        $('#btnAddSku').on('click', function () {
+            layer.open({
+                type: 2,
+                title: '选择商品',
+                area: ['95%', '92%'],
+                maxmin: true,
+                content: skuPickUrl + '?billType=' + billType
+            });
+        });
+
+        $(document).on('click', '.js-remove', function () {
+            $(this).closest('tr').remove();
+            recalc();
+        });
+
+        $(document).on('input change', '.js-qty, .js-price', recalc);
+
+        form.on('select(fromWhId)', function () {
+            refreshWhHints();
+        });
+        form.on('select(toWhId)', function () {
+            refreshWhHints();
+        });
+
+        $('#btnPost').on('click', function () {
+            var reason = $('#reason').val();
+            var fromWhId = $('#fromWhId').val();
+            var handlerId = $('#handlerId').val();
+            if (!reason) {
+                layer.msg('请选择原因');
+                return;
+            }
+            if (!fromWhId) {
+                layer.msg('请选择仓库');
+                return;
+            }
+            if (!handlerId) {
+                layer.msg('请选择经手人');
+                return;
+            }
+            var toWhId = 0;
+            if (billType === 3) {
+                toWhId = parseInt($('#toWhId').val(), 10) || 0;
+                if (!toWhId) {
+                    layer.msg('请选择调入仓');
+                    return;
+                }
+                if (String(toWhId) === String(fromWhId)) {
+                    layer.msg('调出仓与调入仓不能相同');
+                    return;
+                }
+            }
+            var itemList = [];
+            var invalid = false;
+            $('#itemBody tr').each(function () {
+                var skuId = parseInt($(this).attr('data-sku-id'), 10);
+                var qty = parseInt($(this).find('.js-qty').val(), 10);
+                var price = billType === 3 ? 0 : (parseFloat($(this).find('.js-price').val()) || 0);
+                var remark = ($(this).find('.js-remark').val() || '').trim();
+                if (!skuId || !qty || qty <= 0) {
+                    invalid = true;
+                    return false;
+                }
+                if (billType !== 3 && price < 0) {
+                    invalid = true;
+                    return false;
+                }
+                itemList.push({skuId: skuId, qty: qty, price: price, remark: remark});
+            });
+            if (invalid || !itemList.length) {
+                layer.msg('请至少添加一行有效明细（件数>0）');
+                return;
+            }
+            var typeName = billType === 1 ? '入库' : (billType === 2 ? '出库' : '调拨');
+            layer.confirm('确认保存并过账该' + typeName + '单？过账后将立即变更库存。', function (idx) {
+                layer.close(idx);
+                var payload = {
+                    billType: billType,
+                    reason: parseInt(reason, 10),
+                    handlerId: parseInt(handlerId, 10),
+                    fromWhId: parseInt(fromWhId, 10),
+                    toWhId: toWhId,
+                    remark: $('#remark').val() || '',
+                    itemList: itemList
+                };
+                var loading = layer.load(2);
+                $.ajax({
+                    url: saveUrl,
+                    type: 'POST',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(payload),
+                    success: function (res) {
+                        layer.close(loading);
+                        if (res.code === 200 && res.data) {
+                            layer.msg(res.msg || '过账成功', {icon: 1, time: 600});
+                            setTimeout(function () {
+                                window.location.href = res.data;
+                            }, 600);
+                        } else {
+                            layer.msg(res.msg || '过账失败');
+                        }
+                    },
+                    error: function () {
+                        layer.close(loading);
+                        layer.msg('请求失败');
+                    }
+                });
+            });
+        });
+
+        form.render();
+    });
+</script>
+</body>
+</html>
