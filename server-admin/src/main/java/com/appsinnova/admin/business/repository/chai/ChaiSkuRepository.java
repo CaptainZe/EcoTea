@@ -46,4 +46,8 @@ public interface ChaiSkuRepository extends JpaRepository<ChaiSku, Long>, JpaSpec
                        @Param("status") Integer status,
                        @Param("operator") String operator,
                        @Param("updateTime") Long updateTime);
+
+    long countByDeleted(Integer deleted);
+
+    long countByDeletedAndStatus(Integer deleted, Integer status);
 }

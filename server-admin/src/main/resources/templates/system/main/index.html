@@ -2,237 +2,320 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
     <style>
-        .overview-wrap {
-            padding: 18px;
-            background: #f5f7fb;
-            min-height: 100vh;
-        }
-        .overview-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 14px;
-            color: #111827;
-        }
-        .overview-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            border-radius: 10px;
-            padding: 18px;
-            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
-            min-height: 116px;
-        }
-        .overview-card .label {
-            color: #6b7280;
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .overview-card .value {
-            margin-top: 10px;
-            font-size: 44px;
-            font-weight: 700;
-            line-height: 1;
-        }
-        .chart-card {
-            margin-top: 16px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 14px rgba(17, 24, 39, .06);
-            padding: 16px;
-        }
-        .chart-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #1f2937;
-        }
-        .chart-box {
-            width: 100%;
-            height: 340px;
-        }
-        .chart-box-wide {
-            height: 380px;
-        }
-        .brand-table {
-            margin-top: 12px;
-        }
-        .brand-table .layui-table {
-            border-radius: 8px;
+        .widget-small {
+            background-color: #FFFFFF;
             overflow: hidden;
-            font-size: 17px;
+            text-align: center;
+            border-radius: 2px;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,.05);
+            min-height: 80px;
         }
-        .brand-table .layui-table th {
-            background: #eef2ff;
-            color: #1f2937;
-            font-size: 18px;
-            font-weight: 700;
-            border-bottom: 1px solid #dbe3ff;
+        .widget-small .fa {
+            float: left;
+            width: 40%;
+            line-height: 80px;
+            color: #FFFFFF;
         }
-        .brand-table .layui-table td {
-            font-size: 18px;
-            color: #111827;
-            padding-top: 14px;
-            padding-bottom: 14px;
+        .widget-spu .fa { background-color: #029789; }
+        .widget-sku .fa { background-color: #17a2b8; }
+        .widget-online .fa { background-color: #5FB878; }
+        .widget-offline .fa { background-color: #FF5722; }
+        .widget-stock .fa { background-color: #1E9FFF; }
+        .widget-positive .fa { background-color: #009688; }
+        .widget-record .fa { background-color: #393D49; }
+        .widget-wh .fa { background-color: #2F4056; }
+        .widget-in .fa { background-color: #16a34a; }
+        .widget-out .fa { background-color: #ef4444; }
+        .widget-transfer .fa { background-color: #E6A23C; }
+        .widget-bill .fa { background-color: #6366f1; }
+        .widget-small-info {
+            float: left;
+            text-align: left;
+            width: 55%;
+            margin-left: 12px;
+            margin-top: 18px;
+            line-height: 24px;
         }
-        .brand-table .layui-table tbody tr:nth-child(even) {
-            background: #fafbff;
+        .widget-small-info h4 {
+            font-size: 14px;
+            color: #666;
+            font-weight: normal;
+        }
+        .widget-small-info span {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .dashboard-scope-tip {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        .stat-days-tab {
+            margin-bottom: 16px;
+        }
+        .stat-days-tab .layui-btn.active {
+            background-color: #009688;
+            color: #fff;
+        }
+        .dashboard-chart {
+            width: 100%;
+            height: 320px;
+        }
+        .dashboard-chart-title {
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        .dashboard-loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
         }
     </style>
 </head>
-<body>
-<div class="overview-wrap">
-    <div class="overview-title">茶叶品类 概览</div>
-    <div class="layui-row layui-col-space15">
-        <div class="layui-col-md4">
-            <div class="overview-card">
-                <div class="label">总数</div>
-                <div class="value" th:text="${statVo.totalCount}">0</div>
+<body class="timo-layout-page">
+    <div class="stat-days-tab">
+        <button type="button" class="layui-btn layui-btn-sm active" data-days="7">近7天</button>
+        <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" data-days="15">近15天</button>
+        <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" data-days="30">近30天</button>
+    </div>
+    <div class="dashboard-scope-tip" id="scopeTip">数据加载中...</div>
+
+    <div id="dashboardContent" style="display:none;">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-spu">
+                    <i class="icon fa fa-cube fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>SPU 总数</h4>
+                        <span id="spuCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-sku">
+                    <i class="icon fa fa-tags fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>SKU 总数</h4>
+                        <span id="skuCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-online">
+                    <i class="icon fa fa-arrow-up fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>上架 SKU</h4>
+                        <span id="onlineSkuCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-offline">
+                    <i class="icon fa fa-arrow-down fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>下架 SKU</h4>
+                        <span id="offlineSkuCount">0</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="layui-col-md4">
-            <div class="overview-card">
-                <div class="label">上架数</div>
-                <div class="value" style="color: #16A34A;" th:text="${statVo.onlineCount}">0</div>
+
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-stock">
+                    <i class="icon fa fa-database fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>库存合计</h4>
+                        <span id="stockTotalQty">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-positive">
+                    <i class="icon fa fa-check-circle fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>有库存 SKU</h4>
+                        <span id="positiveStockSkuCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-record">
+                    <i class="icon fa fa-list fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>库存记录</h4>
+                        <span id="stockSkuCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-wh">
+                    <i class="icon fa fa-home fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>启用仓库</h4>
+                        <span id="warehouseCount">0</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="layui-col-md4">
-            <div class="overview-card">
-                <div class="label">下架数</div>
-                <div class="value" style="color: #DC2626;" th:text="${statVo.offlineCount}">0</div>
+
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-in">
+                    <i class="icon fa fa-sign-in fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>入库单</h4>
+                        <span id="billInCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-out">
+                    <i class="icon fa fa-sign-out fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>出库单</h4>
+                        <span id="billOutCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-transfer">
+                    <i class="icon fa fa-exchange fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>调拨单</h4>
+                        <span id="billTransferCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6 layui-col-xs12">
+                <div class="widget-small widget-bill">
+                    <i class="icon fa fa-file-text-o fa-3x"></i>
+                    <div class="widget-small-info">
+                        <h4>单据合计</h4>
+                        <span id="billTotalCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-body">
+                        <div class="dashboard-chart-title">库存单据趋势</div>
+                        <div id="billTrendChart" class="dashboard-chart"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
-        <div class="layui-col-md6">
-            <div class="chart-card">
-                <div class="chart-title">上下架占比</div>
-                <div id="statusPieChart" class="chart-box"></div>
-            </div>
-        </div>
-        <div class="layui-col-md6">
-            <div class="chart-card">
-                <div class="chart-title">星级占比</div>
-                <div id="starLevelPieChart" class="chart-box"></div>
-            </div>
-        </div>
+    <div id="dashboardLoading" class="dashboard-loading">
+        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>
+        正在加载运营数据，请稍候...
     </div>
-
-    <div class="layui-row layui-col-space15" style="margin-top: 2px;">
-        <div class="layui-col-md12">
-            <div class="chart-card">
-                <div class="chart-title">品牌数量分布<span style="font-size:13px;font-weight:400;color:#6b7280;margin-left:8px;">（数量前 20）</span></div>
-                <div id="brandBarChart" class="chart-box chart-box-wide"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="chart-card brand-table">
-        <div class="chart-title">茶叶品牌数量</div>
-        <table class="layui-table" lay-size="sm" id="brandStatTable">
-            <thead>
-            <tr>
-                <th width="200">品牌</th>
-                <th width="200">数量</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:if="${#lists.isEmpty(statVo.brandStatList)}">
-                <td colspan="2">暂无数据</td>
-            </tr>
-            <tr th:each="item : ${statVo.brandStatList}">
-                <td th:text="${#dicts.keyValue('TEA_BRAND', item.brand)}">品牌</td>
-                <td th:text="${item.count}">0</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
 
 <script th:src="@{/echarts/echarts.min.js}"></script>
+<script th:replace="/common/template :: script"></script>
 <script th:inline="javascript">
-    const onlineCount = Number([[${statVo.onlineCount}]]) || 0;
-    const offlineCount = Number([[${statVo.offlineCount}]]) || 0;
+    layui.use(['jquery'], function () {
+        var $ = layui.jquery;
+        var statDays = 7;
+        var chartMap = {};
 
-    const starLevelPieData = [];
-    /*[# th:each="s : ${statVo.starLevelStatList}"]*/
-    starLevelPieData.push({ name: /*[[${s.label}]]*/, value: Number(/*[[${s.count}]]*/) || 0 });
-    /*[/]*/
+        $('.stat-days-tab button').on('click', function () {
+            statDays = parseInt($(this).data('days'), 10);
+            $('.stat-days-tab button').removeClass('active layui-btn-primary')
+                .addClass('layui-btn-primary');
+            $(this).removeClass('layui-btn-primary').addClass('active');
+            loadDashboard(true);
+        });
 
-    const brandRows = [];
-    document.querySelectorAll('#brandStatTable tbody tr').forEach(function (tr) {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length < 2) {
-            return;
+        loadDashboard(true);
+
+        function loadDashboard(refreshCharts) {
+            $('#dashboardLoading').show();
+            $('#dashboardContent').hide();
+            $.get('/index/dashboardData', {statDays: statDays}, function (res) {
+                $('#dashboardLoading').hide();
+                if (!res || res.code !== 200 || !res.data) {
+                    $('#scopeTip').text('数据加载失败，请稍后重试');
+                    return;
+                }
+                $('#dashboardContent').show();
+                renderOverview(res.data);
+                if (refreshCharts) {
+                    renderBillTrendChart(res.data.billTrendChart);
+                }
+            }).fail(function () {
+                $('#dashboardLoading').hide();
+                $('#scopeTip').text('数据加载失败，请稍后重试');
+            });
         }
-        const name = (tds[0].innerText || '').trim();
-        const count = Number((tds[1].innerText || '').trim());
-        if (!name || name === '暂无数据' || Number.isNaN(count)) {
-            return;
+
+        function renderOverview(data) {
+            $('#scopeTip').text(data.scopeTip || '');
+            $('#spuCount').text(formatNumber(data.spuCount));
+            $('#skuCount').text(formatNumber(data.skuCount));
+            $('#onlineSkuCount').text(formatNumber(data.onlineSkuCount));
+            $('#offlineSkuCount').text(formatNumber(data.offlineSkuCount));
+            $('#stockTotalQty').text(formatNumber(data.stockTotalQty));
+            $('#positiveStockSkuCount').text(formatNumber(data.positiveStockSkuCount));
+            $('#stockSkuCount').text(formatNumber(data.stockSkuCount));
+            $('#warehouseCount').text(formatNumber(data.warehouseCount));
+            $('#billInCount').text(formatNumber(data.billInCount));
+            $('#billOutCount').text(formatNumber(data.billOutCount));
+            $('#billTransferCount').text(formatNumber(data.billTransferCount));
+            $('#billTotalCount').text(formatNumber(data.billTotalCount));
         }
-        brandRows.push({ name: name, count: count });
-    });
-    brandRows.sort(function (a, b) {
-        return b.count - a.count;
-    });
-    const brandTop20 = brandRows.slice(0, 20);
-    const brandNames = brandTop20.map(function (r) {
-        return r.name;
-    });
-    const brandCounts = brandTop20.map(function (r) {
-        return r.count;
-    });
 
-    const statusPie = echarts.init(document.getElementById('statusPieChart'));
-    statusPie.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
-        series: [{
-            type: 'pie',
-            radius: ['45%', '70%'],
-            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
-            label: { formatter: '{b}: {c} ({d}%)' },
-            data: [
-                { value: onlineCount, name: '上架', itemStyle: { color: '#16a34a' } },
-                { value: offlineCount, name: '下架', itemStyle: { color: '#ef4444' } }
-            ]
-        }]
-    });
+        function formatNumber(value) {
+            if (value === null || value === undefined) {
+                return '0';
+            }
+            return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
 
-    const starLevelPie = echarts.init(document.getElementById('starLevelPieChart'));
-    starLevelPie.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, type: starLevelPieData.length > 6 ? 'scroll' : 'plain' },
-        color: ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#64748b'],
-        series: [{
-            type: 'pie',
-            radius: ['45%', '70%'],
-            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
-            label: { formatter: '{b}: {c} ({d}%)' },
-            data: starLevelPieData.length ? starLevelPieData : [{ value: 0, name: '暂无数据' }]
-        }]
-    });
+        function getChart(domId) {
+            if (chartMap[domId]) {
+                chartMap[domId].dispose();
+            }
+            chartMap[domId] = echarts.init(document.getElementById(domId));
+            return chartMap[domId];
+        }
 
-    const brandBar = echarts.init(document.getElementById('brandBarChart'));
-    brandBar.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { left: 40, right: 20, top: 20, bottom: 60 },
-        xAxis: {
-            type: 'category',
-            data: brandNames,
-            axisLabel: { interval: 0, rotate: brandNames.length > 6 ? 25 : 0 }
-        },
-        yAxis: { type: 'value', minInterval: 1 },
-        series: [{
-            type: 'bar',
-            data: brandCounts,
-            itemStyle: { color: '#3b82f6', borderRadius: [6, 6, 0, 0] },
-            barMaxWidth: 46
-        }]
-    });
+        function renderBillTrendChart(stacked) {
+            var chart = getChart('billTrendChart');
+            if (!stacked || !stacked.categories || !stacked.categories.length) {
+                chart.clear();
+                return;
+            }
+            chart.setOption({
+                tooltip: {trigger: 'axis'},
+                legend: {top: 0},
+                color: ['#16a34a', '#ef4444', '#E6A23C'],
+                grid: {top: 40, left: 20, right: 20, bottom: 20, containLabel: true},
+                xAxis: {type: 'category', data: stacked.categories || []},
+                yAxis: {type: 'value', minInterval: 1},
+                series: (stacked.series || []).map(function (s) {
+                    return {
+                        name: s.name,
+                        type: 'line',
+                        smooth: true,
+                        data: s.data || []
+                    };
+                })
+            });
+        }
 
-    window.addEventListener('resize', function () {
-        statusPie.resize();
-        starLevelPie.resize();
-        brandBar.resize();
+        window.addEventListener('resize', function () {
+            Object.keys(chartMap).forEach(function (domId) {
+                if (chartMap[domId]) {
+                    chartMap[domId].resize();
+                }
+            });
+        });
     });
 </script>
 </body>

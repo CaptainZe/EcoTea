@@ -1,7 +1,7 @@
 package com.appsinnova.admin.system.controller;
 
-import com.appsinnova.admin.business.service.tea.TeaSkuDashboardService;
-import com.appsinnova.admin.business.vo.tea.TeaSkuStatVo;
+import com.appsinnova.admin.business.service.chai.dashboard.ChaiDashboardService;
+import com.appsinnova.admin.business.vo.chai.dashboard.ChaiDashboardVo;
 import com.appsinnova.admin.common.constant.AdminConst;
 import com.appsinnova.admin.common.data.URL;
 import com.appsinnova.admin.common.enums.ResultEnum;
@@ -49,7 +49,7 @@ public class MainController {
     private MenuService menuService;
 
     @Autowired
-    private TeaSkuDashboardService teaSkuDashboardService;
+    private ChaiDashboardService chaiDashboardService;
 
     /**
      * 后台主体内容
@@ -103,9 +103,14 @@ public class MainController {
     @GetMapping("/index")
     @RequiresPermissions("index")
     public String index(Model model) {
-        TeaSkuStatVo statVo = teaSkuDashboardService.buildStatOverview();
-        model.addAttribute("statVo", statVo);
         return "/system/main/index";
+    }
+
+    @GetMapping("/index/dashboardData")
+    @RequiresPermissions("index")
+    @ResponseBody
+    public ResultVo<ChaiDashboardVo> dashboardData(@RequestParam(value = "statDays", required = false) Integer statDays) {
+        return ResultVoUtil.success(chaiDashboardService.getDashboard(statDays));
     }
 
     /**

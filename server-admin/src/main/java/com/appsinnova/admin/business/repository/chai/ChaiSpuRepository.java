@@ -44,4 +44,6 @@ public interface ChaiSpuRepository extends JpaRepository<ChaiSpu, Long>, JpaSpec
     boolean existsByBrandAndNameAndIdNot(Long brand, String name, Long id);
 
     boolean existsByBrandAndNameAndIdNotAndDeleted(Long brand, String name, Long id, Integer deleted);
+
+    long countByDeleted(Integer deleted);
 }

@@ -22,4 +22,6 @@ public interface ChaiWarehouseRepository extends JpaRepository<ChaiWarehouse, Lo
 
     @Query(value = "SELECT COUNT(1) FROM chai_stock_bill WHERE from_wh_id = :whId OR to_wh_id = :whId", nativeQuery = true)
     long countBillsByWhId(@Param("whId") Long whId);
+
+    long countByStatus(Integer status);
 }
