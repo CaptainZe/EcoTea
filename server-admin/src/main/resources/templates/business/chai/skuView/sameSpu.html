@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>同款</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span th:if="${errorMsg != null}" th:text="${errorMsg}"></span>
+        <th:block th:if="${errorMsg == null and spu != null}">
+            <span th:text="${spu.name}"></span>
+            <span th:if="${spu.spuCode != null and !#strings.isEmpty(spu.spuCode)}"
+                  th:text="${spu.spuCode}"
+                  style="color: #9CA3AF; font-size: 12px; margin-left: 8px;"></span>
+            <span style="color:#9CA3AF;font-size:12px;margin-left:8px;" th:text="|（${viewTitle}）|"></span>
+        </th:block>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body" th:if="${errorMsg == null}">
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="80" style="text-align:right;">库存</th>
+                    <th width="90">星级</th>
+                    <th width="100">品牌</th>
+                    <th width="220">商品名称</th>
+                    <th width="120">规格</th>
+                    <th width="80">年份</th>
+                    <th width="90">生产批次</th>
+                    <th width="100">官方价 / 元</th>
+                    <th width="110" th:if="${showSalePrice}">销售价 / 元</th>
+                    <th width="110" th:if="${showRecyclePrice}">回收价 / 元</th>
+                    <th width="100" th:if="${showRecyclePrice}">破损回收价 / 元</th>
+                    <th width="100" th:if="${showRecyclePrice}">无提袋扣减 / 元</th>
+                    <th width="120">展示图</th>
+                    <th width="120" th:if="${showRealImage}">实物图</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td style="text-align:right;" th:text="${item.stockTotalQty != null ? item.stockTotalQty : 0}">0</td>
+                    <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
+                    <td th:text="${item.brandName}"></td>
+                    <td>
+                        <div th:title="${item.name}"><span th:text="${item.name}"></span></div>
+                        <div th:if="${item.skuCode != null and !#strings.isEmpty(item.skuCode)}"
+                             th:text="${item.skuCode}" th:title="${item.skuCode}"
+                             style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
+                    </td>
+                    <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${item.year}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
+                    <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPriceShow}"></td>
+                    <td th:if="${showSalePrice}" style="background-color: #ECFDF5; color: #047857;"
+                        th:text="${item.salePriceShow}"></td>
+                    <td th:if="${showRecyclePrice}" style="background-color: #FFFBEB; color: #B45309;"
+                        th:text="${item.recyclePriceShow}"></td>
+                    <td th:if="${showRecyclePrice}" style="background-color: #FEF2F2; color: #B91C1C;"
+                        th:text="${item.recycleReduceAmountShow}"></td>
+                    <td th:if="${showRecyclePrice}" style="background-color: #FEF2F2; color: #B91C1C;"
+                        th:text="${item.recyclePriceReduceNoBagShow}"></td>
+                    <td>
+                        <th:block th:replace="/common/fragment :: previewImgList(${item.showImageList}, ${'same-spu-show-' + item.id})"></th:block>
+                    </td>
+                    <td th:if="${showRealImage}">
+                        <th:block th:replace="/common/fragment :: previewImgList(${item.realImageList}, ${'same-spu-real-' + item.id})"></th:block>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(list)}">
+                    <td colspan="14" style="text-align:center;color:#9CA3AF;">暂无同款在售商品</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

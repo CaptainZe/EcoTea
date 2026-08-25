@@ -258,8 +258,7 @@ public class ChaiStockService {
         Root<ChaiSku> skuRoot = query.from(ChaiSku.class);
         preList.add(cb.equal(root.get("skuId"), skuRoot.get("id")));
         Class<?> resultType = query.getResultType();
-        boolean isCount = resultType != null
-                && (Long.class.equals(resultType) || long.class.equals(resultType));
+        boolean isCount = (Long.class.equals(resultType) || long.class.equals(resultType));
         if (!isCount) {
             query.distinct(true);
         }

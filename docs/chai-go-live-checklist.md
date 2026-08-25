@@ -173,6 +173,17 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 | [ ] | 茶叶库存 | `/business/chai/stock/index` | `business:chai:stock:index` | 菜单 |
 | [ ] | 茶叶库存单据 | `/business/chai/stockBill/index` | `business:chai:stockBill:index` | 菜单 |
 
+### 3.2.1 茶叶价目（只读，可单独目录）
+
+| 勾选 | 标题 | URL | 权限标识 | 类型 |
+|------|------|-----|----------|------|
+| [ ] | 茶叶价目 | — | — | 目录 |
+| [ ] | 完整价目 | `/business/chai/skuView/internal` | `business:chai:skuView:internal` | 菜单 |
+| [ ] | 销售价目 | `/business/chai/skuView/sales` | `business:chai:skuView:sales` | 菜单 |
+| [ ] | 回收价目 | `/business/chai/skuView/recycle` | `business:chai:skuView:recycle` | 菜单 |
+
+说明：仅 `deleted=0` 且上架；无状态/删除筛选；以 SKU 关联库存合计（含 0）；「看同款」=同 SPU；回收价目写死最近 6 个半年。
+
 ### 3.3 按钮权限
 
 | 勾选 | 父菜单 | 标题 | 权限标识 |
@@ -217,6 +228,9 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 | `business:chai:stock:index` | 库存结存列表、分仓弹窗（只读） |
 | `business:chai:stockBill:index` | 库存单据列表、详情 |
 | `business:chai:stockBill:edit` | 新建并过账、作废、归档、选品搜索 |
+| `business:chai:skuView:internal` | 完整价目（只读，含销售+回收价+实物图） |
+| `business:chai:skuView:sales` | 销售价目（只读，无回收价） |
+| `business:chai:skuView:recycle` | 回收价目（只读，无销售价；仅最近 6 个半年） |
 
 ---
 

@@ -2,6 +2,8 @@ package com.appsinnova.admin.business.common.utils.chai;
 
 import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +12,22 @@ import java.util.List;
  */
 public final class ChaiHalfYearUtil {
 
+    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+
     private ChaiHalfYearUtil() {
+    }
+
+    /**
+     * 以「今天」所在半年为锚点，向前推算 count 个半年（含当期）。
+     * 1–6 月=上半年(100)，7–12 月=下半年(200)。
+     */
+    public static List<HalfYear> recentFromNow(int count) {
+        LocalDate today = LocalDate.now(ZONE);
+        int year = today.getYear();
+        int prodBatch = today.getMonthValue() <= 6
+                ? ChaiProdBatch.FIRST_HALF.getCode()
+                : ChaiProdBatch.SECOND_HALF.getCode();
+        return recentFromAnchor(year, prodBatch, count);
     }
 
     /**

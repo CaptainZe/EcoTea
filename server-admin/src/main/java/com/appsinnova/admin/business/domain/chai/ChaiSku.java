@@ -81,4 +81,8 @@ public class ChaiSku implements Serializable {
     /** 查询：按父 SPU 编码 */
     @Transient
     private String querySpuCode;
+
+    /** 价目视图：各仓合计库存（无结存行视为 0） */
+    @Transient
+    private Integer stockTotalQty;
 }
