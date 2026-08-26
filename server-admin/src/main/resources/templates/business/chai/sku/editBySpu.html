@@ -640,6 +640,7 @@
             $('#skuCardList .sku-card').each(function () {
                 refreshPriceRates($(this));
             });
+            applyReduceNoBagForNewRows();
         }
 
         function roundMoney(n) {
@@ -666,6 +667,51 @@
                 return null;
             }
             return roundMoney(official * rate);
+        }
+
+        /** 无提袋扣减默认值（左闭右开，与 ChaiRecycleNoBagUtil 一致） */
+        function defaultReduceNoBag(recyclePrice) {
+            if (recyclePrice == null || recyclePrice < 100) {
+                return 0;
+            }
+            if (recyclePrice < 500) {
+                return 10;
+            }
+            if (recyclePrice < 1000) {
+                return 15;
+            }
+            if (recyclePrice < 1500) {
+                return 25;
+            }
+            if (recyclePrice < 2000) {
+                return 35;
+            }
+            if (recyclePrice < 3000) {
+                return 40;
+            }
+            if (recyclePrice < 4000) {
+                return 45;
+            }
+            return 50;
+        }
+
+        function applyReduceNoBagFromRecycle($card) {
+            var recycle = toDecimal($card.find('.js-recycle').val());
+            if (recycle == null || recycle <= 0) {
+                return;
+            }
+            $card.find('.js-reduce-bag').val(defaultReduceNoBag(recycle));
+        }
+
+        function applyReduceNoBagForNewRows() {
+            $('#skuCardList .sku-card').each(function () {
+                var idx = $(this).data('idx');
+                var row = rows[idx];
+                if (!row || row.id) {
+                    return;
+                }
+                applyReduceNoBagFromRecycle($(this));
+            });
         }
 
         function officialPriceOf($card) {
@@ -1026,6 +1072,7 @@
                 }
             }
             refreshPriceRates($card);
+            applyReduceNoBagFromRecycle($card);
         });
 
         $('#skuCardList').on('input', '.js-sale', function () {
@@ -1033,7 +1080,9 @@
         });
 
         $('#skuCardList').on('input', '.js-recycle', function () {
-            refreshPriceRates($(this).closest('.sku-card'));
+            var $card = $(this).closest('.sku-card');
+            refreshPriceRates($card);
+            applyReduceNoBagFromRecycle($card);
         });
 
         $('#skuCardList').on('input', '.js-sale-rate', function () {
@@ -1064,6 +1113,7 @@
                 $card.find('.js-recycle').val(price);
             }
             refreshPriceRates($card, 'recycle-rate');
+            applyReduceNoBagFromRecycle($card);
         });
 
         $('#skuCardList').on('change', '.js-year, .js-batch', function () {

@@ -33,6 +33,32 @@ public class ChaiSpuService {
         return chaiSpuRepository.findById(id).orElse(null);
     }
 
+    /**
+     * 复制 SPU 为新建草稿（不含 id/编码/时间；不复制 SKU）
+     */
+    public ChaiSpu copyForEdit(Long id) {
+        ChaiSpu source = getById(id);
+        if (source == null) {
+            return null;
+        }
+        ChaiSpu copy = new ChaiSpu();
+        copy.setStarLevel(source.getStarLevel());
+        copy.setName(source.getName());
+        copy.setBrand(source.getBrand());
+        copy.setExpiration(source.getExpiration());
+        copy.setType(source.getType());
+        copy.setGrade(source.getGrade());
+        copy.setYear(source.getYear());
+        copy.setProdBatch(source.getProdBatch());
+        copy.setSpec(source.getSpec());
+        copy.setShowImageUrls(source.getShowImageUrls());
+        copy.setRealImageUrls(source.getRealImageUrls());
+        copy.setOfficialPrice(source.getOfficialPrice());
+        copy.setStatus(ChaiStatus.OFFLINE.getCode());
+        copy.setDeleted(0);
+        return copy;
+    }
+
     public ChaiSpu getBySpuCode(String spuCode) {
         if (!StringUtils.hasText(spuCode)) {
             return null;

@@ -155,6 +155,7 @@
                     <th width="100">品牌</th>
                     <th width="220">商品名称</th>
                     <th width="120">规格</th>
+                    <th width="80">茶类</th>
                     <th width="80">年份</th>
                     <th width="90">生产批次</th>
                     <th width="100">过账人</th>
@@ -186,6 +187,7 @@
                              style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
                     </td>
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_TYPE', item.type)}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
                     <td th:text="${item.operator}"></td>

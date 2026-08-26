@@ -279,7 +279,8 @@ TIMO 格式：`name` = 标识，`value` = `码:文案,码:文案,...`
 | SKU 状态 | 跟随 SPU 总开关；列表不提供 SKU 上下架/删除 |
 | SKU 唯一 | 同 SPU 下 `(year, prod_batch)` 唯一 |
 | 半年默认 | 以 SPU 的 year + prod_batch 为锚点，向前推 6 期（含锚点） |
-| 价格 | SKU 销售价/回收价/压价%/无提袋扣减提交时必填（官价可空） |
+| 价格 | SKU 销售价/回收价/压价%/无提袋扣减提交时必填（官价可空）；无提袋按回收价区间默认，可手调 |
+| 无提袋历史回填 | 上线执行 `docs/sql/chai_sku_recycle_no_bag_backfill.sql`（不改单据 sku_snap） |
 | 编码 | SPU：`CHAI-{spuId}`；SKU：`CHAI-{spuId}-{skuId}`；保存后生成，勿手填 |
 | 结存创建 | 仅入库过账时按需建 `chai_stock` / `chai_stock_wh` |
 | 单据状态机 | 保存=已过账；已过账→作废(冲)或归档(不冲)；2/3 终态 |

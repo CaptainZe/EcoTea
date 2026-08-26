@@ -94,6 +94,28 @@ public class ChaiSpuController {
         return "/business/chai/spu/edit";
     }
 
+    @GetMapping("/copy/{id}")
+    @RequiresPermissions("business:chai:spu:edit")
+    public String copy(@PathVariable("id") Long id, Model model) {
+        ChaiSpu source = chaiSpuService.getById(id);
+        if (source == null) {
+            model.addAttribute("errorMsg", "SPU不存在");
+            return "/business/chai/spu/edit";
+        }
+        if (Integer.valueOf(1).equals(source.getDeleted())) {
+            model.addAttribute("errorMsg", "已删除的SPU不能复制，请先恢复");
+            return "/business/chai/spu/edit";
+        }
+        ChaiSpu editItem = chaiSpuService.copyForEdit(id);
+        ChaiSpecUtil.fillSpecFields(editItem);
+        model.addAttribute("editItem", editItem);
+        model.addAttribute("hasSku", false);
+        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
+        model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
+        model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        return "/business/chai/spu/edit";
+    }
+
     @PostMapping("/save")
     @RequiresPermissions("business:chai:spu:edit")
     @ResponseBody

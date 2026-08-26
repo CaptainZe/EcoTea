@@ -116,6 +116,7 @@
                     <th width="100" class="sortable" data-field="brand">品牌</th>
                     <th width="220">商品名称</th>
                     <th width="120">规格</th>
+                    <th width="80" class="sortable" data-field="type">茶类</th>
                     <th width="80" class="sortable" data-field="year">年份</th>
                     <th width="90" class="sortable" data-field="prodBatch">生产批次</th>
                     <th width="100" class="sortable" data-field="officialPrice">官方价 / 元</th>
@@ -137,7 +138,7 @@
                         <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑SPU"
                            th:attr="data-url=@{'/business/chai/spu/edit/'+${item.spuId}}" data-size="1500,800">编辑</a>
                         <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="该SPU下SKU"
-                           th:attr="data-url=@{'/business/chai/sku/listBySpu/'+${item.spuId}}" data-size="1500,800">仅看该SPU</a>
+                           th:attr="data-url=@{'/business/chai/sku/listBySpu/'+${item.spuId}}" data-size="1500,800">看同款</a>
                     </td>
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
@@ -153,6 +154,7 @@
                              style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
                     </td>
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_TYPE', item.type)}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
                     <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPriceShow}"></td>

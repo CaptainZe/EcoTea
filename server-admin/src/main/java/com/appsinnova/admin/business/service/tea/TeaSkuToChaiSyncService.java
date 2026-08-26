@@ -1,6 +1,7 @@
 package com.appsinnova.admin.business.service.tea;
 
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
+import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
@@ -91,8 +92,7 @@ public class TeaSkuToChaiSyncService {
         sku.setRecyclePrice(defaultOne(teaSku.getRecyclePrice()));
         sku.setRecyclePriceReducePer(teaSku.getRecyclePriceReducePer() != null
                 ? teaSku.getRecyclePriceReducePer() : 5);
-        sku.setRecyclePriceReduceNoBag(teaSku.getRecyclePriceReduceNoBag() != null
-                ? teaSku.getRecyclePriceReduceNoBag() : new BigDecimal("10"));
+        sku.setRecyclePriceReduceNoBag(ChaiRecycleNoBagUtil.resolve(sku.getRecyclePrice()));
     }
 
     private static BigDecimal defaultOne(BigDecimal value) {

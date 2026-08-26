@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.service.chai;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiHalfYearUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
@@ -123,7 +124,7 @@ public class ChaiSkuService {
         sku.setSalePrice(BigDecimal.ONE);
         sku.setRecyclePrice(BigDecimal.ONE);
         sku.setRecyclePriceReducePer(5);
-        sku.setRecyclePriceReduceNoBag(new BigDecimal("10"));
+        sku.setRecyclePriceReduceNoBag(ChaiRecycleNoBagUtil.resolve(sku.getRecyclePrice()));
         ChaiSpecUtil.fillSpecFields(sku);
         return sku;
     }

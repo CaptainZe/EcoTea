@@ -122,13 +122,14 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="160">操作</th>
+                    <th width="180">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="80">SKU数</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
                     <th width="100" class="sortable" data-field="brand">品牌</th>
                     <th width="200">商品名称</th>
                     <th width="120">规格</th>
+                    <th width="80" class="sortable" data-field="type">茶类</th>
                     <th width="80" class="sortable" data-field="year">年份</th>
                     <th width="90" class="sortable" data-field="prodBatch">生产批次</th>
                     <th width="100" class="sortable" data-field="officialPrice">官方价 / 元</th>
@@ -148,6 +149,8 @@
                            th:attr="data-url=@{'/business/chai/spu/edit/'+${item.id}}" data-size="1500,800">编辑</a>
                         <a class="open-popup" style="color: #047857; font-weight: 600;" data-title="维护SKU"
                            th:attr="data-url=@{'/business/chai/sku/editBySpu/'+${item.id}}" data-size="1500,800">SKU</a>
+                        <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="复制SPU"
+                           th:attr="data-url=@{'/business/chai/spu/copy/'+${item.id}}" data-size="1500,800">复制</a>
                         <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
                            data-msg="下架将同时下架该SPU下全部SKU，是否确认"
                            th:href="@{/business/chai/spu/status/0(ids=${item.id})}">下架</a>
@@ -174,6 +177,7 @@
                              style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
                     </td>
                     <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_TYPE', item.type)}"></td>
                     <td th:text="${item.year}"></td>
                     <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
                     <td th:text="${item.officialPriceShow}"></td>
