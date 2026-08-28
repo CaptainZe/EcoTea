@@ -11,6 +11,7 @@
 
   <modules>
     <module>server-admin</module>
+    <module>server-api</module>
   </modules>
 
 </project>

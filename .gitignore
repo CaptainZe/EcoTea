@@ -2,6 +2,10 @@ target
 
 .cursorignore
 
+# server-api 环境配置（含密钥，部署时再放上；对照 application-env.yml.example）
+server-api/src/main/resources/application-dev.yml
+server-api/src/main/resources/application-prod.yml
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
