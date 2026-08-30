@@ -17,6 +17,10 @@ public final class ChaiPriceUtil {
     private ChaiPriceUtil() {
     }
 
+    public static boolean isNonSale(Integer nonSale) {
+        return Integer.valueOf(1).equals(nonSale);
+    }
+
     public static String plain(BigDecimal amount) {
         if (amount == null) {
             return "";
@@ -24,19 +28,27 @@ public final class ChaiPriceUtil {
         return amount.stripTrailingZeros().toPlainString();
     }
 
-    /** 列表官方价：去尾零；null 显示 "-" */
-    public static String formatOfficialPrice(BigDecimal officialPrice) {
+    /** 列表官方价：非卖品显示文案；否则去尾零；null 显示 "-" */
+    public static String formatOfficialPrice(Integer nonSale, BigDecimal officialPrice) {
+        if (isNonSale(nonSale)) {
+            return "非卖品";
+        }
         if (officialPrice == null) {
             return "-";
         }
         return plain(officialPrice);
     }
 
+    /** @deprecated 请使用 {@link #formatOfficialPrice(Integer, BigDecimal)} */
+    public static String formatOfficialPrice(BigDecimal officialPrice) {
+        return formatOfficialPrice(0, officialPrice);
+    }
+
     public static void fillSpuListShow(ChaiSpu spu) {
         if (spu == null) {
             return;
         }
-        spu.setOfficialPriceShow(formatOfficialPrice(spu.getOfficialPrice()));
+        spu.setOfficialPriceShow(formatOfficialPrice(spu.getNonSale(), spu.getOfficialPrice()));
     }
 
     /**
@@ -72,10 +84,29 @@ public final class ChaiPriceUtil {
         if (sku == null) {
             return;
         }
-        sku.setOfficialPriceShow(formatOfficialPrice(sku.getOfficialPrice()));
-        sku.setSalePriceShow(formatWithDiscount(sku.getSalePrice(), sku.getOfficialPrice()));
-        sku.setRecyclePriceShow(formatWithDiscount(sku.getRecyclePrice(), sku.getOfficialPrice()));
+        sku.setOfficialPriceShow(formatOfficialPrice(sku.getNonSale(), sku.getOfficialPrice()));
+        BigDecimal officialForDiscount = isNonSale(sku.getNonSale()) ? null : sku.getOfficialPrice();
+        sku.setSalePriceShow(formatWithDiscount(sku.getSalePrice(), officialForDiscount));
+        sku.setRecyclePriceShow(formatWithDiscount(sku.getRecyclePrice(), officialForDiscount));
         sku.setRecycleReduceAmountShow(plain(recycleAfterDamage(sku.getRecyclePrice(), sku.getRecyclePriceReducePer())));
         sku.setRecyclePriceReduceNoBagShow(plain(sku.getRecyclePriceReduceNoBag()));
+    }
+
+    /**
+     * 保存前规范化：非卖品强制清空官价；非非卖品时校验官价必填。
+     */
+    public static void normalizeAndValidateOfficial(Integer nonSale, BigDecimal officialPrice,
+                                                    java.util.function.Consumer<BigDecimal> setOfficial,
+                                                    java.util.function.Consumer<Integer> setNonSale) {
+        boolean flag = isNonSale(nonSale);
+        setNonSale.accept(flag ? 1 : 0);
+        if (flag) {
+            setOfficial.accept(null);
+            return;
+        }
+        if (officialPrice == null || officialPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("官方价必填且须大于0");
+        }
+        setOfficial.accept(officialPrice);
     }
 }

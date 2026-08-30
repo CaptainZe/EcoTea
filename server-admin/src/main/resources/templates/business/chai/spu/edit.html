@@ -170,11 +170,19 @@
         </div>
 
         <div class="layui-form-item">
-            <label class="layui-form-label required">官方价(元)</label>
+            <label class="layui-form-label required">非卖品</label>
             <div class="layui-input-inline">
-                <input type="number" step="0.01" min="0" name="officialPrice" class="layui-input"
-                       th:value="${editItem?.officialPrice != null ? editItem.officialPrice : 1}"
-                       required lay-verify="required|number" placeholder="官方价">
+                <select class="timo-search-select" name="nonSale" mo:dict="YES_OR_NO"
+                        mo-selected="${editItem.nonSale != null ? editItem.nonSale : 0}"
+                        lay-filter="nonSale" lay-verify="required"></select>
+            </div>
+            <label class="layui-form-label required" id="officialPriceLabel">官方价(元)</label>
+            <div class="layui-input-inline">
+                <input type="number" step="0.01" min="0.01" name="officialPrice" id="officialPrice"
+                       class="layui-input"
+                       th:value="${editItem?.officialPrice}"
+                       th:attr="disabled=${editItem.nonSale != null and editItem.nonSale == 1}"
+                       placeholder="官方价">
             </div>
         </div>
 
@@ -255,6 +263,28 @@
         var realImageList = [];
 
         form.render('select');
+
+        function applyNonSaleUi(isNonSale) {
+            var $official = $('#officialPrice');
+            var $label = $('#officialPriceLabel');
+            if (isNonSale) {
+                $official.val('').prop('disabled', true)
+                    .removeAttr('required').removeAttr('lay-verify');
+                $label.removeClass('required');
+            } else {
+                $official.prop('disabled', false)
+                    .attr('required', true).attr('lay-verify', 'required|number');
+                $label.addClass('required');
+                if (!$official.val()) {
+                    $official.val('1');
+                }
+            }
+        }
+
+        form.on('select(nonSale)', function (data) {
+            applyNonSaleUi(String(data.value) === '1');
+        });
+        applyNonSaleUi(String($('select[name="nonSale"]').val()) === '1');
 
         initImageGroup({
             uploadElem: '.image-upload',

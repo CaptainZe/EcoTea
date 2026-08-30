@@ -46,19 +46,29 @@ public class ChaiStockService {
     }
 
     /**
-     * 某 SKU 在指定仓的结存件数；无结存行返回 0。
+     * 某 SKU 在指定仓的结存：qty / damageQty；无结存行返回 0。
      */
-    public int getWhQty(Long skuId, Long whId) {
+    public int[] getWhQtyPair(Long skuId, Long whId) {
         if (skuId == null || whId == null || whId <= 0) {
-            return 0;
+            return new int[]{0, 0};
         }
         ChaiStock stock = getBySkuId(skuId);
         if (stock == null) {
-            return 0;
+            return new int[]{0, 0};
         }
         return chaiStockWhRepository.findFirstByStockIdAndWhId(stock.getId(), whId)
-                .map(row -> row.getQty() == null ? 0 : row.getQty())
-                .orElse(0);
+                .map(row -> new int[]{
+                        row.getQty() == null ? 0 : row.getQty(),
+                        row.getDamageQty() == null ? 0 : row.getDamageQty()
+                })
+                .orElse(new int[]{0, 0});
+    }
+
+    /**
+     * 某 SKU 在指定仓的结存件数；无结存行返回 0。
+     */
+    public int getWhQty(Long skuId, Long whId) {
+        return getWhQtyPair(skuId, whId)[0];
     }
 
     /**
@@ -74,6 +84,27 @@ public class ChaiStockService {
                 continue;
             }
             map.put(skuId, getWhQty(skuId, whId));
+        }
+        return map;
+    }
+
+    /**
+     * 批量查分仓：总数 + 破损；key=skuId，value={qty, damageQty}。
+     */
+    public Map<Long, Map<String, Integer>> mapWhStockBySkuIds(List<Long> skuIds, Long whId) {
+        Map<Long, Map<String, Integer>> map = new HashMap<>();
+        if (skuIds == null || skuIds.isEmpty()) {
+            return map;
+        }
+        for (Long skuId : skuIds) {
+            if (skuId == null) {
+                continue;
+            }
+            int[] pair = getWhQtyPair(skuId, whId);
+            Map<String, Integer> one = new HashMap<>();
+            one.put("qty", pair[0]);
+            one.put("damageQty", pair[1]);
+            map.put(skuId, one);
         }
         return map;
     }
@@ -103,9 +134,10 @@ public class ChaiStockService {
 
     /**
      * 过账加减分仓；delta 可正可负。无行且 delta&gt;0 时建行；不允许结果 &lt; 0。
+     * appearanceDamaged=true 时同步增减 damage_qty（本行件数全部按破损）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void applyWhDelta(Long skuId, Long whId, int delta, String operator) {
+    public void applyWhDelta(Long skuId, Long whId, int delta, boolean appearanceDamaged, String operator) {
         if (skuId == null || whId == null) {
             throw new IllegalArgumentException("SKU与仓库不能为空");
         }
@@ -116,32 +148,52 @@ public class ChaiStockService {
         ChaiStockWh row = chaiStockWhRepository.findFirstByStockIdAndWhId(stock.getId(), whId).orElse(null);
         if (row == null) {
             if (delta < 0) {
-                throw new IllegalArgumentException("仓库库存不足");
+                throw new IllegalArgumentException(appearanceDamaged ? "仓库破损库存不足" : "仓库库存不足");
             }
             row = new ChaiStockWh();
             row.setStockId(stock.getId());
             row.setWhId(whId);
             row.setQty(0);
+            row.setDamageQty(0);
             row.setVersion(0);
             row = chaiStockWhRepository.save(row);
         }
-        int updated = chaiStockWhRepository.applyQtyDelta(row.getId(), delta, row.getVersion());
+        if (row.getDamageQty() == null) {
+            row.setDamageQty(0);
+            row = chaiStockWhRepository.save(row);
+        }
+        int updated = appearanceDamaged
+                ? chaiStockWhRepository.applyDamagedQtyDelta(row.getId(), delta, row.getVersion())
+                : chaiStockWhRepository.applyGoodQtyDelta(row.getId(), delta, row.getVersion());
         if (updated == 0) {
-            throw new IllegalArgumentException("库存不足或并发冲突，请重试");
+            throw new IllegalArgumentException(appearanceDamaged
+                    ? "破损库存不足或并发冲突，请重试"
+                    : "完好库存不足或并发冲突，请重试");
         }
         recalcTotalQty(stock.getId(), operator);
+    }
+
+    /** 兼容旧调用：按完好件数变动 */
+    @Transactional(rollbackFor = Exception.class)
+    public void applyWhDelta(Long skuId, Long whId, int delta, String operator) {
+        applyWhDelta(skuId, whId, delta, false, operator);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public ChaiStock ensureStock(Long skuId, String operator) {
         ChaiStock stock = getBySkuId(skuId);
         if (stock != null) {
+            if (stock.getDamageQty() == null) {
+                stock.setDamageQty(0);
+                stock = chaiStockRepository.save(stock);
+            }
             return stock;
         }
         long now = System.currentTimeMillis();
         stock = new ChaiStock();
         stock.setSkuId(skuId);
         stock.setTotalQty(0);
+        stock.setDamageQty(0);
         stock.setOperator(operator != null ? operator : "");
         stock.setCreateTime(now);
         stock.setUpdateTime(now);
@@ -151,14 +203,17 @@ public class ChaiStockService {
     private void recalcTotalQty(Long stockId, String operator) {
         List<ChaiStockWh> rows = chaiStockWhRepository.findByStockIdOrderByQtyDescIdAsc(stockId);
         int sum = 0;
+        int damageSum = 0;
         for (ChaiStockWh row : rows) {
             sum += row.getQty() == null ? 0 : row.getQty();
+            damageSum += row.getDamageQty() == null ? 0 : row.getDamageQty();
         }
         ChaiStock stock = getById(stockId);
         if (stock == null) {
             return;
         }
         stock.setTotalQty(sum);
+        stock.setDamageQty(damageSum);
         stock.setOperator(operator != null ? operator : "");
         stock.setUpdateTime(System.currentTimeMillis());
         chaiStockRepository.save(stock);
@@ -289,6 +344,9 @@ public class ChaiStockService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(skuRoot.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getNonSale() != null) {
+            preList.add(cb.equal(skuRoot.get("nonSale").as(Integer.class), param.getNonSale()));
         }
         if (param.getDeleted() != null) {
             preList.add(cb.equal(skuRoot.get("deleted").as(Integer.class), param.getDeleted()));

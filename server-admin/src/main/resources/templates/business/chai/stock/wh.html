@@ -82,6 +82,7 @@
             </div>
             <div style="margin-top:4px;">
                 合计库存 <span class="wh-total" th:text="${stock.totalQty}">0</span> 件
+                · 其中破损 <span class="wh-total" th:text="${stock.damageQty != null ? stock.damageQty : 0}">0</span> 件
             </div>
         </div>
 
@@ -89,13 +90,14 @@
             <thead>
             <tr>
                 <th>仓库</th>
-                <th width="120">结存件数</th>
+                <th width="100">结存件数</th>
+                <th width="100">其中破损</th>
                 <th width="100">占比</th>
             </tr>
             </thead>
             <tbody>
             <tr th:if="${whList == null or #lists.isEmpty(whList)}">
-                <td colspan="3" style="text-align:center;color:#9CA3AF;">暂无分仓记录（入库过账后产生）</td>
+                <td colspan="4" style="text-align:center;color:#9CA3AF;">暂无分仓记录（入库过账后产生）</td>
             </tr>
             <tr th:each="row : ${whList}">
                 <td th:text="${row.whName}"></td>
@@ -103,6 +105,11 @@
                     <span class="wh-qty"
                           th:classappend="${row.qty == null or row.qty == 0} ? ' is-zero' : ''"
                           th:text="${row.qty}"></span>
+                </td>
+                <td>
+                    <span class="wh-qty"
+                          th:classappend="${row.damageQty == null or row.damageQty == 0} ? ' is-zero' : ''"
+                          th:text="${row.damageQty != null ? row.damageQty : 0}"></span>
                 </td>
                 <td>
                     <span class="wh-ratio"

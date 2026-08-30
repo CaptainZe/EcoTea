@@ -68,6 +68,7 @@ public class TeaSkuToChaiSyncService {
                 form.getUnitCount(), form.getUnitLabel()));
         spu.setShowImageUrls(blankToEmptyJson(form.getShowImageUrls()));
         spu.setRealImageUrls(blankToEmptyJson(form.getRealImageUrls()));
+        spu.setNonSale(0);
         spu.setOfficialPrice(defaultOne(teaSku.getOfficialPrice()));
         spu.setStatus(ChaiStatus.OFFLINE.getCode());
         spu.setOperator(operator);
@@ -87,6 +88,7 @@ public class TeaSkuToChaiSyncService {
     }
 
     private void applyTeaPrices(ChaiSku sku, TeaSku teaSku) {
+        sku.setNonSale(0);
         sku.setOfficialPrice(defaultOne(teaSku.getOfficialPrice()));
         sku.setSalePrice(defaultOne(teaSku.getSalePrice()));
         sku.setRecyclePrice(defaultOne(teaSku.getRecyclePrice()));

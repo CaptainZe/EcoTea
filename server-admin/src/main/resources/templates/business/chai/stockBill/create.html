@@ -52,6 +52,7 @@
             font-size: 12px;
             line-height: 1.4;
             margin-top: 4px;
+            white-space: nowrap;
         }
         .bill-wh-hint.warn {
             color: #DC2626;
@@ -156,12 +157,13 @@
                             <th width="200">商品名称</th>
                             <th width="110">年份/批次</th>
                             <th width="220">展示图</th>
-                            <th width="80">件数</th>
+                            <th width="90">件数</th>
+                            <th width="90">外观破损</th>
                             <th width="130" th:if="${billType != 3}">单价</th>
                             <th width="90" th:if="${billType != 3}">金额</th>
                             <th width="110" th:if="${billType == 3}">参考</th>
                             <th width="150">行备注</th>
-                            <th width="60">操作</th>
+                            <th width="100">操作</th>
                         </tr>
                         </thead>
                         <tbody id="itemBody"></tbody>
@@ -228,25 +230,74 @@
             return v == null ? 0 : parseInt(v, 10) || 0;
         }
 
-        function renderWhHint($tr, fromQty, toQty, fromReady, toReady) {
+        function mapStockGet(map, skuId) {
+            if (!map) {
+                return {qty: 0, damageQty: 0};
+            }
+            var v = map[skuId];
+            if (v == null) {
+                v = map[String(skuId)];
+            }
+            if (!v || typeof v !== 'object') {
+                return {qty: 0, damageQty: 0};
+            }
+            return {
+                qty: parseInt(v.qty, 10) || 0,
+                damageQty: parseInt(v.damageQty, 10) || 0
+            };
+        }
+
+        function isAppearanceDamaged($tr) {
+            return !!$tr.find('.js-appearance-damaged').prop('checked');
+        }
+
+        function availableForRow(totalQty, damageQty, damaged) {
+            var total = totalQty || 0;
+            var damage = damageQty || 0;
+            if (damage < 0) {
+                damage = 0;
+            }
+            if (damage > total) {
+                damage = total;
+            }
+            return damaged ? damage : Math.max(0, total - damage);
+        }
+
+        /** 精简文案：共10 / 完好7 */
+        function formatWhSide(prefix, totalQty, damageQty, damaged, ready) {
+            if (!ready) {
+                return (prefix ? prefix + ' ' : '') + '-';
+            }
+            var avail = availableForRow(totalQty, damageQty, damaged);
+            var side = damaged ? '破损' : '完好';
+            var body = '共' + totalQty + ' / ' + side + avail;
+            return prefix ? (prefix + ' ' + body) : body;
+        }
+
+        function renderWhHint($tr, fromQty, fromDamage, toQty, toDamage, fromReady, toReady) {
             $tr.attr('data-from-qty', fromQty);
+            $tr.attr('data-from-damage', fromDamage);
             $tr.attr('data-to-qty', toQty);
+            $tr.attr('data-to-damage', toDamage);
             $tr.attr('data-from-ready', fromReady ? '1' : '0');
             $tr.attr('data-to-ready', toReady ? '1' : '0');
             var $hint = $tr.find('.js-wh-hint');
             var qty = parseInt($tr.find('.js-qty').val(), 10) || 0;
+            var damaged = isAppearanceDamaged($tr);
             var warn = false;
             if (billType === 1) {
-                $hint.text(fromReady ? ('本仓已有 ' + fromQty + ' 件') : '本仓已有 -')
+                $hint.text(formatWhSide('', fromQty, fromDamage, damaged, fromReady))
                     .toggleClass('warn', false);
             } else if (billType === 2) {
-                warn = fromReady && qty > fromQty;
-                $hint.text(fromReady ? ('本仓可用 ' + fromQty + ' 件') : '本仓可用 -')
+                var avail = availableForRow(fromQty, fromDamage, damaged);
+                warn = fromReady && qty > avail;
+                $hint.text(formatWhSide('', fromQty, fromDamage, damaged, fromReady))
                     .toggleClass('warn', warn);
             } else {
-                warn = fromReady && qty > fromQty;
-                var fromPart = fromReady ? ('调出仓可用 ' + fromQty) : '调出仓可用 -';
-                var toPart = toReady ? ('调入仓已有 ' + toQty) : '调入仓已有 -';
+                var fromAvail = availableForRow(fromQty, fromDamage, damaged);
+                warn = fromReady && qty > fromAvail;
+                var fromPart = formatWhSide('出', fromQty, fromDamage, damaged, fromReady);
+                var toPart = formatWhSide('入', toQty, toDamage, damaged, toReady);
                 $hint.html(fromPart + '<br>' + toPart).toggleClass('warn', warn);
             }
         }
@@ -262,7 +313,7 @@
             var toReady = toWhId > 0;
             if (!fromReady && !(billType === 3 && toReady)) {
                 $rows.each(function () {
-                    renderWhHint($(this), 0, 0, false, false);
+                    renderWhHint($(this), 0, 0, 0, 0, false, false);
                 });
                 return;
             }
@@ -287,12 +338,14 @@
                 if (res.code !== 200) {
                     return;
                 }
-                var fromMap = (res.data && res.data.fromQtyMap) || {};
-                var toMap = (res.data && res.data.toQtyMap) || {};
+                var fromStockMap = (res.data && res.data.fromStockMap) || {};
+                var toStockMap = (res.data && res.data.toStockMap) || {};
                 $rows.each(function () {
                     var $tr = $(this);
                     var skuId = parseInt($tr.attr('data-sku-id'), 10);
-                    renderWhHint($tr, mapGet(fromMap, skuId), mapGet(toMap, skuId), fromReady, toReady);
+                    var from = mapStockGet(fromStockMap, skuId);
+                    var to = mapStockGet(toStockMap, skuId);
+                    renderWhHint($tr, from.qty, from.damageQty, to.qty, to.damageQty, fromReady, toReady);
                 });
             });
         }
@@ -312,11 +365,15 @@
                 }
                 if ($tr.find('.js-wh-hint').length) {
                     var fromQty = parseInt($tr.attr('data-from-qty'), 10);
+                    var fromDamage = parseInt($tr.attr('data-from-damage'), 10);
                     var toQty = parseInt($tr.attr('data-to-qty'), 10);
+                    var toDamage = parseInt($tr.attr('data-to-damage'), 10);
                     renderWhHint(
                         $tr,
                         isNaN(fromQty) ? 0 : fromQty,
+                        isNaN(fromDamage) ? 0 : fromDamage,
                         isNaN(toQty) ? 0 : toQty,
+                        isNaN(toDamage) ? 0 : toDamage,
                         $tr.attr('data-from-ready') === '1',
                         $tr.attr('data-to-ready') === '1'
                     );
@@ -394,19 +451,22 @@
             } else {
                 priceCols = '<td><div class="bill-ref-price">' + refLabel + ' ' + esc(refValue) + '</div></td>';
             }
-            var html = '<tr data-sku-id="' + sku.id + '" data-from-qty="0" data-to-qty="0" data-from-ready="0" data-to-ready="0">'
+            var html = '<tr data-sku-id="' + sku.id + '" data-from-qty="0" data-from-damage="0" data-to-qty="0" data-to-damage="0" data-from-ready="0" data-to-ready="0">'
                 + '<td>' + esc(sku.brandName) + '</td>'
                 + '<td>' + nameCell + '</td>'
                 + '<td>' + esc(halfYearText(sku)) + '</td>'
                 + '<td class="bill-show-cell">' + renderShowImages(sku.showImageUrls) + '</td>'
                 + '<td><input type="number" min="1" step="1" class="layui-input js-qty" value="1">'
                 + '<div class="bill-wh-hint js-wh-hint"></div></td>'
+                + '<td><input type="checkbox" class="js-appearance-damaged" lay-skin="switch" lay-text="是|否" lay-filter="appearanceDamaged"></td>'
                 + priceCols
-                + '<td><input type="text" maxlength="255" class="layui-input js-remark" placeholder="破损/无提袋等"></td>'
-                + '<td><a href="javascript:;" class="js-remove" style="color:#DC2626;">删除</a></td>'
+                + '<td><input type="text" maxlength="255" class="layui-input js-remark" placeholder="无提袋等"></td>'
+                + '<td><a href="javascript:;" class="js-copy" style="color:#1D4ED8;margin-right:8px;">复制</a>'
+                + '<a href="javascript:;" class="js-remove" style="color:#DC2626;">删除</a></td>'
                 + '</tr>';
             $('#itemBody').append(html);
-            renderWhHint($('#itemBody tr').last(), 0, 0, false, false);
+            form.render('checkbox');
+            renderWhHint($('#itemBody tr').last(), 0, 0, 0, 0, false, false);
             recalc();
         }
 
@@ -450,7 +510,34 @@
             recalc();
         });
 
+        $(document).on('click', '.js-copy', function () {
+            var $tr = $(this).closest('tr');
+            var qty = $tr.find('.js-qty').val();
+            var price = $tr.find('.js-price').val();
+            var remark = $tr.find('.js-remark').val();
+            var damaged = !!$tr.find('.js-appearance-damaged').prop('checked');
+            var $clone = $tr.clone();
+            $clone.find('.layui-form-switch').remove();
+            var $cb = $clone.find('input.js-appearance-damaged');
+            $cb.prop('checked', damaged).show().css({display: '', visibility: ''});
+            $clone.find('.js-qty').val(qty);
+            if ($clone.find('.js-price').length) {
+                $clone.find('.js-price').val(price);
+            }
+            $clone.find('.js-remark').val(remark);
+            $tr.after($clone);
+            form.render('checkbox');
+            recalc();
+        });
+
         $(document).on('input change', '.js-qty, .js-price', recalc);
+
+        form.on('switch(appearanceDamaged)', function (data) {
+            var $tr = $(data.elem).closest('tr');
+            if ($tr.length) {
+                recalc();
+            }
+        });
 
         form.on('select(fromWhId)', function () {
             refreshWhHints();
@@ -502,7 +589,13 @@
                     invalid = true;
                     return false;
                 }
-                itemList.push({skuId: skuId, qty: qty, price: price, remark: remark});
+                itemList.push({
+                    skuId: skuId,
+                    qty: qty,
+                    appearanceDamaged: $(this).find('.js-appearance-damaged').prop('checked') ? 1 : 0,
+                    price: price,
+                    remark: remark
+                });
             });
             if (invalid || !itemList.length) {
                 layer.msg('请至少添加一行有效明细（件数>0）');

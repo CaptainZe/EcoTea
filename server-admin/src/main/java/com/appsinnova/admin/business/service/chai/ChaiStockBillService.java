@@ -113,6 +113,7 @@ public class ChaiStockBillService {
                 throw new IllegalArgumentException("已删除的SKU不能入库，请先恢复：" + sku.getSkuCode());
             }
             int qty = line.getQty();
+            int appearanceDamaged = Integer.valueOf(1).equals(line.getAppearanceDamaged()) ? 1 : 0;
             BigDecimal price = line.getPrice() == null ? BigDecimal.ZERO : line.getPrice();
             if (price.compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("单价不能为负数");
@@ -123,6 +124,7 @@ public class ChaiStockBillService {
             item.setSkuCode(sku.getSkuCode() != null ? sku.getSkuCode() : "");
             item.setName(sku.getName() != null ? sku.getName() : "");
             item.setQty(qty);
+            item.setAppearanceDamaged(appearanceDamaged);
             item.setPrice(price);
             item.setAmount(amount);
             item.setRemark(StringUtils.hasText(line.getRemark()) ? line.getRemark().trim() : "");
@@ -155,7 +157,8 @@ public class ChaiStockBillService {
         for (ChaiStockBillItem item : preparedItems) {
             item.setBillId(bill.getId());
             chaiStockBillItemRepository.save(item);
-            applyStockChange(billType, saveVo.getFromWhId(), toWhId, item.getSkuId(), item.getQty(), operator, false);
+            applyStockChange(billType, saveVo.getFromWhId(), toWhId, item.getSkuId(), item.getQty(),
+                    Integer.valueOf(1).equals(item.getAppearanceDamaged()), operator, false);
         }
         return bill;
     }
@@ -170,7 +173,8 @@ public class ChaiStockBillService {
         List<ChaiStockBillItem> items = listItems(billId);
         for (ChaiStockBillItem item : items) {
             applyStockChange(billType, bill.getFromWhId(), bill.getToWhId(),
-                    item.getSkuId(), item.getQty(), operator, true);
+                    item.getSkuId(), item.getQty(),
+                    Integer.valueOf(1).equals(item.getAppearanceDamaged()), operator, true);
         }
         bill.setStatus(ChaiStockBillStatus.VOIDED.getCode());
         bill.setOperator(operator != null ? operator : "");
@@ -191,19 +195,20 @@ public class ChaiStockBillService {
     }
 
     private void applyStockChange(ChaiStockBillType billType, Long fromWhId, Long toWhId,
-                                  Long skuId, int qty, String operator, boolean reverse) {
+                                  Long skuId, int qty, boolean appearanceDamaged,
+                                  String operator, boolean reverse) {
         int sign = reverse ? -1 : 1;
         switch (billType) {
             case IN:
                 // 入库：from_wh 为入到哪
-                chaiStockService.applyWhDelta(skuId, fromWhId, sign * qty, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, sign * qty, appearanceDamaged, operator);
                 break;
             case OUT:
-                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, appearanceDamaged, operator);
                 break;
             case TRANSFER:
-                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, operator);
-                chaiStockService.applyWhDelta(skuId, toWhId, sign * qty, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, appearanceDamaged, operator);
+                chaiStockService.applyWhDelta(skuId, toWhId, sign * qty, appearanceDamaged, operator);
                 break;
             default:
                 throw new IllegalArgumentException("不支持的单据类型");

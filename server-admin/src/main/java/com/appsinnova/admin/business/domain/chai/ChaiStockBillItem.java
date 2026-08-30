@@ -27,6 +27,8 @@ public class ChaiStockBillItem implements Serializable {
     private String skuCode;
     private String name;
     private Integer qty;
+    /** 是否外观破损：0否 1是（本行 qty 全部计入破损结存） */
+    private Integer appearanceDamaged;
     private BigDecimal price;
     private BigDecimal amount;
     /** 行备注：破损、无提袋等 */

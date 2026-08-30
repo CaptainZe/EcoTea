@@ -2,6 +2,7 @@ package com.appsinnova.admin.business.service.chai;
 
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.business.repository.chai.ChaiSpuRepository;
 import com.appsinnova.admin.common.data.PageSort;
@@ -53,7 +54,8 @@ public class ChaiSpuService {
         copy.setSpec(source.getSpec());
         copy.setShowImageUrls(source.getShowImageUrls());
         copy.setRealImageUrls(source.getRealImageUrls());
-        copy.setOfficialPrice(source.getOfficialPrice());
+        copy.setNonSale(source.getNonSale() != null ? source.getNonSale() : 0);
+        copy.setOfficialPrice(ChaiPriceUtil.isNonSale(copy.getNonSale()) ? null : source.getOfficialPrice());
         copy.setStatus(ChaiStatus.OFFLINE.getCode());
         copy.setDeleted(0);
         return copy;
@@ -124,10 +126,19 @@ public class ChaiSpuService {
             if (entity.getDeleted() == null) {
                 entity.setDeleted(0);
             }
-            if (entity.getOfficialPrice() == null) {
-                entity.setOfficialPrice(BigDecimal.ONE);
+            if (entity.getNonSale() == null) {
+                entity.setNonSale(0);
             }
             isCreate = true;
+        }
+        if (ChaiPriceUtil.isNonSale(entity.getNonSale())) {
+            entity.setNonSale(1);
+            entity.setOfficialPrice(null);
+        } else {
+            entity.setNonSale(0);
+            if (entity.getOfficialPrice() == null) {
+                throw new IllegalArgumentException("官方价必填且须大于0");
+            }
         }
         entity.setUpdateTime(System.currentTimeMillis());
         entity = chaiSpuRepository.save(entity);
@@ -211,6 +222,9 @@ public class ChaiSpuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getNonSale() != null) {
+            preList.add(cb.equal(root.get("nonSale").as(Integer.class), param.getNonSale()));
         }
         if (param.getDeleted() != null) {
             preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));

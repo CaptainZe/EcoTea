@@ -139,6 +139,9 @@ public class ChaiSkuViewService {
         if (param.getStarLevel() != null) {
             preList.add(cb.equal(root.get("starLevel").as(Integer.class), param.getStarLevel()));
         }
+        if (param.getNonSale() != null) {
+            preList.add(cb.equal(root.get("nonSale").as(Integer.class), param.getNonSale()));
+        }
 
         if (recentHalfYearOnly) {
             List<ChaiHalfYearUtil.HalfYear> halfYears = ChaiHalfYearUtil.recentFromNow(RECYCLE_HALF_YEAR_COUNT);

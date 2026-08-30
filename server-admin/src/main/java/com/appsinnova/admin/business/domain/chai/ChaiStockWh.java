@@ -23,6 +23,8 @@ public class ChaiStockWh implements Serializable {
     private Long stockId;
     private Long whId;
     private Integer qty;
+    /** 外观破损结存（计入 qty） */
+    private Integer damageQty;
     private Integer version;
 
     /** 列表展示 */

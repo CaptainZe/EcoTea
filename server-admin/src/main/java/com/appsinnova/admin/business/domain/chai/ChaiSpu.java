@@ -34,6 +34,9 @@ public class ChaiSpu implements Serializable {
     private String spec;
     private String showImageUrls;
     private String realImageUrls;
+    /** 是否非卖品：0否 1是（无官方价，仍可销售/回收） */
+    private Integer nonSale;
+    /** 官方价；非卖品时为 null */
     private BigDecimal officialPrice;
     private Integer status;
     /** 0有效 1已删除；不与 status（上下架）混用 */

@@ -89,6 +89,13 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">非卖品</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="nonSale" mo:dict="YES_OR_NO"
+                                mo-selected="${param.nonSale}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">是否删除</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="deleted">
@@ -150,6 +157,7 @@
                 <tr>
                     <th width="80">操作</th>
                     <th width="100" class="sortable col-num" data-field="totalQty">合计库存</th>
+                    <th width="90" class="sortable col-num" data-field="damageQty">其中破损</th>
                     <th width="90">商品状态</th>
                     <th width="90">星级</th>
                     <th width="100">品牌</th>
@@ -172,6 +180,11 @@
                     <td class="col-num">
                         <span class="stock-qty" th:classappend="${item.totalQty == null or item.totalQty == 0} ? ' is-zero' : ''"
                               th:text="${item.totalQty}"></span>
+                    </td>
+                    <td class="col-num">
+                        <span class="stock-qty"
+                              th:classappend="${item.damageQty == null or item.damageQty == 0} ? ' is-zero' : ''"
+                              th:text="${item.damageQty != null ? item.damageQty : 0}"></span>
                     </td>
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>

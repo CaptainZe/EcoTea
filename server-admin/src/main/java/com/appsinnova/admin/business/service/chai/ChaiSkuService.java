@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.service.chai;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiHalfYearUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
@@ -120,7 +121,13 @@ public class ChaiSkuService {
         sku.setRealImageUrls(spu.getRealImageUrls());
         sku.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
         sku.setDeleted(0);
-        sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
+        int nonSale = spu.getNonSale() != null ? spu.getNonSale() : 0;
+        sku.setNonSale(nonSale);
+        if (ChaiPriceUtil.isNonSale(nonSale)) {
+            sku.setOfficialPrice(null);
+        } else {
+            sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
+        }
         sku.setSalePrice(BigDecimal.ONE);
         sku.setRecyclePrice(BigDecimal.ONE);
         sku.setRecyclePriceReducePer(5);
@@ -297,11 +304,31 @@ public class ChaiSkuService {
     }
 
     private void validatePrice(ChaiSku item) {
-        if (item.getSalePrice() == null) {
-            throw new IllegalArgumentException("销售价必填");
+        if (item.getNonSale() == null) {
+            item.setNonSale(0);
         }
-        if (item.getRecyclePrice() == null) {
-            throw new IllegalArgumentException("回收价必填");
+        if (ChaiPriceUtil.isNonSale(item.getNonSale())) {
+            item.setNonSale(1);
+            item.setOfficialPrice(null);
+        } else {
+            item.setNonSale(0);
+            if (item.getOfficialPrice() == null || item.getOfficialPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("官方价必填且须大于0");
+            }
+        }
+        if (item.getSalePrice() == null || item.getSalePrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("销售价必填且须大于0");
+        }
+        if (item.getRecyclePrice() == null || item.getRecyclePrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("回收价必填且须大于0");
+        }
+        if (!ChaiPriceUtil.isNonSale(item.getNonSale())) {
+            if (item.getSalePrice().compareTo(item.getOfficialPrice()) > 0) {
+                throw new IllegalArgumentException("销售价不能大于官方价");
+            }
+            if (item.getRecyclePrice().compareTo(item.getOfficialPrice()) > 0) {
+                throw new IllegalArgumentException("回收价不能大于官方价");
+            }
         }
         if (item.getRecyclePriceReducePer() == null) {
             throw new IllegalArgumentException("回收价压价百分比必填");
@@ -345,6 +372,9 @@ public class ChaiSkuService {
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
+        }
+        if (param.getNonSale() != null) {
+            preList.add(cb.equal(root.get("nonSale").as(Integer.class), param.getNonSale()));
         }
         if (param.getDeleted() != null) {
             preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));

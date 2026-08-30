@@ -154,6 +154,7 @@ public class ChaiSkuController {
         model.addAttribute("starLevelDictJson", dictJson("STAR_LEVEL"));
         model.addAttribute("gradeDictJson", dictJson("CHAI_GRADE"));
         model.addAttribute("specLabelDictJson", dictJson(ChaiSpecUtil.SPEC_LABEL_DICT));
+        model.addAttribute("yesOrNoDictJson", dictJson("YES_OR_NO"));
         return "/business/chai/sku/editBySpu";
     }
 

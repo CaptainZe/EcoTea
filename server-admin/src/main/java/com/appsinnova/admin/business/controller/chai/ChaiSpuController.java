@@ -74,6 +74,7 @@ public class ChaiSpuController {
             editItem.setStatus(ChaiStatus.OFFLINE.getCode());
             editItem.setProdBatch(ChaiProdBatch.FIRST_HALF.getCode());
             editItem.setGrade(0);
+            editItem.setNonSale(0);
             editItem.setOfficialPrice(BigDecimal.ONE);
         } else {
             ChaiSpecUtil.fillSpecFields(editItem);
@@ -173,11 +174,20 @@ public class ChaiSpuController {
         if (saveItem.getProdBatch() == null) {
             return ResultVoUtil.error("生产批次必选");
         }
-        if (saveItem.getOfficialPrice() == null) {
-            return ResultVoUtil.error("官方价必填");
+        if (saveItem.getNonSale() == null) {
+            saveItem.setNonSale(0);
         }
-        if (saveItem.getOfficialPrice().compareTo(BigDecimal.ZERO) < 0) {
-            return ResultVoUtil.error("官方价不能为负数");
+        if (ChaiPriceUtil.isNonSale(saveItem.getNonSale())) {
+            saveItem.setNonSale(1);
+            saveItem.setOfficialPrice(null);
+        } else {
+            saveItem.setNonSale(0);
+            if (saveItem.getOfficialPrice() == null) {
+                return ResultVoUtil.error("官方价必填");
+            }
+            if (saveItem.getOfficialPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                return ResultVoUtil.error("官方价须大于0");
+            }
         }
         if (saveItem.getTotalNetWeight() == null || saveItem.getTotalNetWeight().compareTo(BigDecimal.ZERO) <= 0) {
             return ResultVoUtil.error("总净重必填且大于0");

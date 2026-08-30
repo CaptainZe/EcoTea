@@ -163,6 +163,8 @@ public class ChaiStockBillController {
         Map<String, Object> data = new HashMap<>();
         data.put("fromQtyMap", chaiStockService.mapWhQtyBySkuIds(idList, fromWhId));
         data.put("toQtyMap", chaiStockService.mapWhQtyBySkuIds(idList, toWhId));
+        data.put("fromStockMap", chaiStockService.mapWhStockBySkuIds(idList, fromWhId));
+        data.put("toStockMap", chaiStockService.mapWhStockBySkuIds(idList, toWhId));
         return ResultVoUtil.success(data);
     }
 

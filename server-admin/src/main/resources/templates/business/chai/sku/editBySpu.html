@@ -120,7 +120,7 @@
         }
         .sku-price-row {
             align-items: center;
-            gap: 8px 16px;
+            gap: 8px 4px;
             flex-wrap: wrap;
         }
         .sku-price-group {
@@ -144,6 +144,12 @@
         }
         .sku-price-group .js-reduce-bag {
             width: 88px;
+        }
+        .sku-price-group .js-non-sale {
+            width: 120px;
+        }
+        .sku-price-group:has(.js-non-sale) .layui-form-select {
+            width: 120px;
         }
         .sku-price-group--short > label {
             width: 88px;
@@ -284,6 +290,7 @@
         <script type="application/json" id="starLevelDictJson" th:utext="${starLevelDictJson}">{}</script>
         <script type="application/json" id="gradeDictJson" th:utext="${gradeDictJson}">{}</script>
         <script type="application/json" id="specLabelDictJson" th:utext="${specLabelDictJson}">{}</script>
+        <script type="application/json" id="yesOrNoDictJson" th:utext="${yesOrNoDictJson}">{}</script>
 
         <div class="sku-spu-card">
             <div class="sku-spu-card-hd">
@@ -379,12 +386,14 @@
         var starLevelDict = parseJsonEl('starLevelDictJson', {});
         var gradeDict = parseJsonEl('gradeDictJson', {});
         var specLabelDict = parseJsonEl('specLabelDictJson', {});
+        var yesOrNoDict = parseJsonEl('yesOrNoDictJson', {});
 
         var missing = [];
         if (!prodBatchDict || Object.keys(prodBatchDict).length === 0) missing.push('CHAI_PROD_BATCH');
         if (!starLevelDict || Object.keys(starLevelDict).length === 0) missing.push('STAR_LEVEL');
         if (!gradeDict || Object.keys(gradeDict).length === 0) missing.push('CHAI_GRADE');
         if (!specLabelDict || Object.keys(specLabelDict).length === 0) missing.push('CHAI_SPEC_LABEL');
+        if (!yesOrNoDict || Object.keys(yesOrNoDict).length === 0) missing.push('YES_OR_NO');
         if (missing.length) {
             $('#dictWarn').text('字典未加载：' + missing.join('、') + '，请检查系统字典配置').show();
         }
@@ -401,6 +410,8 @@
             if (row.unitCount == null && row.unit_count != null) row.unitCount = row.unit_count;
             if (row.unitLabel == null && row.unit_label != null) row.unitLabel = row.unit_label;
             if (row.officialPrice == null && row.official_price != null) row.officialPrice = row.official_price;
+            if (row.nonSale == null && row.non_sale != null) row.nonSale = row.non_sale;
+            if (row.nonSale == null) row.nonSale = 0;
             if (row.salePrice == null && row.sale_price != null) row.salePrice = row.sale_price;
             if (row.recyclePrice == null && row.recycle_price != null) row.recyclePrice = row.recycle_price;
             if (row.recyclePriceReducePer == null && row.recycle_price_reduce_per != null) {
@@ -519,6 +530,7 @@
             setSelectVal($card.find('.js-grade'), row.grade);
             setSelectVal($card.find('.js-batch'), row.prodBatch);
             setSelectVal($card.find('.js-unit-label'), row.unitLabel);
+            setSelectVal($card.find('.js-non-sale'), row.nonSale != null ? row.nonSale : 0);
         }
 
         function setSelectVal($sel, val) {
@@ -548,8 +560,14 @@
                 html += '</div>';
 
                 html += '<div class="sku-field-row sku-price-row">';
+                html += '<div class="sku-price-group"><label>非卖品</label>';
+                html += '<select class="layui-input js-non-sale" lay-filter="skuNonSale">'
+                    + buildSelectOptions(yesOrNoDict, row.nonSale != null ? row.nonSale : 0) + '</select></div>';
+                var nonSale = Number(row.nonSale) === 1;
                 html += '<div class="sku-price-group"><label>官方价（元）</label>';
-                html += '<input type="number" step="0.01" min="0.01" class="layui-input js-official" value="' + nullToEmpty(row.officialPrice) + '"></div>';
+                html += '<input type="number" step="0.01" min="0.01" class="layui-input js-official" value="'
+                    + (nonSale ? '' : nullToEmpty(row.officialPrice)) + '"'
+                    + (nonSale ? ' disabled' : '') + '></div>';
                 html += '</div>';
 
                 html += '<div class="sku-field-row sku-price-row">';
@@ -638,7 +656,9 @@
             });
             form.render('select');
             $('#skuCardList .sku-card').each(function () {
-                refreshPriceRates($(this));
+                var $card = $(this);
+                applyNonSaleUi($card);
+                refreshPriceRates($card);
             });
             applyReduceNoBagForNewRows();
         }
@@ -714,13 +734,32 @@
             });
         }
 
+        function isNonSaleCard($card) {
+            return String($card.find('.js-non-sale').val()) === '1';
+        }
+
+        function applyNonSaleUi($card) {
+            var nonSale = isNonSaleCard($card);
+            var $official = $card.find('.js-official');
+            if (nonSale) {
+                $official.val('').prop('disabled', true);
+            } else {
+                $official.prop('disabled', false);
+            }
+            updatePriceGroupState($card);
+        }
+
         function officialPriceOf($card) {
+            if (isNonSaleCard($card)) {
+                return null;
+            }
             return toDecimal($card.find('.js-official').val());
         }
 
         function updatePriceGroupState($card) {
+            var nonSale = isNonSaleCard($card);
             var official = officialPriceOf($card);
-            var enabled = official != null && official > 0;
+            var enabled = !nonSale && official != null && official > 0;
             $card.find('.js-sale-group, .js-recycle-group').each(function () {
                 var $group = $(this);
                 $group.toggleClass('is-disabled', !enabled);
@@ -777,7 +816,15 @@
                 row.unitWeight = toDecimal($card.find('.js-unit-w').val());
                 row.unitCount = toInt($card.find('.js-unit-c').val());
                 row.unitLabel = toInt($card.find('.js-unit-label').val());
-                row.officialPrice = toDecimal($card.find('.js-official').val());
+                row.nonSale = toInt($card.find('.js-non-sale').val());
+                if (row.nonSale == null) row.nonSale = 0;
+                if (Number(row.nonSale) === 1) {
+                    row.nonSale = 1;
+                    row.officialPrice = null;
+                } else {
+                    row.nonSale = 0;
+                    row.officialPrice = toDecimal($card.find('.js-official').val());
+                }
                 row.salePrice = toDecimal($card.find('.js-sale').val());
                 row.recyclePrice = toDecimal($card.find('.js-recycle').val());
                 row.recyclePriceReducePer = toInt($card.find('.js-reduce-per').val());
@@ -1017,22 +1064,33 @@
                     layer.msg('第' + (i + 1) + '张：规格信息不完整');
                     return;
                 }
-                if (r.officialPrice === null || r.officialPrice <= 0) {
-                    layer.msg('第' + (i + 1) + '张：官方价须大于 0');
-                    return;
-                }
                 if (r.salePrice === null || r.recyclePrice === null
                     || r.recyclePriceReducePer === null || r.recyclePriceReduceNoBag === null) {
                     layer.msg('第' + (i + 1) + '张：销售价/回收价/压价%/无提袋扣减均必填');
                     return;
                 }
-                if (r.salePrice <= 0 || r.salePrice > r.officialPrice) {
-                    layer.msg('第' + (i + 1) + '张：销售价须在 (0, 官方价] 范围内');
+                if (r.salePrice <= 0 || r.recyclePrice <= 0) {
+                    layer.msg('第' + (i + 1) + '张：销售价与回收价须大于 0');
                     return;
                 }
-                if (r.recyclePrice <= 0 || r.recyclePrice > r.officialPrice) {
-                    layer.msg('第' + (i + 1) + '张：回收价须在 (0, 官方价] 范围内');
-                    return;
+                var nonSale = Number(r.nonSale) === 1;
+                if (nonSale) {
+                    r.nonSale = 1;
+                    r.officialPrice = null;
+                } else {
+                    r.nonSale = 0;
+                    if (r.officialPrice === null || r.officialPrice <= 0) {
+                        layer.msg('第' + (i + 1) + '张：官方价须大于 0');
+                        return;
+                    }
+                    if (r.salePrice > r.officialPrice) {
+                        layer.msg('第' + (i + 1) + '张：销售价须在 (0, 官方价] 范围内');
+                        return;
+                    }
+                    if (r.recyclePrice > r.officialPrice) {
+                        layer.msg('第' + (i + 1) + '张：回收价须在 (0, 官方价] 范围内');
+                        return;
+                    }
                 }
             }
             confirmMissingAnchorThenSave();
@@ -1050,6 +1108,12 @@
             if (spuEditUrl) {
                 window.location.href = spuEditUrl;
             }
+        });
+
+        form.on('select(skuNonSale)', function (data) {
+            var $card = $(data.elem).closest('.sku-card');
+            applyNonSaleUi($card);
+            refreshPriceRates($card);
         });
 
         $('#skuCardList').on('input', '.js-official', function () {

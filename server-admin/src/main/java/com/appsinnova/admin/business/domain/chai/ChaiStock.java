@@ -22,6 +22,8 @@ public class ChaiStock implements Serializable {
 
     private Long skuId;
     private Integer totalQty;
+    /** 外观破损结存（计入 totalQty） */
+    private Integer damageQty;
     private String operator;
     private Long updateTime;
     private Long createTime;
@@ -49,6 +51,9 @@ public class ChaiStock implements Serializable {
     private Integer type;
     @Transient
     private Integer status;
+    /** 查询：非卖品（映射 SKU.nonSale） */
+    @Transient
+    private Integer nonSale;
     @Transient
     private Integer deleted;
     @Transient
