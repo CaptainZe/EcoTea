@@ -155,14 +155,10 @@
 			<version>3.0.11.RELEASE</version>
 		</dependency>
 
-		<!-- redis的支持-->
+		<!-- redis的支持（Lettuce，与 server-api 一致）-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>redis.clients</groupId>
-			<artifactId>jedis</artifactId>
 		</dependency>
 
 		<!-- hutool工具类 -->

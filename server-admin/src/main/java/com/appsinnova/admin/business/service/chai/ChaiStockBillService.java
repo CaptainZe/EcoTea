@@ -10,7 +10,7 @@ import com.appsinnova.admin.business.repository.chai.ChaiStockBillRepository;
 import com.appsinnova.admin.business.service.sys.DailySequenceService;
 import com.appsinnova.admin.business.vo.chai.ChaiStockBillSaveVo;
 import com.appsinnova.admin.common.data.PageSort;
-import com.appsinnova.admin.common.utils.JsonUtils;
+import com.appsinnova.admin.business.common.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

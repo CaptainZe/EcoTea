@@ -1,4 +1,4 @@
-package com.appsinnova.admin.business.common;
+package com.appsinnova.admin.business.common.constant;
 
 /**
  * 全局常量

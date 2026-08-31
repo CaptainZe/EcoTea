@@ -6,7 +6,7 @@ import com.appsinnova.admin.business.service.tea.TeaQuoteOrderDashboardService;
 import com.appsinnova.admin.business.service.tea.TeaSkuDashboardService;
 import com.appsinnova.admin.business.vo.tea.TeaPartnerDashboardVo;
 import com.appsinnova.admin.business.vo.tea.TeaQuoteDashboardVo;
-import com.appsinnova.admin.common.utils.JsonUtils;
+import com.appsinnova.admin.business.common.utils.JsonUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
 import lombok.RequiredArgsConstructor;

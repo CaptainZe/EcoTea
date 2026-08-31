@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.common.utils.chai;
 
-import com.appsinnova.admin.common.utils.JsonUtils;
+import com.appsinnova.admin.business.common.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

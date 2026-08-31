@@ -3,7 +3,7 @@ package com.appsinnova.admin.business.common.utils.chai;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.common.utils.DictUtils;
-import com.appsinnova.admin.common.utils.JsonUtils;
+import com.appsinnova.admin.business.common.utils.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.StringUtils;
 

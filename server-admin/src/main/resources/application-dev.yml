@@ -10,6 +10,9 @@ spring:
     jdbc-url: jdbc:mysql://10.15.2.14:3307/tea?useSSL=false&characterEncoding=utf-8
     username: igguser
     password: forconnect
+  redis:
+    host: 10.15.2.27
+    port: 6379
 
 aliyun:
   oss:

@@ -16,7 +16,7 @@ import com.appsinnova.admin.business.service.sys.AppSecretKeyService;
 import com.appsinnova.admin.business.service.tea.TeaSkuService;
 import com.appsinnova.admin.business.service.tea.TeaSkuToChaiSyncService;
 import com.appsinnova.admin.common.utils.DictUtils;
-import com.appsinnova.admin.common.utils.JsonUtils;
+import com.appsinnova.admin.business.common.utils.JsonUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
 import com.appsinnova.admin.component.shiro.ShiroUtil;

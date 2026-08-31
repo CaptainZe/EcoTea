@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.controller.tea;
 
-import com.appsinnova.admin.business.common.BaseConstant;
+import com.appsinnova.admin.business.common.constant.BaseConstant;
 import com.appsinnova.admin.business.common.enums.tea.TeaPartnerStatus;
 import com.appsinnova.admin.business.common.enums.tea.TeaPartnerType;
 import com.appsinnova.admin.business.common.pca.PcaCodeService;
