@@ -46,4 +46,9 @@ public interface ChaiSpuRepository extends JpaRepository<ChaiSpu, Long>, JpaSpec
     boolean existsByBrandAndNameAndIdNotAndDeleted(Long brand, String name, Long id, Integer deleted);
 
     long countByDeleted(Integer deleted);
+
+    /** 按品牌统计未删除 SPU 数量：Object[]{ brandId, count }，count 降序 */
+    @Query("select s.brand, count(s) from ChaiSpu s where s.deleted = :deleted "
+            + "group by s.brand order by count(s) desc")
+    List<Object[]> countGroupByBrand(@Param("deleted") Integer deleted);
 }

@@ -3,12 +3,15 @@ package com.appsinnova.admin.business.service.chai.dashboard;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
+import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiStockBill;
+import com.appsinnova.admin.business.repository.chai.ChaiBrandRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiSkuRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiSpuRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiStockBillRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiStockRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiWarehouseRepository;
+import com.appsinnova.admin.business.vo.chai.dashboard.ChaiDashboardBrandStatVo;
 import com.appsinnova.admin.business.vo.chai.dashboard.ChaiDashboardStackedBarVo;
 import com.appsinnova.admin.business.vo.chai.dashboard.ChaiDashboardStackedSeriesVo;
 import com.appsinnova.admin.business.vo.chai.dashboard.ChaiDashboardVo;
@@ -22,8 +25,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +39,11 @@ public class ChaiDashboardService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
     private static final DateTimeFormatter DAY_LABEL = DateTimeFormatter.ofPattern("MM-dd");
 
+    private static final String UNKNOWN_BRAND = "未知品牌";
+
     private final ChaiSpuRepository chaiSpuRepository;
     private final ChaiSkuRepository chaiSkuRepository;
+    private final ChaiBrandRepository chaiBrandRepository;
     private final ChaiStockRepository chaiStockRepository;
     private final ChaiWarehouseRepository chaiWarehouseRepository;
     private final ChaiStockBillRepository chaiStockBillRepository;
@@ -48,7 +56,7 @@ public class ChaiDashboardService {
 
         ChaiDashboardVo dashboard = new ChaiDashboardVo();
         dashboard.setStatDays(days);
-        dashboard.setScopeTip("茶叶库存运营概览：近 " + days + " 天库存单据统计（仅已过账）");
+        dashboard.setScopeTip("茶叶库存运营概览：近 " + days + " 天库存单据统计（仅已过账）；品牌 SPU 为当前未删除快照");
 
         long spuCount = chaiSpuRepository.countByDeleted(0);
         long skuCount = chaiSkuRepository.countByDeleted(0);
@@ -74,8 +82,46 @@ public class ChaiDashboardService {
         dashboard.setBillOutCount(outCount);
         dashboard.setBillTransferCount(transferCount);
         dashboard.setBillTotalCount(inCount + outCount + transferCount);
+        dashboard.setSpuBrandStatList(buildSpuBrandStat());
         dashboard.setBillTrendChart(buildBillTrend(days, posted));
         return dashboard;
+    }
+
+    private List<ChaiDashboardBrandStatVo> buildSpuBrandStat() {
+        List<Object[]> rows = chaiSpuRepository.countGroupByBrand(0);
+        if (rows == null || rows.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Set<Long> brandIds = new HashSet<>();
+        for (Object[] row : rows) {
+            if (row != null && row[0] instanceof Number) {
+                brandIds.add(((Number) row[0]).longValue());
+            }
+        }
+        Map<Long, String> brandNameMap = new HashMap<>();
+        if (!brandIds.isEmpty()) {
+            for (ChaiBrand brand : chaiBrandRepository.findAllById(brandIds)) {
+                if (brand != null && brand.getId() != null) {
+                    brandNameMap.put(brand.getId(), brand.getName());
+                }
+            }
+        }
+
+        List<ChaiDashboardBrandStatVo> list = new ArrayList<>();
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2) {
+                continue;
+            }
+            Long brandId = row[0] instanceof Number ? ((Number) row[0]).longValue() : null;
+            long count = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+            String brandName = brandId != null ? brandNameMap.get(brandId) : null;
+            if (brandName == null || brandName.trim().isEmpty()) {
+                brandName = brandId != null ? UNKNOWN_BRAND + "(" + brandId + ")" : UNKNOWN_BRAND;
+            }
+            list.add(new ChaiDashboardBrandStatVo(brandId, brandName, count));
+        }
+        return list;
     }
 
     private ChaiDashboardStackedBarVo buildBillTrend(int days, Integer postedStatus) {

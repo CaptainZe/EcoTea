@@ -62,9 +62,19 @@
             width: 100%;
             height: 320px;
         }
+        .dashboard-chart-brand {
+            width: 100%;
+            height: 320px;
+        }
         .dashboard-chart-title {
             font-weight: bold;
             margin: 8px 0;
+        }
+        .dashboard-chart-sub {
+            color: #999;
+            font-size: 12px;
+            font-weight: normal;
+            margin-left: 8px;
         }
         .dashboard-loading {
             text-align: center;
@@ -203,6 +213,20 @@
             <div class="layui-col-md12">
                 <div class="layui-card">
                     <div class="layui-card-body">
+                        <div class="dashboard-chart-title">
+                            茶品牌 · SPU 数量分布
+                            <span class="dashboard-chart-sub" id="spuBrandStatTip">未删除快照</span>
+                        </div>
+                        <div id="spuBrandStatChart" class="dashboard-chart-brand"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-body">
                         <div class="dashboard-chart-title">库存单据趋势</div>
                         <div id="billTrendChart" class="dashboard-chart"></div>
                     </div>
@@ -246,6 +270,7 @@
                 $('#dashboardContent').show();
                 renderOverview(res.data);
                 if (refreshCharts) {
+                    renderSpuBrandStatChart(res.data.spuBrandStatList);
                     renderBillTrendChart(res.data.billTrendChart);
                 }
             }).fail(function () {
@@ -283,6 +308,77 @@
             }
             chartMap[domId] = echarts.init(document.getElementById(domId));
             return chartMap[domId];
+        }
+
+        function renderSpuBrandStatChart(list) {
+            var dom = document.getElementById('spuBrandStatChart');
+            var rows = Array.isArray(list) ? list.slice() : [];
+            var tip = '未删除快照';
+            if (rows.length) {
+                var total = 0;
+                rows.forEach(function (r) { total += Number(r.count || 0); });
+                tip = '未删除快照 · 合计 ' + formatNumber(total) + ' 个 SPU · ' + rows.length + ' 个品牌';
+            }
+            $('#spuBrandStatTip').text(tip);
+
+            dom.style.height = '320px';
+            var chart = getChart('spuBrandStatChart');
+            if (!rows.length) {
+                chart.clear();
+                chart.setOption({
+                    title: {
+                        text: '暂无品牌数据',
+                        left: 'center',
+                        top: 'middle',
+                        textStyle: {color: '#999', fontSize: 14, fontWeight: 'normal'}
+                    }
+                });
+                return;
+            }
+
+            var names = [];
+            var values = [];
+            rows.forEach(function (r) {
+                names.push(r.brandName || '未知品牌');
+                values.push(Number(r.count || 0));
+            });
+
+            chart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {type: 'shadow'},
+                    formatter: function (params) {
+                        if (!params || !params.length) {
+                            return '';
+                        }
+                        var p = params[0];
+                        return p.name + '：' + formatNumber(p.value) + ' 个 SPU';
+                    }
+                },
+                grid: {top: 28, left: 20, right: 20, bottom: 16, containLabel: true},
+                xAxis: {
+                    type: 'category',
+                    data: names,
+                    axisLabel: {
+                        interval: 0,
+                        rotate: names.length > 6 ? 30 : 0
+                    }
+                },
+                yAxis: {type: 'value', minInterval: 1},
+                series: [{
+                    name: 'SPU 数量',
+                    type: 'bar',
+                    data: values,
+                    barMaxWidth: 48,
+                    itemStyle: {color: '#029789'},
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: function (p) { return formatNumber(p.value); }
+                    }
+                }]
+            });
+            chart.resize();
         }
 
         function renderBillTrendChart(stacked) {
