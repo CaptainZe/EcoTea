@@ -5,8 +5,8 @@ package com.ecotea.api.common.constant;
  */
 public interface RedisConstant {
 
-    /** 本项目 key 前缀，与 EcoTea / 其它系统隔离 */
-    String KEY_PRE = "ecotea_api_";
+    /** EcoTea 共用 key 前缀（admin / api 必须一致） */
+    String KEY_PRE = "ecotea_";
 
     /* ***** 常用过期时间（秒） ***** */
     int NO_EXPIRE = 0;

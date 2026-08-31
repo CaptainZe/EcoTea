@@ -45,3 +45,6 @@ mvn -pl server-api -am spring-boot:run
 - 健康检查：`GET http://localhost:8081/health`
 - 品牌列表：`GET http://localhost:8081/chai/brand/list`
 - 工具测试：`GET http://localhost:8081/test/util/redis` 等
+- 微信回调（GET 验签 / POST 消息）：`/wx/mp/callback`  
+  正式 URL 规划：`https://api.ecotea.cn/wx/mp/callback`（备案与 HTTPS 就绪后再在公众平台配置）  
+  已支持：关注欢迎语、文本回声；明文与安全模式（AES）

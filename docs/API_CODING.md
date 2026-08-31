@@ -28,6 +28,7 @@ com.ecotea.api
 ├── ApiApplication
 ├── controller/          # HTTP 入口，按业务分子包（chai、wx、tea…）
 ├── service/             # 业务逻辑，按业务分子包
+├── handler/             # 消息/事件 Handler，按业务分子包（如 handler.wx）
 ├── mapper/              # MyBatis-Plus Mapper
 ├── domain/              # 与表对应的实体
 ├── dto/ 或 req/vo/      # 入参/出参（复杂接口用；需要时再建，不提前空包）
@@ -117,7 +118,7 @@ com.ecotea.api
 
 ## 13. 微信相关（预留）
 
-- 包建议：`controller.wx`、`config` 中 Wx 配置、`wx.handler`（或 `service.wx`）。
+- 包约定（分层优先，与 controller/service 一致）：`controller.wx`、`handler.wx`、`config` 中 Wx 配置、`service.wx`（有业务服务时再加）。
 - 回调验签失败按微信要求返回纯文本 / XML，不用业务 `ApiResult`。
 - 可不落库 `wx_user`；加表需确认后再做。
 

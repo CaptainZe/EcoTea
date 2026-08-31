@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import java.io.IOException;
 
 /**
- * Json 工具类（参考 AVM JsonUtils）
+ * Json 工具类
  */
 public final class JsonUtils {
 

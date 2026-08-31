@@ -24,4 +24,7 @@ wx:
     aes-key: # 明文模式可留空；安全模式必填
     config-storage:
       type: RedisTemplate
-      key-prefix: wx:mp:
+      key-prefix: "wx:mp:"
+      # Boot 2.7 自带 httpclient5 过旧，与 WxJava 4.8 默认 HttpComponents 不兼容，固定用 4.x
+      http-client-type: HttpClient
+
