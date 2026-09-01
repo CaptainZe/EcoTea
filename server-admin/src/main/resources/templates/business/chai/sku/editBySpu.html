@@ -312,7 +312,7 @@
             </div>
             <div class="sku-spu-hint">
                 <span th:if="${generated}">已按锚点预填最近 6 个半年。不需要的半年删除卡片后保存。</span>
-                <span th:if="${!generated}">不需要的半年，删除对应卡片即可。</span>
+                <span th:if="${!generated}">不需要的半年，删除对应卡片即可。可用「从SPU同步」批量对齐名称/规格/图片等共享字段（含已删除SKU，不含半年与销/回收价）。</span>
                 品牌、保质期、茶类随 SPU 带入。名称、规格、图片需要时再展开调整。
             </div>
         </div>
@@ -328,6 +328,10 @@
         <div style="margin-bottom: 10px;">
             <button type="button" class="layui-btn layui-btn-sm" id="btnAddRow">
                 <i class="layui-icon">&#xe654;</i> 添加SKU
+            </button>
+            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnSyncFromSpu"
+                    th:if="${!generated}">
+                <i class="layui-icon">&#xe669;</i> 从SPU同步共享字段
             </button>
         </div>
 
@@ -878,6 +882,32 @@
 
         $('#btnAddRow').on('click', function () {
             appendTemplateSku();
+        });
+
+        $('#btnSyncFromSpu').on('click', function () {
+            layer.confirm(
+                '将用当前SPU的名称、星级、品牌、保质期、茶类、等级、规格、图片、非卖品、官方价，覆盖本SPU下全部SKU（含已删除，恢复后也已对齐）。<br>'
+                + '不会修改：删除状态、年份/生产批次、SKU编码、销售价/回收价及相关扣减、上下架状态。<br>'
+                + '本页未保存的编辑将丢失，同步后刷新页面。是否继续？',
+                {icon: 3, title: '从SPU同步共享字段'},
+                function (index) {
+                    layer.close(index);
+                    var loadIdx = layer.load(2);
+                    $.post('/business/chai/sku/syncSharedFromSpu/' + spuId, function (res) {
+                        layer.close(loadIdx);
+                        if (res && res.code === 200) {
+                            layer.msg(res.msg || '同步成功', {icon: 1, time: 1200}, function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            layer.msg((res && res.msg) || '同步失败', {icon: 2});
+                        }
+                    }).fail(function () {
+                        layer.close(loadIdx);
+                        layer.msg('同步失败', {icon: 2});
+                    });
+                }
+            );
         });
 
         $('#btnAddAnchor').on('click', function () {

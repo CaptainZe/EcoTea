@@ -108,19 +108,35 @@ public class ChaiSkuService {
     public ChaiSku copyFromSpu(ChaiSpu spu, Integer year, Integer prodBatch) {
         ChaiSku sku = new ChaiSku();
         sku.setSpuId(spu.getId());
+        sku.setYear(year);
+        sku.setProdBatch(prodBatch);
+        applySharedFromSpu(spu, sku);
+        sku.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
+        sku.setDeleted(0);
+        sku.setSalePrice(BigDecimal.ONE);
+        sku.setRecyclePrice(BigDecimal.ONE);
+        sku.setRecyclePriceReducePer(5);
+        sku.setRecyclePriceReduceNoBag(ChaiRecycleNoBagUtil.resolve(sku.getRecyclePrice()));
+        ChaiSpecUtil.fillSpecFields(sku);
+        return sku;
+    }
+
+    /**
+     * 将 SPU 共享字段写入 SKU（不改 year/prodBatch/编码/销回收价/上下架）。
+     */
+    public void applySharedFromSpu(ChaiSpu spu, ChaiSku sku) {
+        if (spu == null || sku == null) {
+            return;
+        }
         sku.setStarLevel(spu.getStarLevel());
         sku.setName(spu.getName());
         sku.setBrand(spu.getBrand());
         sku.setExpiration(spu.getExpiration());
         sku.setType(spu.getType());
         sku.setGrade(spu.getGrade());
-        sku.setYear(year);
-        sku.setProdBatch(prodBatch);
         sku.setSpec(spu.getSpec());
         sku.setShowImageUrls(spu.getShowImageUrls());
         sku.setRealImageUrls(spu.getRealImageUrls());
-        sku.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
-        sku.setDeleted(0);
         int nonSale = spu.getNonSale() != null ? spu.getNonSale() : 0;
         sku.setNonSale(nonSale);
         if (ChaiPriceUtil.isNonSale(nonSale)) {
@@ -128,12 +144,45 @@ public class ChaiSkuService {
         } else {
             sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
         }
-        sku.setSalePrice(BigDecimal.ONE);
-        sku.setRecyclePrice(BigDecimal.ONE);
-        sku.setRecyclePriceReducePer(5);
-        sku.setRecyclePriceReduceNoBag(ChaiRecycleNoBagUtil.resolve(sku.getRecyclePrice()));
-        ChaiSpecUtil.fillSpecFields(sku);
-        return sku;
+    }
+
+    /**
+     * 一键将 SPU 共享字段同步到该 SPU 下全部 SKU（含已删除，便于恢复后仍对齐）。
+     * 不修改 deleted / 半年 / 销回收价 / 上下架。
+     *
+     * @return updatedCount / activeCount / deletedCount
+     */
+    @Transactional
+    public Map<String, Integer> syncSharedFieldsFromSpu(ChaiSpu spu, String operator) {
+        if (spu == null || spu.getId() == null) {
+            throw new IllegalArgumentException("SPU不能为空");
+        }
+        List<ChaiSku> list = listBySpuId(spu.getId(), null);
+        Map<String, Integer> result = new HashMap<>();
+        result.put("updatedCount", 0);
+        result.put("activeCount", 0);
+        result.put("deletedCount", 0);
+        if (list.isEmpty()) {
+            return result;
+        }
+        long now = System.currentTimeMillis();
+        int activeCount = 0;
+        int deletedCount = 0;
+        for (ChaiSku sku : list) {
+            applySharedFromSpu(spu, sku);
+            sku.setOperator(operator);
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+            if (Integer.valueOf(1).equals(sku.getDeleted())) {
+                deletedCount++;
+            } else {
+                activeCount++;
+            }
+        }
+        result.put("updatedCount", list.size());
+        result.put("activeCount", activeCount);
+        result.put("deletedCount", deletedCount);
+        return result;
     }
 
     public ChaiSku save(ChaiSku entity) {
