@@ -147,42 +147,28 @@ public class ChaiSkuService {
     }
 
     /**
-     * 一键将 SPU 共享字段同步到该 SPU 下全部 SKU（含已删除，便于恢复后仍对齐）。
+     * 将 SPU 共享字段同步到该 SPU 下已删除的 SKU（有效 SKU 由编辑页保存写入）。
      * 不修改 deleted / 半年 / 销回收价 / 上下架。
      *
-     * @return updatedCount / activeCount / deletedCount
+     * @return 更新条数
      */
     @Transactional
-    public Map<String, Integer> syncSharedFieldsFromSpu(ChaiSpu spu, String operator) {
+    public int syncSharedFieldsToDeletedSkus(ChaiSpu spu, String operator) {
         if (spu == null || spu.getId() == null) {
-            throw new IllegalArgumentException("SPU不能为空");
+            return 0;
         }
-        List<ChaiSku> list = listBySpuId(spu.getId(), null);
-        Map<String, Integer> result = new HashMap<>();
-        result.put("updatedCount", 0);
-        result.put("activeCount", 0);
-        result.put("deletedCount", 0);
+        List<ChaiSku> list = listBySpuId(spu.getId(), 1);
         if (list.isEmpty()) {
-            return result;
+            return 0;
         }
         long now = System.currentTimeMillis();
-        int activeCount = 0;
-        int deletedCount = 0;
         for (ChaiSku sku : list) {
             applySharedFromSpu(spu, sku);
             sku.setOperator(operator);
             sku.setUpdateTime(now);
             chaiSkuRepository.save(sku);
-            if (Integer.valueOf(1).equals(sku.getDeleted())) {
-                deletedCount++;
-            } else {
-                activeCount++;
-            }
         }
-        result.put("updatedCount", list.size());
-        result.put("activeCount", activeCount);
-        result.put("deletedCount", deletedCount);
-        return result;
+        return list.size();
     }
 
     public ChaiSku save(ChaiSku entity) {
@@ -301,6 +287,8 @@ public class ChaiSkuService {
             save(item);
         }
         syncStatusFromSpu(spuId, spu.getStatus() != null ? spu.getStatus() : 0, operator);
+        // 已删除 SKU 不在本页编辑，保存时顺带对齐共享字段，避免恢复后仍是旧数据
+        syncSharedFieldsToDeletedSkus(spu, operator);
     }
 
     /**

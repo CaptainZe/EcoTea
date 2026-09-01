@@ -147,6 +147,7 @@ public class ChaiSkuController {
         model.addAttribute("spu", spu);
         model.addAttribute("skuList", skuList);
         model.addAttribute("skuListJson", ChaiFormHelper.toCamelJson(skuList));
+        model.addAttribute("spuSharedJson", ChaiFormHelper.toCamelJson(spu));
         model.addAttribute("generated", generated);
         model.addAttribute("anchorSkuMissing", anchorSkuMissing);
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
@@ -228,40 +229,6 @@ public class ChaiSkuController {
         Map<String, Object> data = new HashMap<>();
         data.put("sku", sku);
         return ResultVoUtil.success(data);
-    }
-
-    /**
-     * 将 SPU 共享字段同步到下属全部 SKU（含已删除）；不改半年与销/回收价、不恢复删除状态。
-     */
-    @PostMapping("/syncSharedFromSpu/{spuId}")
-    @RequiresPermissions("business:chai:sku:edit")
-    @ResponseBody
-    public ResultVo<?> syncSharedFromSpu(@PathVariable("spuId") Long spuId) {
-        ChaiSpu spu = chaiSpuService.getById(spuId);
-        if (spu == null) {
-            return ResultVoUtil.error("SPU不存在");
-        }
-        if (Integer.valueOf(1).equals(spu.getDeleted())) {
-            return ResultVoUtil.error("已删除的SPU不能同步SKU，请先恢复");
-        }
-        User user = ShiroUtil.getSubject();
-        try {
-            Map<String, Integer> syncResult = chaiSkuService.syncSharedFieldsFromSpu(spu, user.getNickname());
-            int updated = syncResult.getOrDefault("updatedCount", 0);
-            if (updated <= 0) {
-                return ResultVoUtil.error("尚无已保存的SKU，请先保存SKU后再同步");
-            }
-            int activeCount = syncResult.getOrDefault("activeCount", 0);
-            int deletedCount = syncResult.getOrDefault("deletedCount", 0);
-            String msg = "已同步 " + updated + " 个SKU（有效 " + activeCount + "，已删除 " + deletedCount + "）";
-            Map<String, Object> data = new HashMap<>();
-            data.put("updatedCount", updated);
-            data.put("activeCount", activeCount);
-            data.put("deletedCount", deletedCount);
-            return ResultVoUtil.success(msg, data);
-        } catch (IllegalArgumentException ex) {
-            return ResultVoUtil.error(ex.getMessage());
-        }
     }
 
     private void fillShowFields(ChaiSku item,
