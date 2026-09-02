@@ -2,7 +2,8 @@
 
 EcoTea 对外 API 服务。与 `server-admin` **仅共享数据库/Redis**，代码不互通。
 
-编码规范见仓库根目录：[docs/API_CODING.md](../docs/API_CODING.md)。
+编码规范见仓库根目录：[docs/API_CODING.md](../docs/API_CODING.md)。  
+微信销售端规划（关键词 / 价目 / 关于我们）：[docs/WX_SALES_ROADMAP.md](../docs/WX_SALES_ROADMAP.md)。
 
 ## 技术栈
 
@@ -45,6 +46,10 @@ mvn -pl server-api -am spring-boot:run
 - 健康检查：`GET http://localhost:8081/health`
 - 品牌列表：`GET http://localhost:8081/chai/brand/list`
 - 工具测试：`GET http://localhost:8081/test/util/redis` 等
+- 茶叶销售价目（试跑，数据源 **chai_sku**）：
+  - 页：`http://localhost:8081/h5/chai/price.html`
+  - 例：`http://localhost:8081/h5/chai/price.html?keyword=瑞泉`
+  - API：`GET /chai/sku/sale/list?keyword=&page=1&size=20`
 - 微信回调（GET 验签 / POST 消息）：`/wx/mp/callback`  
   正式 URL 规划：`https://api.ecotea.cn/wx/mp/callback`（备案与 HTTPS 就绪后再在公众平台配置）  
   已支持：关注欢迎语、文本回声；明文与安全模式（AES）

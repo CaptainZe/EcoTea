@@ -11,7 +11,7 @@ spring:
     username: igguser
     password: forconnect
   redis:
-    host: 10.15.2.27
+    host: 10.15.2.19
     port: 6379
 
 aliyun:

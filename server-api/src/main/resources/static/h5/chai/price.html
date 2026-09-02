@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>茶叶价目 · EcoTea</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-price.css"/>
+</head>
+<body>
+  <header class="top">
+    <h1>茶叶价目</h1>
+  </header>
+
+  <aside class="notice-bar" role="note">
+    回收二次销售 · 包装原装完整 · 非品牌官方直营
+  </aside>
+
+  <form class="search" id="searchForm">
+    <input type="search" id="keyword" name="keyword" placeholder="品牌全称或品名关键词" autocomplete="off"/>
+    <button type="submit">查询</button>
+  </form>
+
+  <p class="meta" id="meta"></p>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>暂无上架商品</p>
+  <div class="pager" id="pager" hidden>
+    <button type="button" id="prevBtn">上一页</button>
+    <span id="pageInfo"></span>
+    <button type="button" id="nextBtn">下一页</button>
+  </div>
+
+  <div class="notice-mask" id="noticeMask" hidden>
+    <div class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+      <h2 id="noticeTitle">购前说明</h2>
+      <div class="notice-body">
+        <p>本店商品为<strong>回收二次销售</strong>，来源于市场流转回收，并非品牌官方直营渠道。</p>
+        <p>上架前均核查包装为<strong>原装完整</strong>（原封/原盒等保持完好）。如有品相疑问，请先联系客服确认。</p>
+      </div>
+      <button type="button" class="notice-ok" id="noticeOk">我知道了</button>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <button type="button" class="lb-close" id="lbClose" aria-label="关闭">×</button>
+    <button type="button" class="lb-nav lb-prev" id="lbPrev" aria-label="上一张">‹</button>
+    <div class="lb-stage" id="lbStage">
+      <img id="lbImg" alt=""/>
+    </div>
+    <button type="button" class="lb-nav lb-next" id="lbNext" aria-label="下一张">›</button>
+    <p class="lb-index" id="lbIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-price.js"></script>
+</body>
+</html>

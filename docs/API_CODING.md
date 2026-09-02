@@ -31,7 +31,8 @@ com.ecotea.api
 ├── handler/             # 消息/事件 Handler，按业务分子包（如 handler.wx）
 ├── mapper/              # MyBatis-Plus Mapper
 ├── domain/              # 与表对应的实体
-├── dto/ 或 req/vo/      # 入参/出参（复杂接口用；需要时再建，不提前空包）
+├── vo/                  # 出参/展示对象（XxxVO）
+├── req/                 # 入参（复杂查询体时再建，如 XxxQuery / XxxReq）
 ├── config/              # 仅 Spring @Configuration
 └── common/
     ├── constant/
@@ -71,8 +72,8 @@ com.ecotea.api
 | Service | `XxxService`（可不强制 Interface） | `ChaiBrandService` |
 | Mapper | `XxxMapper` | `ChaiBrandMapper` |
 | 实体 | 与表对应，PascalCase | `ChaiBrand` → `chai_brand` |
-| 入参 | `XxxReq` / `XxxQuery` | `BrandListQuery` |
-| 出参 | `XxxVO` / `XxxResp` | `BrandVO` |
+| 入参 | `XxxReq` / `XxxQuery`（包 `req`） | `BrandListQuery` |
+| 出参 | `XxxVO`（包 `vo`） | `ChaiSkuSaleItemVO` |
 | 枚举 | 业务含义清晰 | `ChaiStatus` |
 | 常量 | `XxxConstant` / `ErrorCode` | `RedisConstant` |
 
@@ -80,7 +81,8 @@ com.ecotea.api
 
 - 实体时间字段：对齐 admin 业务表时优先 **`Long` 毫秒时间戳**；存量如 `sys_dict` 为 `Date` 则保持。
 - 主键策略与表一致。
-- 只映射需要的列；对外可在 VO 裁剪字段。
+- **`domain` 映射整张表持久化字段**，勿按接口裁剪缺列；对外裁剪放在 **`vo`**（如不返回回收价）。
+- 表外展示字段（admin 的 `@Transient`）不要写进 domain。
 - 写操作在 Service 层使用 `@Transactional`（只读查询不必加）。
 
 ## 8. Redis 与锁
