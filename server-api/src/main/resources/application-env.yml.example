@@ -28,3 +28,10 @@ wx:
       # Boot 2.7 自带 httpclient5 过旧，与 WxJava 4.8 默认 HttpComponents 不兼容，固定用 4.x
       http-client-type: HttpClient
 
+# 网站备案页脚（H5 通用）；填真实文案后生效，空则不展示
+ecotea:
+  beian:
+    icp-text: ""
+    icp-url: "https://beian.miit.gov.cn"
+    mps-text: ""
+    mps-url: ""

@@ -32,12 +32,17 @@ http://localhost:8081/chai/sku/sale/list?keyword=瑞泉&page=1&size=20
 
 ### 待验证通过后继续
 
+- [x] 域名 ICP 备案通过
+- [x] SSL 证书申请 + 域名解析（`api` / `admin`；步骤见 `docs/NGINX_SSL_DEPLOY.md`）
+- [ ] Nginx HTTPS 反代上线（8081/8080）+ 公众平台服务器 URL、菜单、真机验收
+- [x] H5 通用备案页脚（`GET /site/beian` + `site-footer.js`；配置 `ecotea.beian`，填入真实 ICP/公网安备文案）
 - [ ] 微信文本关键词命中 → 被动回复最多 10 条摘要 + H5 链接  
       （链接规划：`https://api.ecotea.cn/h5/chai/price.html?keyword=xxx`）
 - [ ] 自定义菜单：茶叶价目 → 上述 H5；关于我们 → 客服页
 - [ ] 关于我们 H5：多客服微信号 / 二维码展示
 - [ ] admin：客服联系人配置（表或现有能力，实现前再定）
-- [ ] 备案 + HTTPS `api.ecotea.cn` 后：公众平台服务器 URL、菜单、真机验收
+- [ ] 业务 Redis 缓存（见 `docs/REDIS_CACHE.md`，暂缓）
+
 
 ## 包与接口约定（api）
 

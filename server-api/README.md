@@ -50,6 +50,7 @@ mvn -pl server-api -am spring-boot:run
   - 页：`http://localhost:8081/h5/chai/price.html`
   - 例：`http://localhost:8081/h5/chai/price.html?keyword=瑞泉`
   - API：`GET /chai/sku/sale/list?keyword=&page=1&size=20`
+- 备案页脚（H5 通用）：`GET /site/beian`；配置见 `ecotea.beian`；页面挂 `#siteFooter` + `site-footer.js`
 - 微信回调（GET 验签 / POST 消息）：`/wx/mp/callback`  
   正式 URL 规划：`https://api.ecotea.cn/wx/mp/callback`（备案与 HTTPS 就绪后再在公众平台配置）  
   已支持：关注欢迎语、文本回声；明文与安全模式（AES）
