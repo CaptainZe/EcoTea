@@ -1,0 +1,124 @@
+:root {
+  --bg: #f3f5f1;
+  --card: #ffffff;
+  --ink: #1c241c;
+  --muted: #6b756c;
+  --line: #d8ddd6;
+  --accent: #3d5a3d;
+  --accent-soft: #e8efe6;
+  --radius: 10px;
+  --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+.hero {
+  padding: 2rem 1.15rem 1.35rem;
+  background:
+    radial-gradient(ellipse 90% 70% at 10% -10%, rgba(61, 90, 61, 0.12), transparent 55%),
+    linear-gradient(180deg, #e4ebe2 0%, var(--bg) 100%);
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+.hero .lead {
+  margin: 0.75rem 0 0;
+  max-width: 28rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.main {
+  padding: 0.35rem 1rem 1.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.intro {
+  margin: 0 0 1.1rem;
+  padding: 1rem 1.05rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.intro h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.intro p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.entry {
+  display: block;
+  padding: 1rem 1.05rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.entry:hover,
+.entry:focus {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.entry-name {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.entry-desc {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+@media (min-width: 640px) {
+  .hero {
+    padding: 2.75rem 1.75rem 1.75rem;
+  }
+
+  .hero h1 {
+    font-size: 1.85rem;
+  }
+
+  .main {
+    padding-top: 0.75rem;
+  }
+}

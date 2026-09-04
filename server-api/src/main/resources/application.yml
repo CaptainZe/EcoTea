@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   profiles:
     active: dev
   application:
@@ -28,3 +28,7 @@ ecotea:
     icp-url: "https://beian.miit.gov.cn"
     mps-text: ""
     mps-url: ""
+  # 管理写操作鉴权；真实密钥写在 application-dev/prod.yml
+  security:
+    api-key: ""
+

@@ -1,4 +1,4 @@
-# TIMO配置
+﻿# TIMO配置
 project:
   captcha-open: false                          #是否开启登录验证码
   shiro:
@@ -38,3 +38,10 @@ spring:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
+
+# 调用 server-api（发布微信菜单等）
+ecotea:
+  api:
+    base-url: http://127.0.0.1:8081
+    api-key:  # 与 api ecotea.security.api-key 一致
+

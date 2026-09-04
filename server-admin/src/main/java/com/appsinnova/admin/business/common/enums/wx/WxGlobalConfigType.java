@@ -16,7 +16,7 @@ public enum WxGlobalConfigType {
     /** 回收说明：{"title":"...","body":"...","ctaText":"...","ctaUrl":"..."} */
     RECYCLE_DESC(2, "回收说明"),
 
-    /** 客服：{"wechatId":"...","qrImageUrl":"...","remark":"..."}，多客服可用 items */
+    /** 客服：{"items":[{"wechat_id","qr_image_url"},...]} */
     CUSTOMER_SERVICE(3, "客服"),
 
     /** 销售 H5 文案：{"noticeTitle":"...","noticeBody":"...","bannerText":"..."} */

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <style>
+        .cs-toolbar {
+            margin: 0 0 12px 110px;
+        }
+        .cs-card {
+            margin: 0 20px 14px 110px;
+            padding: 14px 14px 12px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+            background: #fafafa;
+            max-width: 640px;
+        }
+        .cs-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .cs-card-title {
+            font-weight: 600;
+            color: #333;
+        }
+        .cs-card .layui-form-label {
+            width: 90px;
+            padding: 9px 8px;
+        }
+        .cs-card .layui-input-block {
+            margin-left: 100px;
+        }
+        .cs-card .layui-form-item {
+            margin-bottom: 10px;
+        }
+        .qr-box {
+            width: 120px;
+            height: 120px;
+            border: 1px dashed #c2c2c2;
+            border-radius: 6px;
+            background: #fff;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.4;
+            user-select: none;
+        }
+        .qr-box:hover {
+            border-color: #009688;
+            color: #009688;
+        }
+        .qr-box.has-img {
+            border-style: solid;
+            border-color: #ddd;
+        }
+        .qr-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .qr-box .qr-placeholder {
+            padding: 8px;
+            pointer-events: none;
+        }
+        .qr-box .qr-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .55);
+            color: #fff;
+            font-size: 14px;
+            display: none;
+            z-index: 2;
+        }
+        .qr-box.has-img .qr-remove {
+            display: block;
+        }
+        .cs-tip {
+            margin: 0 20px 8px 110px;
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            max-width: 640px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">配置类型</label>
+            <div class="layui-input-inline" style="width: 280px;">
+                <select class="timo-search-select" name="type" id="configType" mo:dict="WX_GLOBAL_CONFIG_TYPE"
+                        mo-selected="${editItem.type}" lay-verify="required" lay-filter="configType"></select>
+            </div>
+        </div>
+
+        <!-- type=1 关注欢迎语 -->
+        <div id="blockWelcome" class="cfg-block">
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label required">欢迎语正文</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <textarea name="subscribeWelcomeConfig.text" class="layui-textarea textarea-fill"
+                              style="min-height: 400px; line-height: 1.6;"
+                              placeholder="纯文本，可用【】、—— 分段。勿写 HTML。">[[${editItem?.subscribeWelcomeConfig?.text}]]</textarea>
+                    <div class="layui-form-mid layui-word-aux" style="white-space: normal;">
+                        微信被动回复不支持加粗/变色；建议约 600 字内。存 {"text":"..."}。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- type=2 回收说明 -->
+        <div id="blockRecycle" class="cfg-block" style="display:none;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">标题</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <input type="text" name="recycleDescConfig.title" class="layui-input" style="max-width: 520px;"
+                           th:value="${editItem?.recycleDescConfig?.title}" placeholder="如：茶叶回收说明"/>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label required">正文</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <textarea name="recycleDescConfig.body" class="layui-textarea textarea-fill"
+                              style="min-height: 220px;">[[${editItem?.recycleDescConfig?.body}]]</textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">按钮文案</label>
+                <div class="layui-input-inline" style="width: 280px;">
+                    <input type="text" name="recycleDescConfig.ctaText" class="layui-input"
+                           th:value="${editItem?.recycleDescConfig?.ctaText}" placeholder="如：联系客服"/>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">按钮链接</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <input type="text" name="recycleDescConfig.ctaUrl" class="layui-input" style="max-width: 520px;"
+                           th:value="${editItem?.recycleDescConfig?.ctaUrl}" placeholder="https://..."/>
+                </div>
+            </div>
+        </div>
+
+        <!-- type=3 客服（可多项） -->
+        <div id="blockCs" class="cfg-block" style="display:none;">
+            <p class="cs-tip">每位客服须填写微信号（作为二维码说明）并上传二维码；可添加多名。</p>
+            <div class="cs-toolbar">
+                <button type="button" class="layui-btn layui-btn-sm" id="csAddBtn">
+                    <i class="layui-icon layui-icon-add-1"></i> 添加客服
+                </button>
+            </div>
+            <div id="csList"></div>
+        </div>
+
+        <!-- type=4 销售 H5 文案 -->
+        <div id="blockSaleH5" class="cfg-block" style="display:none;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">弹窗标题</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <input type="text" name="saleH5CopyConfig.noticeTitle" class="layui-input" style="max-width: 520px;"
+                           th:value="${editItem?.saleH5CopyConfig?.noticeTitle}" placeholder="如：购买须知"/>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">弹窗正文</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <textarea name="saleH5CopyConfig.noticeBody" class="layui-textarea textarea-fill"
+                              style="min-height: 200px; line-height: 1.6;"
+                              placeholder="二次销售说明等，纯文本，可换行">[[${editItem?.saleH5CopyConfig?.noticeBody}]]</textarea>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">顶栏说明</label>
+                <div class="layui-input-block" style="margin-left: 110px;">
+                    <textarea name="saleH5CopyConfig.bannerText" class="layui-textarea textarea-fill"
+                              style="min-height: 100px;"
+                              placeholder="列表页顶部短说明">[[${editItem?.saleH5CopyConfig?.bannerText}]]</textarea>
+                    <div class="layui-form-mid layui-word-aux" style="white-space: normal;">
+                        用于 sale.html：有弹窗标题/正文则进页弹一次；顶栏说明常驻展示。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="wxGlobalConfigForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button class="layui-btn btn-secondary close-popup"><i class="fa fa-times-circle"></i> 关闭</button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var CS_INIT = /*[[${editItem?.customerServiceConfig?.items}]]*/ [];
+    /*]]>*/
+    layui.use(['form', 'upload', 'layer'], function () {
+        var form = layui.form;
+        var upload = layui.upload;
+        var layer = layui.layer;
+        var csIndex = 0;
+
+        function toggleBlocks(typeVal) {
+            var t = String(typeVal || '');
+            $('#blockWelcome').toggle(t === '1');
+            $('#blockRecycle').toggle(t === '2');
+            $('#blockCs').toggle(t === '3');
+            $('#blockSaleH5').toggle(t === '4');
+        }
+
+        function escapeAttr(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;');
+        }
+
+        function renumberCards() {
+            $('#csList .cs-card').each(function (i) {
+                $(this).find('.cs-card-title').text('客服 ' + (i + 1));
+                $(this).find('.cs-remove').toggle($('#csList .cs-card').length > 1);
+            });
+        }
+
+        function bindUpload($card) {
+            var btnId = $card.find('.qr-upload-btn').attr('id');
+            upload.render({
+                elem: '#' + btnId,
+                url: '/business/upload/file',
+                accept: 'images',
+                done: function (res) {
+                    if (res && res.code === 0 && res.data && res.data.src) {
+                        setCardQr($card, res.data.src);
+                    } else {
+                        layer.msg((res && res.msg) ? res.msg : '上传失败');
+                    }
+                },
+                error: function () {
+                    layer.msg('上传失败');
+                }
+            });
+        }
+
+        function setCardQr($card, url) {
+            var $box = $card.find('.qr-box');
+            var $input = $card.find('.qr-url-input');
+            $input.val(url || '');
+            if (url) {
+                $box.addClass('has-img');
+                if ($box.find('img').length === 0) {
+                    $box.prepend('<img alt="二维码">');
+                }
+                $box.find('img').attr('src', url);
+                $box.find('.qr-placeholder').hide();
+            } else {
+                $box.removeClass('has-img');
+                $box.find('img').remove();
+                $box.find('.qr-placeholder').show();
+            }
+        }
+
+        function addCsCard(item) {
+            item = item || {};
+            var idx = csIndex++;
+            var wechatId = item.wechatId || '';
+            var qr = item.qrImageUrl || '';
+            var btnId = 'qrUploadBtn_' + idx;
+            var html =
+                '<div class="cs-card" data-idx="' + idx + '">' +
+                '  <div class="cs-card-head">' +
+                '    <span class="cs-card-title">客服</span>' +
+                '    <button type="button" class="layui-btn layui-btn-xs layui-btn-danger cs-remove">删除</button>' +
+                '  </div>' +
+                '  <div class="layui-form-item">' +
+                '    <label class="layui-form-label required">微信号</label>' +
+                '    <div class="layui-input-block">' +
+                '      <input type="text" class="layui-input cs-wechat" name="customerServiceConfig.items[' + idx + '].wechatId"' +
+                '             value="' + escapeAttr(wechatId) + '" placeholder="展示在二维码旁的说明，如：tea_kf01" maxlength="64"/>' +
+                '    </div>' +
+                '  </div>' +
+                '  <div class="layui-form-item">' +
+                '    <label class="layui-form-label required">二维码</label>' +
+                '    <div class="layui-input-block">' +
+                '      <div class="qr-box' + (qr ? ' has-img' : '') + '" title="点击上传">' +
+                '        <button type="button" class="qr-upload-btn" id="' + btnId + '" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;padding:0;border:0;cursor:pointer;z-index:1;"></button>' +
+                (qr ? '<img alt="二维码" src="' + escapeAttr(qr) + '">' : '') +
+                '        <div class="qr-placeholder"' + (qr ? ' style="display:none"' : '') + '>点击上传<br/>客服二维码</div>' +
+                '        <span class="qr-remove" title="移除图片">×</span>' +
+                '      </div>' +
+                '      <input type="hidden" class="qr-url-input" name="customerServiceConfig.items[' + idx + '].qrImageUrl" value="' + escapeAttr(qr) + '"/>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>';
+            var $card = $(html);
+            $('#csList').append($card);
+            bindUpload($card);
+            renumberCards();
+            // reindex names so Spring binds contiguous 0..n-1
+            reindexNames();
+        }
+
+        function reindexNames() {
+            $('#csList .cs-card').each(function (i) {
+                $(this).find('.cs-wechat').attr('name', 'customerServiceConfig.items[' + i + '].wechatId');
+                $(this).find('.qr-url-input').attr('name', 'customerServiceConfig.items[' + i + '].qrImageUrl');
+            });
+        }
+
+        $('#csAddBtn').on('click', function () {
+            addCsCard({});
+        });
+
+        $('#csList').on('click', '.cs-remove', function () {
+            if ($('#csList .cs-card').length <= 1) {
+                layer.msg('至少保留一名客服');
+                return;
+            }
+            $(this).closest('.cs-card').remove();
+            renumberCards();
+            reindexNames();
+        });
+
+        $('#csList').on('click', '.qr-remove', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setCardQr($(this).closest('.cs-card'), '');
+        });
+
+        toggleBlocks($('#configType').val());
+
+        form.on('select(configType)', function (data) {
+            toggleBlocks(data.value);
+        });
+
+        var initList = Array.isArray(CS_INIT) ? CS_INIT : [];
+        if (initList.length === 0) {
+            addCsCard({});
+        } else {
+            initList.forEach(function (it) {
+                addCsCard(it || {});
+            });
+        }
+
+        form.on('submit(wxGlobalConfigForm)', function () {
+            reindexNames();
+            $.ajax({
+                url: '/business/wx/globalConfig/save',
+                data: $("#editform").serialize(),
+                type: "post",
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg);
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

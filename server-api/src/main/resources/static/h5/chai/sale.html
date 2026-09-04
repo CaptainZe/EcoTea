@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>在售价目</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/site-footer.css"/>
+</head>
+<body>
+  <header class="top">
+    <h1>在售价目</h1>
+    <p class="sub">仅展示有货现货 · 价格随市</p>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <form class="search" id="searchForm">
+    <input type="search" id="keyword" name="keyword" placeholder="品牌全称或品名" autocomplete="off"/>
+    <button type="submit">查询</button>
+  </form>
+
+  <div class="filter-bar" id="filterBar" hidden>
+    <span id="filterText"></span>
+    <button type="button" class="link-btn" id="clearFilterBtn">返回全部</button>
+  </div>
+
+  <p class="meta" id="meta"></p>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>暂无有货商品</p>
+  <div class="pager" id="pager" hidden>
+    <button type="button" id="prevBtn">上一页</button>
+    <span id="pageInfo"></span>
+    <button type="button" id="nextBtn">下一页</button>
+  </div>
+
+  <div id="siteFooter"></div>
+
+  <div class="modal" id="noticeModal" hidden>
+    <div class="modal-mask" data-close="1"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true">
+      <h2 class="modal-title" id="noticeTitle"></h2>
+      <div class="modal-body" id="noticeBody"></div>
+      <button type="button" class="modal-ok" id="noticeOk">知道了</button>
+    </div>
+  </div>
+
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-sale.js"></script>
+  <script src="/h5/assets/js/site-footer.js"></script>
+</body>
+</html>

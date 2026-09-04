@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 微信自定义菜单</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">AppID</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="appId" th:value="${param.appId}" placeholder="模糊" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">订阅号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="appName" th:value="${param.appName}" placeholder="模糊" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加"
+                        th:attr="data-url=@{/business/wx/mpMenu/edit}" data-size="900,720">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status"
+                               th:href="@{/business/wx/mpMenu/delete}">删除</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="200">操作</th>
+                    <th width="80" class="sortable" data-field="id">ID</th>
+                    <th width="180">AppID</th>
+                    <th width="140">订阅号名</th>
+                    <th>菜单 config</th>
+                    <th width="80">最后操作人</th>
+                    <th width="130" class="sortable" data-field="updateTime">更新时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item:${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" data-title="编辑"
+                           th:attr="data-url=@{'/business/wx/mpMenu/edit/'+${item.id}}" data-size="900,720">编辑</a>
+                        <a class="open-popup" data-title="复制"
+                           th:attr="data-url=@{'/business/wx/mpMenu/copy/'+${item.id}}" data-size="900,720">复制</a>
+                        <a class="ajax-get" style="color:#0369A1;font-weight:600;"
+                           data-msg="确认将当前菜单发布到微信？粉丝端可能数分钟后生效"
+                           th:href="@{/business/wx/mpMenu/publish(id=${item.id})}">发布</a>
+                    </td>
+                    <td th:text="${item.id}"></td>
+                    <td th:text="${item.appId}"></td>
+                    <td th:text="${item.appName}"></td>
+                    <td style="max-width:320px;word-break:break-all;white-space:pre-wrap;"
+                        th:text="${#strings.abbreviate(item.config != null ? item.config : '', 120)}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${item.updateTime != null ? #dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss') : ''}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

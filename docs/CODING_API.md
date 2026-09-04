@@ -122,6 +122,7 @@ com.ecotea.api
 
 - 包约定（分层优先，与 controller/service 一致）：`controller.wx`、`handler.wx`、`config` 中 Wx 配置、`service.wx`（有业务服务时再加）。
 - 回调验签失败按微信要求返回纯文本 / XML，不用业务 `ApiResult`。
+- 管理写操作（如 `POST /wx/mp/menu/publish`）须 Header `X-EcoTea-Api-Key`（`ecotea.security.api-key`），拦截器挂在 `/wx/mp/menu/**`。
 - 可不落库 `wx_user`；加表需确认后再做。
 
 ## 14. 提交前自检

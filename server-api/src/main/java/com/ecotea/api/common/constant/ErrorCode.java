@@ -14,6 +14,9 @@ public interface ErrorCode {
     /** 参数校验失败 */
     int BAD_REQUEST = 400;
 
+    /** 未授权（如 Api-Key 无效） */
+    int UNAUTHORIZED = 401;
+
     /** 系统异常（对外统一文案，细节只写日志） */
     int SYSTEM_ERROR = 500;
 }

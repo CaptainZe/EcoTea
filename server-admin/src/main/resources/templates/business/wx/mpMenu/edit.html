@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+</head>
+<body>
+<div class="layui-form timo-compile">
+    <form id="editform">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">AppID</label>
+            <div class="layui-input-block">
+                <input type="text" name="appId" th:value="${editItem.appId}" required lay-verify="required"
+                       placeholder="与微信公众平台 / api wx.mp.app-id 一致；复制后须改成新 AppID" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">订阅号名</label>
+            <div class="layui-input-block">
+                <input type="text" name="appName" th:value="${editItem.appName}" required lay-verify="required"
+                       placeholder="仅后台展示" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">菜单 JSON</label>
+            <div class="layui-input-block">
+                <textarea name="config" required lay-verify="required" class="layui-textarea"
+                          style="min-height: 360px; font-family: Consolas, Monaco, monospace; font-size: 13px;"
+                          placeholder="微信 menu/create 所需 JSON，须含 button 数组"
+                          th:text="${editItem.config}"></textarea>
+                <div class="layui-form-mid layui-word-aux" style="padding: 8px 0 0;">
+                    一级菜单名建议不超过 4 个汉字；view 的 url 须为 https。<br>
+                    保存只写入数据库；要生效请到列表点「发布」。
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="wxMpMenuForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.on('submit(wxMpMenuForm)', function () {
+            $.ajax({
+                url: '/business/wx/mpMenu/save',
+                data: $('#editform').serialize(),
+                type: 'POST',
+                dataType: 'json',
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                },
+                error: function () {
+                    alert('保存请求失败');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

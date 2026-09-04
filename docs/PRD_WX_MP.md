@@ -42,9 +42,9 @@ DDL 由运维自行执行（见下方建表语句）。枚举：admin / api 均�
 | type | 枚举 | 用途 | config（扁平） |
 |------|------|------|----------------|
 | 1 | `SUBSCRIBE_WELCOME` | 关注欢迎语 | `{"text":"..."}` |
-| 2 | `RECYCLE_DESC` | 回收说明 | `{"title":"...","body":"...","ctaText":"...","ctaUrl":"..."}` |
-| 3 | `CUSTOMER_SERVICE` | 客服 | `{"wechatId":"...","qrImageUrl":"...","remark":"..."}`（多客服可用 `items`） |
-| 4 | `SALE_H5_COPY` | 销售 H5 文案 | `{"noticeTitle":"...","noticeBody":"...","bannerText":"..."}` |
+| 2 | `RECYCLE_DESC` | 回收说明 | `{"title","body","cta_text","cta_url"}` |
+| 3 | `CUSTOMER_SERVICE` | 客服 | `{"items":[{"wechat_id","qr_image_url"},...]}`（微信号=二维码说明，均必填，可多项） |
+| 4 | `SALE_H5_COPY` | 销售 H5 文案 | `{"notice_title","notice_body","banner_text"}` |
 
 ```sql
 CREATE TABLE `wx_global_config` (
@@ -60,8 +60,22 @@ CREATE TABLE `wx_global_config` (
 ```
 
 - **admin**：按 type 编辑；**无**「发布到微信菜单」按钮。  
+  - 页面：`/business/wx/globalConfig/index`  
+  - 权限：`business:wx:globalConfig:index` / `edit` / `delete`  
+  - 字典：`WX_GLOBAL_CONFIG_TYPE`（须在系统字典配置，见下）  
+  - 各 type 使用 `@Transient` 强类型配置对象（如 `subscribeWelcomeConfig` / `saleH5CopyConfig`），表单分块编辑后序列化进 `config`（JsonUtils SNAKE_CASE）  
 - **api**：只读；关注/H5 使用。  
+  - 销售文案：`GET /wx/globalConfig/saleH5Copy`  
 - 欢迎语为**纯文本**（可用【】、—— 分段）；微信被动文本**不支持** HTML 加粗/变色。
+
+**上线配置（admin 手工一次）：**
+
+1. 系统字典新增 `WX_GLOBAL_CONFIG_TYPE`，值示例：  
+   `1:关注欢迎语,2:回收说明,3:客服,4:销售H5文案`
+2. 菜单：业务 → 微信 → 「通用配置」  
+   - 菜单 URL：`/business/wx/globalConfig/index`，权限 `business:wx:globalConfig:index`  
+   - 按钮：编辑 `business:wx:globalConfig:edit`；删除 `business:wx:globalConfig:delete`  
+3. 角色勾选上述菜单后刷新权限
 
 ### 3.2 `wx_mp_menu`（自定义菜单，独立表）
 
@@ -81,9 +95,27 @@ CREATE TABLE `wx_mp_menu` (
 ) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COMMENT='微信-订阅号自定义菜单配置';
 ```
 
-- `config`：微信 `menu/create` 所需 JSON（或等价 `button` 结构，由 api 组装）。  
-- **admin 独立页面**维护；「发布到微信」→ **HTTP 调 api**（鉴权）→ api `menuCreate`。  
+- `config`：微信 `menu/create` 所需 JSON（含 `button` 数组）。  
+- **admin 独立页面**维护；「发布到微信」→ admin 服务端 HTTP 调 api（Header `X-EcoTea-Api-Key`）→ api 读同表 `config` 后 `menuCreate`。  
 - 不放入 `wx_global_config`。
+
+**admin：**
+
+- 页面：`/business/wx/mpMenu/index`  
+- 权限：`business:wx:mpMenu:index` / `edit` / `publish` / `delete`  
+- 新建默认填入三个 view：在售价目 / 茶叶回收 / 联系我们（§4 URL）
+
+**api：**
+
+- `POST /wx/mp/menu/publish`（body：`{ "id" }` 或 `{ "appId" }`），须 Api-Key  
+- 配置：`ecotea.security.api-key`；admin：`ecotea.api.base-url` + `ecotea.api.api-key`
+
+**上线配置（admin 手工一次）：**
+
+1. 菜单：业务 → 微信 → 「自定义菜单」  
+   - URL：`/business/wx/mpMenu/index`，权限 `business:wx:mpMenu:index`  
+   - 按钮：编辑 `business:wx:mpMenu:edit`；发布 `business:wx:mpMenu:publish`；删除 `business:wx:mpMenu:delete`  
+2. 角色勾选后刷新权限；两侧配置同一 Api-Key 后保存菜单再点发布  
 
 ### 3.3 `wx_user`
 
@@ -102,25 +134,34 @@ CREATE TABLE `wx_mp_menu` (
 ### 4.1 销售 `sale.html`
 
 - 条件：`status=上架`、`deleted=0`、**全仓 `totalQty > 0`**  
+- 排序：与 admin skuView 一致 — `year DESC, prodBatch DESC, id DESC`  
 - 展示：现有销售信息 + **库存总数**；若 `damageQty > 0` 则展示**破损数量**  
+- **看同款**：`sameSpuSaleCount > 1` 时展示；`?spuId=` 筛选同 SPU 有货 SKU  
 - 不露回收价  
 - 关键词匹配：品牌名完全匹配 → 否则 SKU 名称模糊  
-- 弹窗/顶栏文案来自 `wx_global_config`  
+- 弹窗/顶栏文案来自 `wx_global_config` type=4（`notice_title`/`notice_body` 弹窗，`banner_text` 顶栏）  
+- API：`GET /chai/sku/sale/list?keyword=&spuId=&page=&size=`；文案 `GET /wx/globalConfig/saleH5Copy`  
+- 页面：`https://api.ecotea.cn/h5/chai/sale.html`  
 - 旧试跑页 `price.html`：**已删除**，不再保留  
 
 ### 4.2 回收 `recycle.html`
 
 - 回收说明 + 引流（加微信 / 跳转联系我们）  
-- 文案可来自全局配置  
+- 文案来自 `wx_global_config` type=2：`title` / `body` / `cta_text` / `cta_url`  
+- API：`GET /wx/globalConfig/recycleDesc`  
+- 页面：`https://api.ecotea.cn/h5/chai/recycle.html`  
 
 ### 4.3 联系我们 `about.html`
 
-- 客服微信号 / 二维码（配置驱动）  
+- 客服微信号 / 二维码（配置驱动，type=3 `items`）  
+- API：`GET /wx/globalConfig/customerService`  
+- 页面：`https://api.ecotea.cn/h5/about.html`  
 
 ### 4.4 官网
 
 - `https://api.ecotea.cn/h5/index.html`  
-- 同域、不新证书；介绍 + 入口链到上述 H5 + 备案页脚  
+- 同域、不新证书；介绍 + 入口链到上述三 H5 + 备案页脚（`site-footer.js`）  
+- 静态页：`static/h5/index.html` + `assets/css/site-home.css`；文案不出现 EcoTea  
 
 三页及官网均挂备案页脚组件。
 
@@ -144,6 +185,13 @@ CREATE TABLE `wx_mp_menu` (
 |------|------|
 | 品牌全称 / 品名 | 查可售列表，被动回复最多 **10** 条摘要；更多/过长 → `sale.html?keyword=` |
 | 客服（等约定词） | 引导至联系我们 H5 或短文案 + 链接 |
+
+实现（api）：
+
+- `TextMsgHandler` → `WxKeywordReplyService`
+- 客服约定词（整句精确）：`客服` / `联系我们` / `人工` / `联系客服` / `人工客服`
+- 查价复用 `ChaiSkuSaleQueryService`（有货）；链接根地址 `ecotea.site.public-base-url`（默认 `https://api.ecotea.cn`）
+- 客服回复可读 `wx_global_config` type=3（微信号/备注）+ `/h5/about.html`（页在步骤 6）
 
 ---
 
@@ -177,13 +225,13 @@ admin「发布菜单」：admin 服务端（或受控请求）调用 api，由 a
 |------|------|------|
 | 0 | 本 PRD + 清理试跑文档/无用 Controller/`price.html` | 已完成 |
 | 1 | 建表 `wx_global_config`、`wx_mp_menu`；定 type 枚举 | 已完成 |
-| 2 | admin：全局配置（先欢迎语） | 待做 |
-| 3 | api：`SubscribeHandler` 读欢迎语配置 | 待做 |
-| 4 | 销售 API 扩展库存/破损 + `sale.html` | 待做 |
-| 5 | 关键词：品牌/品名 + 客服 | 待做 |
-| 6 | `recycle.html` + `about.html` + 对应配置 | 待做 |
-| 7 | admin 菜单页 + api 鉴权发布 | 待做 |
-| 8 | `h5/index.html` 同域官网 | 待做 |
+| 2 | admin：全局配置（先欢迎语） | 已完成 |
+| 3 | api：`SubscribeHandler` 读欢迎语配置 | 已完成 |
+| 4 | 销售 API 扩展库存/破损 + `sale.html` | 已完成 |
+| 5 | 关键词：品牌/品名 + 客服 | 已完成 |
+| 6 | `recycle.html` + `about.html` + 对应配置 | 已完成 |
+| 7 | admin 菜单页 + api 鉴权发布 | 已完成 |
+| 8 | `h5/index.html` 同域官网 | 已完成 |
 | 9 | 业务 Redis 缓存（暂缓） | 暂缓 |
 
 依赖：`4 → 5`；`6 → 7`（三 URL 齐后再正式发菜单）；`2 → 3`。

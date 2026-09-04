@@ -21,3 +21,8 @@ aliyun:
     bucket: tea-pub
     host: https://tea-pub.oss-cn-shenzhen.aliyuncs.com
     path: dev
+
+ecotea:
+  api:
+    base-url: http://127.0.0.1:8081
+    api-key: "KbrWYxwQA7UjZp9RMrnFtdwatPVYPHZC"

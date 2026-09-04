@@ -1,4 +1,4 @@
-# 复制为 application-dev.yml 或 application-prod.yml 后填写真实值（本文件可提交 git）
+﻿# 复制为 application-dev.yml 或 application-prod.yml 后填写真实值（本文件可提交 git）
 # 公共配置见同目录 application.yml（可提交）；本文件仅环境相关
 spring:
   datasource:
@@ -30,8 +30,16 @@ wx:
 
 # 网站备案页脚（H5 通用）；填真实文案后生效，空则不展示
 ecotea:
+  site:
+      # 对外 HTTPS 根地址，不要末尾斜杠；被动回复里的 H5 链接用它拼接
+      public-base-url: https://api.ecotea.cn
   beian:
     icp-text: ""
     icp-url: "https://beian.miit.gov.cn"
     mps-text: ""
     mps-url: ""
+  # 管理端写操作鉴权（与 admin ecotea.api.api-key 一致；勿写入公开文档）
+  security:
+    api-key: ""
+
+

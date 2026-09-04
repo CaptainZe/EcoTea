@@ -1,0 +1,79 @@
+:root {
+  --bg: #f3f5f1;
+  --card: #ffffff;
+  --ink: #1c241c;
+  --muted: #6b756c;
+  --line: #d8ddd6;
+  --accent: #3d5a3d;
+  --accent-soft: #e8efe6;
+  --radius: 10px;
+  --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+.top {
+  padding: 1.15rem 1rem 0.75rem;
+  background: linear-gradient(180deg, #e4ebe2 0%, var(--bg) 100%);
+}
+
+.top h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+}
+
+.top .sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.main {
+  padding: 0.5rem 1rem 1.5rem;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1rem 1.25rem;
+}
+
+.loading, .empty {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+}
+
+.body {
+  white-space: pre-wrap;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.cta {
+  display: block;
+  margin-top: 1.25rem;
+  height: 2.6rem;
+  line-height: 2.6rem;
+  text-align: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 650;
+  text-decoration: none;
+}

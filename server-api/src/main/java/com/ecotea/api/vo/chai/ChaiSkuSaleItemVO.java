@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 销售侧 ChaiSku 展示（不含回收价；不含原封/原盒等包装文案）。
@@ -14,6 +15,7 @@ public class ChaiSkuSaleItemVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long id;
+    private Long spuId;
     /** 标题：品牌 + 品名 */
     private String title;
     private String name;
@@ -28,8 +30,14 @@ public class ChaiSkuSaleItemVO implements Serializable {
     private String officialPriceShow;
     /** 如：388元(3.88折) */
     private String salePriceShow;
+    /** 全仓库存总数 */
+    private Integer totalQty;
+    /** 破损数量；仅 >0 时有意义，前端按需展示 */
+    private Integer damageQty;
+    /** 同 SPU 下有货可售 SKU 数（含自身）；>1 可展示「看同款」 */
+    private Integer sameSpuSaleCount;
     /** 首图（展示图列表第一张） */
     private String coverImage;
     /** 展示图完整 URL 列表 */
-    private java.util.List<String> imageUrls;
+    private List<String> imageUrls;
 }

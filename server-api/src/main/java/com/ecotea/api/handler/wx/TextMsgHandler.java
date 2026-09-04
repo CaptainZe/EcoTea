@@ -1,5 +1,7 @@
 package com.ecotea.api.handler.wx;
 
+import com.ecotea.api.service.wx.WxKeywordReplyService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.common.session.WxSessionManager;
@@ -12,11 +14,14 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * 文本消息：简单回声，便于联调。
+ * 文本消息：关键词客服 / 品牌品名查价。
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TextMsgHandler implements WxMpMessageHandler {
+
+    private final WxKeywordReplyService wxKeywordReplyService;
 
     @Override
     public WxMpXmlOutMessage handle(WxMpXmlMessage wxMessage,
@@ -26,7 +31,7 @@ public class TextMsgHandler implements WxMpMessageHandler {
         String content = wxMessage.getContent();
         log.info("wx mp text, openid={}, contentLength={}",
                 wxMessage.getFromUser(), content == null ? 0 : content.length());
-        String reply = content == null ? "已收到" : ("收到：" + content);
+        String reply = wxKeywordReplyService.reply(content);
         return WxMpXmlOutMessage.TEXT()
                 .content(reply)
                 .fromUser(wxMessage.getToUser())

@@ -149,7 +149,7 @@ EOF
 ## 5. 外置配置与日志
 
 - `conf/application.yml`：端口 `8081`、MyBatis 等公共配置。  
-- `conf/application-prod.yml`：数据源、Redis、`wx.mp`、`ecotea.beian` 等（对照仓库 `application-env.yml.example`）。  
+- `conf/application-prod.yml`：数据源、Redis、`wx.mp`、`ecotea.beian`、`ecotea.security.api-key` 等（对照仓库 `application-env.yml.example`）。  
 - `conf/logback-spring.xml`：`logsDir` 必须为 `/data/logs/tea-api`（与仓库 `server-api/src/main/resources/logback-spring.xml` 一致）。
 
 ---
@@ -251,7 +251,7 @@ journalctl -u tea-api -n 50 --no-pager
 {"code":0,"message":"success","data":{"mysql":"UP","redis":"UP","status":"UP"}}
 ```
 
-浏览器可选：`https://api.ecotea.cn/h5/chai/sale.html`（见 `PRD_WX_MP.md`，实现后验收）。
+浏览器可选：`https://api.ecotea.cn/h5/index.html`、`/h5/chai/sale.html`（见 `PRD_WX_MP.md`）。
 
 ---
 

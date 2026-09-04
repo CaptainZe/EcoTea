@@ -14,8 +14,9 @@ public class ChaiSkuSalePageVO implements Serializable {
     private long total;
     private long page;
     private long size;
-    /** brand_exact / name_like / none */
+    /** brand_exact / name_like / spu / none */
     private String matchType;
     private String keyword;
+    private Long spuId;
     private List<ChaiSkuSaleItemVO> list = Collections.emptyList();
 }
