@@ -66,7 +66,7 @@ CREATE TABLE `wx_global_config` (
   - 各 type 使用 `@Transient` 强类型配置对象（如 `subscribeWelcomeConfig` / `saleH5CopyConfig`），表单分块编辑后序列化进 `config`（JsonUtils SNAKE_CASE）  
 - **api**：只读；关注/H5 使用。  
   - 销售文案：`GET /wx/globalConfig/saleH5Copy`  
-- 欢迎语为**纯文本**（可用【】、—— 分段）；微信被动文本**不支持** HTML 加粗/变色。
+- 欢迎语为**纯文本**（可用【】、—— 分段）；微信被动文本**不支持** HTML 加粗/变色，但可用 `<a href="https://...">文案</a>` 做可点击文字链（不露完整 URL）。
 
 **上线配置（admin 手工一次）：**
 
@@ -183,8 +183,8 @@ CREATE TABLE `wx_mp_menu` (
 
 | 输入 | 行为 |
 |------|------|
-| 品牌全称 / 品名 | 查可售列表，被动回复最多 **10** 条摘要；更多/过长 → `sale.html?keyword=` |
-| 客服（等约定词） | 引导至联系我们 H5 或短文案 + 链接 |
+| 品牌全称 / 品名 | 查可售列表，被动回复最多 **10** 条摘要；更多/过长 → a 标签链到 `sale.html?keyword=` |
+| 客服（等约定词） | 短文案 + a 标签链到「联系我们」H5 |
 
 实现（api）：
 

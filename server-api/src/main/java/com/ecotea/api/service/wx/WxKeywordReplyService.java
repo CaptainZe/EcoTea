@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -21,6 +20,7 @@ import java.util.Set;
 
 /**
  * 微信文本关键词：客服引导、品牌/品名查价。
+ * 文内跳转使用微信文本 a 标签（仅显示链文案，不露完整 URL）。
  */
 @Slf4j
 @Service
@@ -50,7 +50,7 @@ public class WxKeywordReplyService {
         String aboutUrl = absUrl(WxConstant.H5_ABOUT_PATH);
         WxCustomerServiceConfig cs = wxGlobalConfigService.getCustomerService();
         StringBuilder sb = new StringBuilder();
-        sb.append("如需对接购买或回收，请打开「联系我们」：\n").append(aboutUrl);
+        sb.append("如需对接购买或回收，请").append(wxHref(aboutUrl, "打开「联系我们」")).append("。");
         if (cs != null && cs.getItems() != null && !cs.getItems().isEmpty()) {
             sb.append("\n\n客服微信：");
             for (int i = 0; i < cs.getItems().size(); i++) {
@@ -78,8 +78,9 @@ public class WxKeywordReplyService {
 
         if (total <= 0 || list == null || list.isEmpty()) {
             return "未找到与「" + keyword + "」匹配的有货商品。\n"
-                    + "可换品牌全称/品名再试，或打开价目页浏览：\n"
-                    + h5Url;
+                    + "可换品牌全称/品名再试，或"
+                    + wxHref(h5Url, "打开价目页浏览")
+                    + "。";
         }
 
         String matchHint;
@@ -107,9 +108,9 @@ public class WxKeywordReplyService {
 
         boolean truncated = total > shown;
         if (truncated || total > WxConstant.SALE_KEYWORD_MAX_ITEMS) {
-            sb.append("\n更多现货请打开价目页：\n").append(h5Url);
+            sb.append("\n更多现货请").append(wxHref(h5Url, "打开价目页")).append("。");
         } else {
-            sb.append("\n详情与图片：\n").append(h5Url);
+            sb.append("\n详情与图片请").append(wxHref(h5Url, "打开价目页")).append("。");
         }
         return sb.toString().trim();
     }
@@ -142,11 +143,18 @@ public class WxKeywordReplyService {
         return line.toString();
     }
 
+    /**
+     * 微信文本消息可点击链：仅 a 标签；标签内勿换行。
+     */
+    private static String wxHref(String url, String label) {
+        return "<a href=\"" + url + "\">" + label + "</a>";
+    }
+
     private String saleListUrl(String keyword) {
         String base = absUrl(WxConstant.H5_SALE_PATH);
         try {
             return base + "?keyword=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8.name());
-        } catch (UnsupportedEncodingException e) {
+        } catch (java.io.UnsupportedEncodingException e) {
             return base + "?keyword=" + keyword;
         }
     }
