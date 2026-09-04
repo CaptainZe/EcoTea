@@ -1,4 +1,4 @@
-# EcoTea 管理端 — AI 编码规范（ADMIN_CONTEXT）
+# EcoTea 管理端 — AI 编码规范（CODING_ADMIN）
 
 > **模块**：`server-admin`（`tea-admin`）  
 > **用途**：约束 AI 在本项目中的**统一编码边界与约定**；非业务需求说明。  
@@ -203,7 +203,7 @@ templates/business/
 
 | 文档 | 内容 |
 |------|------|
-| **ADMIN_CONTEXT.md**（本文） | 项目结构、技术栈、TIMO/business 边界、编码规范 |
+| **CODING_ADMIN.md**（本文） | 项目结构、技术栈、TIMO/business 边界、编码规范 |
 | `docs/business/*.md` | 各业务域需求与流程（如 tea 报价、SKU 等） |
 
 ---

@@ -231,7 +231,7 @@ EXIT;
 mysql -utea_app -p -h127.0.0.1 tea -e "SELECT DATABASE();"
 ```
 
-> 表结构请按项目 SQL / 上线清单（如 `docs/chai-go-live-checklist.md`）另行导入，本文不展开建表。
+> 表结构请按项目 SQL / 业务上线脚本另行导入，本文不展开建表。
 
 ### 2.9 应用侧连接示例
 

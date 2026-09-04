@@ -1,6 +1,6 @@
 # 业务 Redis 缓存规划（待实现）
 
-> 状态：**仅规划，代码未接入**。基础设施见 `REDIS_DEPLOY.md`。  
+> 状态：**仅规划，代码未接入**。基础设施见 `DEPLOY_REDIS.md`。
 > 原则：admin / api 共用同一 Redis、同一前缀 `ecotea_`（`RedisConstant.KEY_PRE`）；key 用 `_` 分隔，不用 `:`。  
 > 不管 tea 模块（后续删除）。销售价目列表结果**不做** Redis 缓存（后续要加库存展示，再单独设计）。
 

@@ -61,14 +61,14 @@ com.ecotea.api
 - 业务失败：抛 `BizException`，由 `GlobalExceptionHandler` 转 `ApiResult.fail`。
 - 参数校验失败：同样经全局 Handler，使用 `ErrorCode.BAD_REQUEST`。
 - 禁止在 Controller 里大量 `try/catch` 后手动拼失败结果（除非有明确边界转换）。
-- URL：小写、与现有资源路径风格一致（如 `/chai/brand/list`）；微信回调路径须与公众平台配置一致。
+- URL：小写、与现有资源路径风格一致（如 `/chai/sku/sale/list`）；微信回调路径须与公众平台配置一致。
 - 入参校验：使用 `@Valid` / `@Validated` + JSR-303。
 
 ## 6. 命名
 
 | 类型 | 约定 | 示例 |
 |------|------|------|
-| Controller | `XxxController` | `ChaiBrandController` |
+| Controller | `XxxController` | `ChaiSkuSaleController` |
 | Service | `XxxService`（可不强制 Interface） | `ChaiBrandService` |
 | Mapper | `XxxMapper` | `ChaiBrandMapper` |
 | 实体 | 与表对应，PascalCase | `ChaiBrand` → `chai_brand` |
@@ -102,7 +102,7 @@ com.ecotea.api
 - 用户可感知错误用 `BizException`。
 - 错误码集中在 `com.ecotea.api.common.constant.ErrorCode`，避免魔法数字。
 - Handler 兜底 `Exception` → 统一文案，不把内部细节返回给调用方。
-- 脚手架测试接口（`/test/util/**`）非生产能力，可保留但勿当正式 API。
+- 脚手架测试接口勿当作正式 API；已移除 `/test/util/**`。
 
 ## 11. 配置与密钥
 

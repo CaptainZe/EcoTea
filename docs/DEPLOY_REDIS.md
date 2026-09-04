@@ -5,7 +5,7 @@
 > 下文已按本机实装经验校正（精简 conf、`Type=simple`）。
 
 admin / api **仅共享** MySQL 与 Redis，业务 key 前缀见各模块 `RedisConstant`（如 `ecotea_`）。  
-应用侧业务缓存约定（字典 / 品牌 / 保质期等）见 `REDIS_CACHE.md`（若有）。
+应用侧业务缓存约定（字典 / 品牌 / 保质期等）见 `TODO_REDIS_CACHE.md`（若有）。
 
 ---
 

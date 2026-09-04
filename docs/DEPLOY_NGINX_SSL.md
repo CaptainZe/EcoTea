@@ -4,7 +4,7 @@
 > 域名与反代：`api.ecotea.cn` → `127.0.0.1:8081`；`admin.ecotea.cn` → `127.0.0.1:8080`。  
 > 证书：阿里云 **个人测试证书 pro**（DV，约 6 个月）；下载格式选 **Nginx**。本期不用 Let’s Encrypt / certbot（后续可选）。
 
-相关文档：MySQL 见 `MYSQL_DEPLOY.md`；Redis 见 `REDIS_DEPLOY.md`；业务缓存规划见 `REDIS_CACHE.md`；销售/微信规划见 `WX_SALES_ROADMAP.md`。
+相关文档：MySQL 见 `DEPLOY_MYSQL.md`；Redis 见 `DEPLOY_REDIS.md`；api 进程部署见 `DEPLOY_API.md`；业务缓存规划见 `TODO_REDIS_CACHE.md`；微信订阅号需求见 `PRD_WX_MP.md`。
 
 ---
 
@@ -292,7 +292,7 @@ curl -Ik https://admin.ecotea.cn/
 
 浏览器建议打开：
 
-- `https://api.ecotea.cn/h5/chai/price.html`
+- `https://api.ecotea.cn/h5/chai/sale.html`（实现后；见 `PRD_WX_MP.md`）
 - `https://admin.ecotea.cn/`
 
 确认证书域名匹配、无过期告警。
