@@ -496,7 +496,7 @@ public class TeaQuoteOrderService {
 
     private String generateOrderNo(long timestamp) {
         String date = TimeUtils.getDateYYMMdd(timestamp);
-        Integer seq = dailySequenceService.getCurrentAndIncrement(DailySeqType.QUOTE_ORDER_NO);
+        Integer seq = dailySequenceService.getCurrentAndIncrement(DailySeqType.QUOTE_ORDER_NO, timestamp);
         return String.format("TEA-QO-%s-%04d", date, seq);
     }
 

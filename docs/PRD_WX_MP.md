@@ -18,7 +18,7 @@
 | 关注欢迎语 | 文章引导 + 回收/销售说明 + 功能说明（纯文本） |
 | 自定义菜单（3） | 在售价目 / 茶叶回收 / 联系我们 → 三个 H5 |
 | 关键词 | 品牌/品名查价；「客服」 |
-| 同域简单官网 | `https://api.ecotea.cn/h5/index.html`（不新开域名/证书） |
+| 同域简单官网 | `https://ecotea.cn/`（反代 api 静态 H5；业务链仍可用 `api.ecotea.cn`） |
 
 ---
 
@@ -159,9 +159,9 @@ CREATE TABLE `wx_mp_menu` (
 
 ### 4.4 官网
 
-- `https://api.ecotea.cn/h5/index.html`  
-- 同域、不新证书；介绍 + 入口链到上述三 H5 + 备案页脚（`site-footer.js`）  
-- 静态页：`static/h5/index.html` + `assets/css/site-home.css`；文案不出现 EcoTea  
+- `https://api.ecotea.cn/h5/index.html` 或根域 `https://ecotea.cn/`（Nginx 反代 api，见 `DEPLOY_NGINX_SSL.md`）  
+- 同域、不新开业务域名证书以外：根域另需 `ecotea.cn` 证书（公安备案）；介绍 + 入口链到回收/联系 H5 + 备案页脚（`site-footer.js`）  
+- 静态页：`static/h5/index.html` + `assets/css/site-home.css`；文案不出现 EcoTea；首页**不**放在售价目入口  
 
 三页及官网均挂备案页脚组件。
 
@@ -214,7 +214,7 @@ admin「发布菜单」：admin 服务端（或受控请求）调用 api，由 a
 - 对外暴露回收价、成本  
 - 抽 admin/api 共用业务 jar  
 - 业务 Redis 缓存（见 `TODO_REDIS_CACHE.md`，另排期）  
-- 官网独立域名与新证书  
+- 另开营销独立域名/新站点（根域 `ecotea.cn` 仅作官网入口与公安备案，内容仍为 api H5）  
 - 欢迎语 HTML 富文本推送到微信  
 
 ---

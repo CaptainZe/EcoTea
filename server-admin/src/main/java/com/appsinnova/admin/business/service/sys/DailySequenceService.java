@@ -15,11 +15,19 @@ public class DailySequenceService {
     private final DailySequenceRepository dailySequenceRepository;
 
     /**
-     * 获取当天当前序号，并把序号 +1 后落库。
+     * 获取当天当前序号，并把序号 +1 后落库（业务日按当前时刻中国时区 yyyyMMdd）。
      */
     @Transactional(rollbackFor = Exception.class)
     public synchronized Integer getCurrentAndIncrement(DailySeqType dailySeqType) {
-        String bizDate = TimeUtils.getDateYYMMdd(System.currentTimeMillis());
+        return getCurrentAndIncrement(dailySeqType, System.currentTimeMillis());
+    }
+
+    /**
+     * 按指定时间戳对应的中国业务日取号，保证与单号日期一致。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public synchronized Integer getCurrentAndIncrement(DailySeqType dailySeqType, long timestamp) {
+        String bizDate = TimeUtils.getDateYYMMdd(timestamp);
         long now = System.currentTimeMillis();
         DailySequence model = dailySequenceRepository.findFirstByBizTypeAndBizDate(dailySeqType.getCode(), bizDate);
         if (model == null) {
