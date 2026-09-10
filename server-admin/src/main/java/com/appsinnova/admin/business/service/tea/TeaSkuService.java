@@ -1,6 +1,6 @@
 package com.appsinnova.admin.business.service.tea;
 
-import com.appsinnova.admin.business.common.utils.SkuUtil;
+import com.appsinnova.admin.business.common.utils.tea.SkuUtil;
 import com.appsinnova.admin.business.domain.tea.TeaSku;
 import com.appsinnova.admin.business.repository.tea.TeaSkuRepository;
 import com.appsinnova.admin.common.data.PageSort;

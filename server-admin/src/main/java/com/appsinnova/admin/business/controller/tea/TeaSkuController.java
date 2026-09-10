@@ -3,7 +3,7 @@ package com.appsinnova.admin.business.controller.tea;
 import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
-import com.appsinnova.admin.business.common.enums.SkuStatus;
+import com.appsinnova.admin.business.common.enums.tea.SkuStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;

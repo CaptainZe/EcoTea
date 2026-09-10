@@ -1,4 +1,4 @@
-package com.appsinnova.admin.business.common.utils;
+package com.appsinnova.admin.business.common.utils.tea;
 
 import com.appsinnova.admin.common.utils.DictUtils;
 import net.sourceforge.pinyin4j.PinyinHelper;
