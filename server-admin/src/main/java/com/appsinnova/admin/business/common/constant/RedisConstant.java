@@ -19,4 +19,10 @@ public interface RedisConstant {
 
     /** 默认 Redis 实例名（多 Redis 时扩展其它名称） */
     String DEFAULT_REDIS = "default";
+
+    /* ***** 日序号（Redis INCR，基础设施） ***** */
+    /** 序号 key 存活：3 天 */
+    int SEQ_TTL_SEC = DAY_EXPIRE * 3;
+    /** key：{@code ecotea_seq_{biz}_{yyyyMMdd}}，biz 见 {@link SeqBizConstant} */
+    String SEQ_KEY_INFIX = "seq_";
 }

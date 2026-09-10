@@ -116,4 +116,36 @@ public final class RedisUtils {
             return false;
         }
     }
+
+    /**
+     * INCR key，返回自增后的值；失败返回 null
+     */
+    public static Long increment(StringRedisTemplate redis, String key) {
+        if (redis == null) {
+            log.error("RedisUtils.increment({}) redis is null", key);
+            return null;
+        }
+        try {
+            return redis.opsForValue().increment(key, 1L);
+        } catch (Exception e) {
+            log.error("RedisUtils.increment({}) Exception: {}", key, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 剩余 TTL（秒）。-1 永不过期；-2 key 不存在；失败返回 null
+     */
+    public static Long getExpireSec(StringRedisTemplate redis, String key) {
+        if (redis == null) {
+            log.error("RedisUtils.getExpireSec({}) redis is null", key);
+            return null;
+        }
+        try {
+            return redis.getExpire(key, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("RedisUtils.getExpireSec({}) Exception: {}", key, e.getMessage());
+            return null;
+        }
+    }
 }

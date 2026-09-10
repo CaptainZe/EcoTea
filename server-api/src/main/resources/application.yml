@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   profiles:
     active: dev
   application:
@@ -20,15 +20,3 @@ logging:
   level:
     root: INFO
     com.ecotea.api: DEBUG
-
-# 网站备案页脚（H5 通用）；填真实文案后生效，空则不展示
-ecotea:
-  beian:
-    icp-text: ""
-    icp-url: "https://beian.miit.gov.cn"
-    mps-text: ""
-    mps-url: ""
-  # 管理写操作鉴权；真实密钥写在 application-dev/prod.yml
-  security:
-    api-key: ""
-

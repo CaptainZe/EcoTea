@@ -1,6 +1,7 @@
 /**
  * 通用备案页脚：挂载到 #siteFooter，拉取 GET /site/beian。
  * 各 H5 页引入本脚本 + site-footer.css 即可。
+ * 公安备案号前展示盾牌图标：/h5/assets/image/gaba_icon.png
  */
 (function () {
   var mount = document.getElementById("siteFooter");
@@ -8,16 +9,41 @@
     return;
   }
 
+  var MPS_ICON_SRC = "/h5/assets/image/gaba_icon.png";
+
   function hasText(s) {
     return !!(s && String(s).trim());
   }
 
-  function appendLink(parent, text, url) {
+  function appendIcpLink(parent, text, url) {
     var a = document.createElement("a");
     a.textContent = text;
     a.href = url || "#";
     a.target = "_blank";
     a.rel = "noreferrer noopener";
+    parent.appendChild(a);
+  }
+
+  /** 公安备案：图标在编号之前 */
+  function appendMpsLink(parent, text, url) {
+    var a = document.createElement("a");
+    a.className = "site-beian-mps";
+    a.href = url || "#";
+    a.target = "_blank";
+    a.rel = "noreferrer noopener";
+
+    var img = document.createElement("img");
+    img.className = "site-beian-mps-icon";
+    img.src = MPS_ICON_SRC;
+    img.alt = "";
+    img.width = 16;
+    img.height = 16;
+
+    var span = document.createElement("span");
+    span.textContent = text;
+
+    a.appendChild(img);
+    a.appendChild(span);
     parent.appendChild(a);
   }
 
@@ -35,10 +61,10 @@
     }
 
     if (mpsOk) {
-      appendLink(footer, data.mpsText.trim(), data.mpsUrl.trim());
+      appendMpsLink(footer, data.mpsText.trim(), data.mpsUrl.trim());
     }
     if (icpOk) {
-      appendLink(footer, data.icpText.trim(), data.icpUrl.trim());
+      appendIcpLink(footer, data.icpText.trim(), data.icpUrl.trim());
     }
     mount.appendChild(footer);
   }
