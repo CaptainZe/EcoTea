@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.service.tea;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
@@ -40,7 +41,7 @@ public class TeaSkuToChaiSyncService {
         if (teaSku == null) {
             throw new IllegalArgumentException("茶叶SKU不存在");
         }
-        if (Integer.valueOf(1).equals(teaSku.getSyncFlag())) {
+        if (YesOrNo.isYes(teaSku.getSyncFlag())) {
             throw new IllegalArgumentException("该记录已同步，请先标记为未同步后再操作");
         }
         validateForm(form);

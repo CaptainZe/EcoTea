@@ -1,5 +1,7 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
+import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockReason;
@@ -80,19 +82,19 @@ public class ChaiStockBillService {
         if (handler == null) {
             throw new IllegalArgumentException("经手人不存在");
         }
-        if (!Integer.valueOf(1).equals(handler.getStatus())) {
+        if (!ChaiStatus.isOnline(handler.getStatus())) {
             throw new IllegalArgumentException("经手人已下架，请重新选择");
         }
         String handlerName = ChaiStaffService.formatDisplayName(handler);
 
         ChaiWarehouse fromWh = chaiWarehouseService.getById(saveVo.getFromWhId());
-        if (fromWh == null || !Integer.valueOf(1).equals(fromWh.getStatus())) {
+        if (fromWh == null || !ChaiStatus.isOnline(fromWh.getStatus())) {
             throw new IllegalArgumentException("仓库不存在或已下架");
         }
         Long toWhId = saveVo.getToWhId() == null ? 0L : saveVo.getToWhId();
         if (billType == ChaiStockBillType.TRANSFER) {
             ChaiWarehouse toWh = chaiWarehouseService.getById(toWhId);
-            if (toWh == null || !Integer.valueOf(1).equals(toWh.getStatus())) {
+            if (toWh == null || !ChaiStatus.isOnline(toWh.getStatus())) {
                 throw new IllegalArgumentException("调入仓库不存在或已下架");
             }
             if (saveVo.getFromWhId().equals(toWhId)) {
@@ -108,11 +110,12 @@ public class ChaiStockBillService {
             if (sku == null) {
                 throw new IllegalArgumentException("SKU不存在：" + line.getSkuId());
             }
-            if (billType == ChaiStockBillType.IN && Integer.valueOf(1).equals(sku.getDeleted())) {
+            if (billType == ChaiStockBillType.IN && YesOrNo.isYes(sku.getDeleted())) {
                 throw new IllegalArgumentException("已删除的SKU不能入库，请先恢复：" + sku.getSkuCode());
             }
             int qty = line.getQty();
-            int appearanceDamaged = Integer.valueOf(1).equals(line.getAppearanceDamaged()) ? 1 : 0;
+            int appearanceDamaged = YesOrNo.isYes(line.getAppearanceDamaged())
+                    ? YesOrNo.YES.getCode() : YesOrNo.NO.getCode();
             BigDecimal price = line.getPrice() == null ? BigDecimal.ZERO : line.getPrice();
             if (price.compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("单价不能为负数");
@@ -157,7 +160,7 @@ public class ChaiStockBillService {
             item.setBillId(bill.getId());
             chaiStockBillItemRepository.save(item);
             applyStockChange(billType, saveVo.getFromWhId(), toWhId, item.getSkuId(), item.getQty(),
-                    Integer.valueOf(1).equals(item.getAppearanceDamaged()), operator, false);
+                    YesOrNo.isYes(item.getAppearanceDamaged()), operator, false);
         }
         return bill;
     }
@@ -173,7 +176,7 @@ public class ChaiStockBillService {
         for (ChaiStockBillItem item : items) {
             applyStockChange(billType, bill.getFromWhId(), bill.getToWhId(),
                     item.getSkuId(), item.getQty(),
-                    Integer.valueOf(1).equals(item.getAppearanceDamaged()), operator, true);
+                    YesOrNo.isYes(item.getAppearanceDamaged()), operator, true);
         }
         bill.setStatus(ChaiStockBillStatus.VOIDED.getCode());
         bill.setOperator(operator != null ? operator : "");

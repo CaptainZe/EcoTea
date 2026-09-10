@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.controller.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
@@ -107,7 +108,7 @@ public class ChaiSkuController {
             model.addAttribute("errorMsg", "SPU不存在");
             return "/business/chai/sku/editBySpu";
         }
-        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+        if (YesOrNo.isYes(spu.getDeleted())) {
             model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再维护SKU");
             return "/business/chai/sku/editBySpu";
         }
@@ -170,7 +171,7 @@ public class ChaiSkuController {
         if (spu == null) {
             return ResultVoUtil.error("SPU不存在");
         }
-        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+        if (YesOrNo.isYes(spu.getDeleted())) {
             return ResultVoUtil.error("已删除的SPU不能维护SKU，请先恢复");
         }
 
@@ -219,7 +220,7 @@ public class ChaiSkuController {
         if (spu == null) {
             return ResultVoUtil.error("SPU不存在");
         }
-        if (Integer.valueOf(1).equals(spu.getDeleted())) {
+        if (YesOrNo.isYes(spu.getDeleted())) {
             return ResultVoUtil.error("已删除的SPU不能维护SKU，请先恢复");
         }
         ChaiSpecUtil.fillSpecFields(spu);

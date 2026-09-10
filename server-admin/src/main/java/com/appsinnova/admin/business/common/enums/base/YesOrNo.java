@@ -28,6 +28,14 @@ public enum YesOrNo {
         return null;
     }
 
+    public static boolean isYes(Integer code) {
+        return YES.code.equals(code);
+    }
+
+    public static boolean isNo(Integer code) {
+        return NO.code.equals(code);
+    }
+
     public static YesOrNo fromRequestParam(String param) {
         if (param == null || param.trim().isEmpty()) {
             return null;

@@ -1,5 +1,7 @@
 package com.appsinnova.admin.business.controller.tea;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
+import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.sys.AppSecretKeyType;
 import com.appsinnova.admin.business.common.enums.SkuStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
@@ -241,7 +243,7 @@ public class TeaSkuController {
             model.addAttribute("errorMsg", "茶叶SKU不存在");
             return "/business/tea/teaSku/sync";
         }
-        if (Integer.valueOf(1).equals(teaSku.getSyncFlag())) {
+        if (YesOrNo.isYes(teaSku.getSyncFlag())) {
             model.addAttribute("errorMsg", "该记录已同步，请先标记为未同步后再操作");
             return "/business/tea/teaSku/sync";
         }
@@ -254,13 +256,13 @@ public class TeaSkuController {
         editItem.setYear(teaSku.getYear());
         editItem.setShowImageUrls(teaSku.getImageUrls());
         editItem.setRealImageUrls(teaSku.getRealImageUrls());
-        editItem.setStatus(0);
+        editItem.setStatus(ChaiStatus.OFFLINE.getCode());
 
         String brandMatchTip = null;
         String brandName = resolveTeaBrandName(teaSku.getBrand());
         if (teaSku.getBrand() != null && !"-".equals(brandName)) {
             ChaiBrand chaiBrand = chaiBrandService.getByName(brandName);
-            if (chaiBrand != null && Integer.valueOf(1).equals(chaiBrand.getStatus())) {
+            if (chaiBrand != null && ChaiStatus.isOnline(chaiBrand.getStatus())) {
                 editItem.setBrand(chaiBrand.getId());
             } else if (chaiBrand != null) {
                 brandMatchTip = "chai品牌「" + brandName + "」已下架，请先上架或手工选择";
@@ -275,7 +277,7 @@ public class TeaSkuController {
         String expirationName = resolveTeaExpirationName(teaSku.getExpiration());
         if (teaSku.getExpiration() != null && !"-".equals(expirationName)) {
             ChaiExpiration chaiExpiration = chaiExpirationService.getByName(expirationName);
-            if (chaiExpiration != null && Integer.valueOf(1).equals(chaiExpiration.getStatus())) {
+            if (chaiExpiration != null && ChaiStatus.isOnline(chaiExpiration.getStatus())) {
                 editItem.setExpiration(chaiExpiration.getId());
             } else if (chaiExpiration != null) {
                 expirationMatchTip = "chai保质期「" + expirationName + "」已下架，请先上架或手工选择";
@@ -326,7 +328,7 @@ public class TeaSkuController {
         if (CollectionUtils.isEmpty(ids)) {
             return ResultVoUtil.error("请选择一条记录");
         }
-        if (!Integer.valueOf(0).equals(syncFlag) && !Integer.valueOf(1).equals(syncFlag)) {
+        if (YesOrNo.fromCode(syncFlag) == null) {
             return ResultVoUtil.error("标记参数无效");
         }
         User user = ShiroUtil.getSubject();

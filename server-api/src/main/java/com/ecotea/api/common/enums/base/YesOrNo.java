@@ -27,4 +27,12 @@ public enum YesOrNo {
         }
         return null;
     }
+
+    public static boolean isYes(Integer code) {
+        return YES.code.equals(code);
+    }
+
+    public static boolean isNo(Integer code) {
+        return NO.code.equals(code);
+    }
 }

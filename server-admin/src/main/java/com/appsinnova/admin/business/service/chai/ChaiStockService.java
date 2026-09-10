@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiStock;
@@ -355,9 +356,9 @@ public class ChaiStockService {
             preList.add(cb.equal(skuRoot.get("spuId").as(Long.class), param.getSpuId()));
         }
         if (param.getQueryHasQty() != null) {
-            if (Integer.valueOf(1).equals(param.getQueryHasQty())) {
+            if (YesOrNo.isYes(param.getQueryHasQty())) {
                 preList.add(cb.greaterThan(root.get("totalQty").as(Integer.class), 0));
-            } else if (Integer.valueOf(0).equals(param.getQueryHasQty())) {
+            } else if (YesOrNo.isNo(param.getQueryHasQty())) {
                 preList.add(cb.equal(root.get("totalQty").as(Integer.class), 0));
             }
         }

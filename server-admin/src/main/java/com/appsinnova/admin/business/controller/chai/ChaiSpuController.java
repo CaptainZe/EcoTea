@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.controller.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
@@ -78,7 +79,7 @@ public class ChaiSpuController {
             editItem.setOfficialPrice(BigDecimal.ONE);
         } else {
             ChaiSpecUtil.fillSpecFields(editItem);
-            if (Integer.valueOf(1).equals(editItem.getDeleted())) {
+            if (YesOrNo.isYes(editItem.getDeleted())) {
                 model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再编辑");
                 return "/business/chai/spu/edit";
             }
@@ -103,7 +104,7 @@ public class ChaiSpuController {
             model.addAttribute("errorMsg", "SPU不存在");
             return "/business/chai/spu/edit";
         }
-        if (Integer.valueOf(1).equals(source.getDeleted())) {
+        if (YesOrNo.isYes(source.getDeleted())) {
             model.addAttribute("errorMsg", "已删除的SPU不能复制，请先恢复");
             return "/business/chai/spu/edit";
         }
@@ -135,7 +136,7 @@ public class ChaiSpuController {
             saveItem.setSpuCode(oldEntity.getSpuCode());
             saveItem.setCreateTime(oldEntity.getCreateTime());
             saveItem.setDeleted(oldEntity.getDeleted());
-            if (Integer.valueOf(1).equals(oldEntity.getDeleted())) {
+            if (YesOrNo.isYes(oldEntity.getDeleted())) {
                 return ResultVoUtil.error("已删除的SPU不能编辑，请先恢复");
             }
             oldYear = oldEntity.getYear();
@@ -301,7 +302,7 @@ public class ChaiSpuController {
             if (entity == null) {
                 continue;
             }
-            if (Integer.valueOf(1).equals(entity.getDeleted())) {
+            if (YesOrNo.isYes(entity.getDeleted())) {
                 return ResultVoUtil.error("SPU「" + entity.getName() + "」已删除，请先恢复");
             }
             if (ChaiStatus.ONLINE.getCode().equals(status) && chaiSkuService.countBySpuId(id) == 0) {

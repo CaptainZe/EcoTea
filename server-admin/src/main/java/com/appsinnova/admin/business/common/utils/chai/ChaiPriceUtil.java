@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.common.utils.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 
@@ -18,7 +19,7 @@ public final class ChaiPriceUtil {
     }
 
     public static boolean isNonSale(Integer nonSale) {
-        return Integer.valueOf(1).equals(nonSale);
+        return YesOrNo.isYes(nonSale);
     }
 
     public static String plain(BigDecimal amount) {

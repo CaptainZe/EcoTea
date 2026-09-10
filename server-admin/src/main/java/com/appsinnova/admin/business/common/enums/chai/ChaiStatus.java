@@ -15,4 +15,12 @@ public enum ChaiStatus {
 
     private final Integer code;
     private final String message;
+
+    public static boolean isOnline(Integer code) {
+        return ONLINE.code.equals(code);
+    }
+
+    public static boolean isOffline(Integer code) {
+        return OFFLINE.code.equals(code);
+    }
 }
