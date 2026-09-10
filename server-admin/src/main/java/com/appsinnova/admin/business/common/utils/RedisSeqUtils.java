@@ -12,7 +12,7 @@ import org.springframework.util.StringUtils;
  * key 不存在时可用 {@link MaxSeqLoader} 从业务表最大号 SETNX 初始化，再 INCR，避免 Redis 丢 key 后从 1 撞号。<br>
  * 单号格式由各业务工具类自行拼接（如 {@code ChaiStockBillNoUtil}）。
  * </p>
- * <p>后续替代 {@code DailySequenceService}；调用方保存遇唯一键冲突时可再取号重试。</p>
+ * <p>调用方保存遇唯一键冲突时可再取号重试。</p>
  */
 @Slf4j
 public final class RedisSeqUtils {

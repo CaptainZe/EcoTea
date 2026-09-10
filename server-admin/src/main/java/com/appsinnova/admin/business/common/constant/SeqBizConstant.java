@@ -6,7 +6,6 @@ package com.appsinnova.admin.business.common.constant;
  */
 public interface SeqBizConstant {
 
-    String QUOTE_ORDER = "quote_order";
     String CHAI_STOCK_IN = "chai_stock_in";
     String CHAI_STOCK_OUT = "chai_stock_out";
     String CHAI_STOCK_TRANSFER = "chai_stock_transfer";

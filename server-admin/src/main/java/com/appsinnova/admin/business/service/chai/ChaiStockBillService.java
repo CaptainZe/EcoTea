@@ -3,11 +3,11 @@ package com.appsinnova.admin.business.service.chai;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockReason;
+import com.appsinnova.admin.business.common.utils.RedisSeqUtils;
 import com.appsinnova.admin.business.common.utils.chai.ChaiStockBillNoUtil;
 import com.appsinnova.admin.business.domain.chai.*;
 import com.appsinnova.admin.business.repository.chai.ChaiStockBillItemRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiStockBillRepository;
-import com.appsinnova.admin.business.service.sys.DailySequenceService;
 import com.appsinnova.admin.business.vo.chai.ChaiStockBillSaveVo;
 import com.appsinnova.admin.common.data.PageSort;
 import com.appsinnova.admin.business.common.utils.JsonUtils;
@@ -41,7 +41,6 @@ public class ChaiStockBillService {
     private final ChaiSkuService chaiSkuService;
     private final ChaiStaffService chaiStaffService;
     private final ChaiWarehouseService chaiWarehouseService;
-    private final DailySequenceService dailySequenceService;
 
     public ChaiStockBill getById(Long id) {
         return chaiStockBillRepository.findById(id).orElse(null);
@@ -138,7 +137,7 @@ public class ChaiStockBillService {
 
         long now = System.currentTimeMillis();
         ChaiStockBill bill = new ChaiStockBill();
-        bill.setBillNo(ChaiStockBillNoUtil.next(billType, dailySequenceService));
+        bill.setBillNo(nextBillNo(billType));
         bill.setBillType(billType.getCode());
         bill.setStatus(ChaiStockBillStatus.POSTED.getCode());
         bill.setReason(saveVo.getReason());
@@ -192,6 +191,21 @@ public class ChaiStockBillService {
         bill.setOperator(operator != null ? operator : "");
         bill.setUpdateTime(System.currentTimeMillis());
         chaiStockBillRepository.save(bill);
+    }
+
+    private String nextBillNo(ChaiStockBillType billType) {
+        RedisSeqUtils.MaxSeqLoader loader = date -> {
+            ChaiStockBill latest = chaiStockBillRepository.findFirstByBillNoStartingWithOrderByBillNoDesc(
+                    ChaiStockBillNoUtil.noPrefix(billType, date));
+            return latest == null ? 0L : ChaiStockBillNoUtil.parseSeq(latest.getBillNo());
+        };
+        for (int i = 0; i < 5; i++) {
+            String billNo = ChaiStockBillNoUtil.next(billType, loader);
+            if (!chaiStockBillRepository.existsByBillNo(billNo)) {
+                return billNo;
+            }
+        }
+        throw new IllegalStateException("生成单据号失败，请重试");
     }
 
     private void applyStockChange(ChaiStockBillType billType, Long fromWhId, Long toWhId,

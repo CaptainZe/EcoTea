@@ -1,6 +1,5 @@
 package com.appsinnova.admin.business.common.pca;
 
-import com.appsinnova.admin.business.domain.tea.TeaPartner;
 import com.appsinnova.admin.business.vo.base.PcaOptionVo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -56,15 +55,5 @@ public class PcaCodeService {
      */
     public String validateRegion(String provinceCode, String cityCode, String districtCode) {
         return catalog.validateRegion(provinceCode, cityCode, districtCode);
-    }
-
-    /** 填充列表/表单展示用名称 */
-    public void fillRegionNames(TeaPartner partner) {
-        if (partner == null) {
-            return;
-        }
-        partner.setProvinceName(resolveName(partner.getProvince()));
-        partner.setCityName(resolveName(partner.getCity()));
-        partner.setDistrictName(resolveName(partner.getDistrict()));
     }
 }

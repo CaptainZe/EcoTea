@@ -11,4 +11,8 @@ public interface ChaiStockBillRepository extends JpaRepository<ChaiStockBill, Lo
     long countByStatusAndBillTypeAndCreateTimeBetween(Integer status, Integer billType, Long createTimeStart, Long createTimeEnd);
 
     List<ChaiStockBill> findByStatusAndCreateTimeGreaterThanEqual(Integer status, Long createTime);
+
+    ChaiStockBill findFirstByBillNoStartingWithOrderByBillNoDesc(String billNoPrefix);
+
+    boolean existsByBillNo(String billNo);
 }
