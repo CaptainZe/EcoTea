@@ -1,0 +1,36 @@
+/* 方案 A：标题左侧文案，右侧公众号推广横幅 */
+.top-main,
+.hero-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.top-text,
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-mp,
+.hero-mp {
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.site-mp-img {
+  display: block;
+  height: 52px;
+  width: auto;
+  max-width: min(48vw, 168px);
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+@media (min-width: 480px) {
+  .site-mp-img {
+    height: 56px;
+    max-width: 200px;
+  }
+}

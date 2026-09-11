@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>在售价目</title>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/site-mp.css"/>
   <link rel="stylesheet" href="/h5/assets/css/site-footer.css"/>
 </head>
 <body>
   <header class="top">
-    <h1>在售价目</h1>
-    <p class="sub">仅展示有货现货 · 价格随市</p>
+    <div class="top-main">
+      <div class="top-text">
+        <h1>在售价目</h1>
+        <p class="sub">仅展示有货现货 · 价格随市</p>
+      </div>
+      <div id="siteMp" class="top-mp"></div>
+    </div>
   </header>
 
   <div class="banner" id="banner" hidden></div>
@@ -55,6 +61,7 @@
   </div>
 
   <script src="/h5/assets/js/chai-sale.js"></script>
+  <script src="/h5/assets/js/site-mp.js"></script>
   <script src="/h5/assets/js/site-footer.js"></script>
 </body>
 </html>

@@ -38,7 +38,13 @@
     galleryNext: document.getElementById("galleryNext")
   };
 
-  var NOTICE_KEY = "chai_sale_notice_dismissed";
+  /** localStorage：存当天日期，同一天关闭后不再弹 */
+  var NOTICE_KEY = "chai_sale_notice_day";
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
 
   function qs(name) {
     var params = new URLSearchParams(window.location.search);
@@ -373,7 +379,7 @@
   function closeNotice() {
     els.noticeModal.hidden = true;
     try {
-      sessionStorage.setItem(NOTICE_KEY, "1");
+      localStorage.setItem(NOTICE_KEY, todayStr());
     } catch (e) {
       /* ignore */
     }
@@ -385,14 +391,12 @@
     if (!title && !body) {
       return;
     }
-    var dismissed = false;
     try {
-      dismissed = sessionStorage.getItem(NOTICE_KEY) === "1";
+      if (localStorage.getItem(NOTICE_KEY) === todayStr()) {
+        return;
+      }
     } catch (e) {
-      dismissed = false;
-    }
-    if (dismissed) {
-      return;
+      /* ignore */
     }
     els.noticeTitle.textContent = title || "购买须知";
     els.noticeBody.textContent = body;

@@ -98,49 +98,79 @@ public class WxKeywordReplyService {
 
         int shown = 0;
         for (ChaiSkuSaleItemVO item : list) {
-            String line = formatSaleLine(shown + 1, item);
-            if (sb.length() + line.length() + 80 > WxConstant.TEXT_SOFT_MAX_CHARS) {
+            String block = formatSaleItem(shown + 1, item);
+            // 多行条目更长，预留页脚与空行
+            if (sb.length() + block.length() + 100 > WxConstant.TEXT_SOFT_MAX_CHARS) {
                 break;
             }
-            sb.append(line).append('\n');
+            sb.append(block).append("\n\n");
             shown++;
         }
 
         boolean truncated = total > shown;
         if (truncated || total > WxConstant.SALE_KEYWORD_MAX_ITEMS) {
-            sb.append("\n更多现货请").append(wxHref(h5Url, "打开价目页")).append("。");
+            sb.append("更多现货请").append(wxHref(h5Url, "打开价目页")).append("。");
         } else {
-            sb.append("\n详情与图片请").append(wxHref(h5Url, "打开价目页")).append("。");
+            sb.append("详情与图片请").append(wxHref(h5Url, "打开价目页")).append("。");
         }
         return sb.toString().trim();
     }
 
-    private String formatSaleLine(int index, ChaiSkuSaleItemVO item) {
-        StringBuilder line = new StringBuilder();
-        line.append(index).append(". ");
+    /**
+     * 单条商品多行展示（条目间由调用方追加空行）；品名链接待详情页再加。
+     * <pre>
+     * 1. 品牌 · 品名
+     * 规格 · 批次
+     * 售价 · 库存[ 破损]
+     * </pre>
+     */
+    private String formatSaleItem(int index, ChaiSkuSaleItemVO item) {
+        String title;
         if (StringUtils.hasText(item.getTitle())) {
-            line.append(item.getTitle().trim());
+            title = item.getTitle().trim();
         } else if (StringUtils.hasText(item.getName())) {
-            line.append(item.getName().trim());
+            title = item.getName().trim();
         } else {
-            line.append("商品");
+            title = "商品";
         }
+
+        StringBuilder mid = new StringBuilder();
         if (StringUtils.hasText(item.getSpecShow())) {
-            line.append(" | ").append(item.getSpecShow().trim());
+            mid.append(item.getSpecShow().trim());
         }
         if (StringUtils.hasText(item.getProdBatchShow())) {
-            line.append(" | ").append(item.getProdBatchShow().trim());
+            if (mid.length() > 0) {
+                mid.append(" · ");
+            }
+            mid.append(item.getProdBatchShow().trim());
         }
+
+        StringBuilder bottom = new StringBuilder();
         if (StringUtils.hasText(item.getSalePriceShow())) {
-            line.append(" | ").append(item.getSalePriceShow().trim());
+            bottom.append(item.getSalePriceShow().trim());
         }
         if (item.getTotalQty() != null) {
-            line.append(" | 库存").append(item.getTotalQty());
+            if (bottom.length() > 0) {
+                bottom.append(" · ");
+            }
+            bottom.append("库存").append(item.getTotalQty());
         }
         if (item.getDamageQty() != null && item.getDamageQty() > 0) {
-            line.append(" 破损").append(item.getDamageQty());
+            if (bottom.length() > 0) {
+                bottom.append(" · ");
+            }
+            bottom.append("破损").append(item.getDamageQty());
         }
-        return line.toString();
+
+        StringBuilder block = new StringBuilder();
+        block.append(index).append(". ").append(title);
+        if (mid.length() > 0) {
+            block.append('\n').append(mid);
+        }
+        if (bottom.length() > 0) {
+            block.append('\n').append(bottom);
+        }
+        return block.toString();
     }
 
     /**

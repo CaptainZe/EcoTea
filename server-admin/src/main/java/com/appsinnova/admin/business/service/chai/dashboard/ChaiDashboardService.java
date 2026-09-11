@@ -52,11 +52,11 @@ public class ChaiDashboardService {
         int days = resolveStatDays(statDays);
         long startMs = startMsForDays(days);
         long endMs = System.currentTimeMillis();
-        Integer posted = ChaiStockBillStatus.POSTED.getCode();
+        List<Integer> effectiveStatuses = effectiveBillStatuses();
 
         ChaiDashboardVo dashboard = new ChaiDashboardVo();
         dashboard.setStatDays(days);
-        dashboard.setScopeTip("茶叶库存运营概览：近 " + days + " 天库存单据统计（仅已过账）；品牌 SPU 为当前未删除快照");
+        dashboard.setScopeTip("茶叶库存运营概览：近 " + days + " 天库存单据统计（已过账+归档，不含作废）；品牌 SPU 为当前未删除快照");
 
         long spuCount = chaiSpuRepository.countByDeleted(0);
         long skuCount = chaiSkuRepository.countByDeleted(0);
@@ -72,18 +72,18 @@ public class ChaiDashboardService {
         dashboard.setPositiveStockSkuCount(chaiStockRepository.countByTotalQtyGreaterThan(0));
         dashboard.setWarehouseCount(chaiWarehouseRepository.countByStatus(ChaiStatus.ONLINE.getCode()));
 
-        long inCount = chaiStockBillRepository.countByStatusAndBillTypeAndCreateTimeBetween(
-                posted, ChaiStockBillType.IN.getCode(), startMs, endMs);
-        long outCount = chaiStockBillRepository.countByStatusAndBillTypeAndCreateTimeBetween(
-                posted, ChaiStockBillType.OUT.getCode(), startMs, endMs);
-        long transferCount = chaiStockBillRepository.countByStatusAndBillTypeAndCreateTimeBetween(
-                posted, ChaiStockBillType.TRANSFER.getCode(), startMs, endMs);
+        long inCount = chaiStockBillRepository.countByStatusInAndBillTypeAndCreateTimeBetween(
+                effectiveStatuses, ChaiStockBillType.IN.getCode(), startMs, endMs);
+        long outCount = chaiStockBillRepository.countByStatusInAndBillTypeAndCreateTimeBetween(
+                effectiveStatuses, ChaiStockBillType.OUT.getCode(), startMs, endMs);
+        long transferCount = chaiStockBillRepository.countByStatusInAndBillTypeAndCreateTimeBetween(
+                effectiveStatuses, ChaiStockBillType.TRANSFER.getCode(), startMs, endMs);
         dashboard.setBillInCount(inCount);
         dashboard.setBillOutCount(outCount);
         dashboard.setBillTransferCount(transferCount);
         dashboard.setBillTotalCount(inCount + outCount + transferCount);
         dashboard.setSpuBrandStatList(buildSpuBrandStat());
-        dashboard.setBillTrendChart(buildBillTrend(days, posted));
+        dashboard.setBillTrendChart(buildBillTrend(days, effectiveStatuses));
         return dashboard;
     }
 
@@ -124,7 +124,7 @@ public class ChaiDashboardService {
         return list;
     }
 
-    private ChaiDashboardStackedBarVo buildBillTrend(int days, Integer postedStatus) {
+    private ChaiDashboardStackedBarVo buildBillTrend(int days, List<Integer> effectiveStatuses) {
         LocalDate endDate = LocalDate.now(ZONE);
         LocalDate startDate = endDate.minusDays(days - 1L);
         List<LocalDate> dateList = new ArrayList<>();
@@ -138,7 +138,8 @@ public class ChaiDashboardService {
         }
 
         long queryStart = startOfDayMs(startDate);
-        List<ChaiStockBill> bills = chaiStockBillRepository.findByStatusAndCreateTimeGreaterThanEqual(postedStatus, queryStart);
+        List<ChaiStockBill> bills = chaiStockBillRepository.findByStatusInAndCreateTimeGreaterThanEqual(
+                effectiveStatuses, queryStart);
         for (ChaiStockBill bill : bills) {
             if (bill.getCreateTime() == null || bill.getBillType() == null) {
                 continue;
@@ -194,6 +195,13 @@ public class ChaiDashboardService {
             return statDays;
         }
         return DEFAULT_STAT_DAYS;
+    }
+
+    /** 有效业务单据：已过账 + 归档（作废不计入） */
+    private List<Integer> effectiveBillStatuses() {
+        return Arrays.asList(
+                ChaiStockBillStatus.POSTED.getCode(),
+                ChaiStockBillStatus.ARCHIVED.getCode());
     }
 
     private long startMsForDays(int days) {
