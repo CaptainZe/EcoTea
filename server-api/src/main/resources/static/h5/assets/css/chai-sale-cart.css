@@ -25,11 +25,17 @@ body {
 
 .nav-back {
   justify-self: start;
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
+}
+
+.nav-back-img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .nav-title {
@@ -41,7 +47,7 @@ body {
 
 .nav-spacer {
   justify-self: end;
-  width: 4.5rem;
+  width: 1.5rem;
 }
 
 .cart-toolbar {

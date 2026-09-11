@@ -1,0 +1,30 @@
+/* 销售库存胶囊：列表 / 详情共用 */
+
+.stock {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 650;
+  min-width: 0;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.stock.scarce {
+  color: #9a3412;
+  background: #fef2f2;
+}
+
+.stock.normal {
+  color: #3d5a3d;
+  background: #e8efe6;
+}
+
+.stock .dmg {
+  color: #9a3412;
+  margin-left: 0.25rem;
+  font-weight: 650;
+}

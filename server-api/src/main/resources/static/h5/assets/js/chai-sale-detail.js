@@ -285,14 +285,9 @@
       els.discount.textContent = "";
     }
 
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg = '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
+    if (els.stock && window.ChaiSaleStock) {
+      els.stock.innerHTML = window.ChaiSaleStock.renderHtml(item);
     }
-    els.stock.innerHTML =
-      "现货库存 " +
-      escapeHtml(item.totalQty != null ? item.totalQty : 0) +
-      dmg;
 
     renderAttrs(item);
 

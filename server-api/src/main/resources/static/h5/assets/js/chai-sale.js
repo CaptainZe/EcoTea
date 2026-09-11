@@ -137,25 +137,10 @@
   }
 
   function stockHtml(item) {
-    var qty = item.totalQty != null ? Number(item.totalQty) : 0;
-    if (isNaN(qty) || qty < 0) {
-      qty = 0;
+    if (window.ChaiSaleStock && window.ChaiSaleStock.renderHtml) {
+      return window.ChaiSaleStock.renderHtml(item);
     }
-    var scarce = qty <= 3;
-    var label = scarce ? "仅剩 " + qty + " 件" : "现货 " + qty + " 件";
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg =
-        '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
-    }
-    return (
-      '<span class="stock ' +
-      (scarce ? "scarce" : "normal") +
-      '">' +
-      escapeHtml(label) +
-      dmg +
-      "</span>"
-    );
+    return "";
   }
 
   function addCartBtnHtml(item) {
