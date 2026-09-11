@@ -10,6 +10,10 @@ spring:
     jdbc-url: jdbc:mysql://127.0.0.1:3306/tea?useSSL=false&characterEncoding=utf-8
     username: tea_user
     password: Tea@123456
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: vyaGlgb9
 
 aliyun:
   oss:
