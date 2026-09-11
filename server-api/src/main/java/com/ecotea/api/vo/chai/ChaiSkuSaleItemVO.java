@@ -30,6 +30,8 @@ public class ChaiSkuSaleItemVO implements Serializable {
     private String officialPriceShow;
     /** 如：388元(3.88折) */
     private String salePriceShow;
+    /** 如：3.5折；无有效折扣时为 null */
+    private String discountShow;
     /** 全仓库存总数 */
     private Integer totalQty;
     /** 破损数量；仅 >0 时有意义，前端按需展示 */

@@ -122,6 +122,30 @@ public class ChaiSkuSaleQueryService {
         return result;
     }
 
+    /**
+     * 有货上架 SKU 详情；不存在或不可售返回 null。
+     */
+    public ChaiSkuSaleItemVO getSaleDetail(Long id) {
+        if (id == null) {
+            return null;
+        }
+        ChaiSku sku = chaiSkuMapper.selectOne(new LambdaQueryWrapper<ChaiSku>()
+                .eq(ChaiSku::getId, id)
+                .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
+                .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
+                .inSql(ChaiSku::getId, STOCK_IN_SQL)
+                .last("LIMIT 1"));
+        if (sku == null) {
+            return null;
+        }
+        List<ChaiSku> records = Collections.singletonList(sku);
+        Map<Long, String> brandNameMap = loadBrandNameMap(records);
+        Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
+        Map<Long, ChaiStock> stockMap = loadStockMap(records);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records);
+        return toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
+    }
+
     private Long resolveBrandIdExact(String keyword) {
         if (!StringUtils.hasText(keyword)) {
             return null;
@@ -243,6 +267,7 @@ public class ChaiSkuSaleQueryService {
         vo.setSalePrice(sku.getSalePrice());
         vo.setOfficialPriceShow(ChaiPriceUtil.formatOfficialPrice(sku.getNonSale(), sku.getOfficialPrice()));
         vo.setSalePriceShow(ChaiPriceUtil.formatSaleWithDiscount(sku.getSalePrice(), sku.getOfficialPrice()));
+        vo.setDiscountShow(ChaiPriceUtil.formatDiscountShow(sku.getSalePrice(), sku.getOfficialPrice()));
         vo.setTotalQty(totalQty);
         vo.setDamageQty(damageQty);
         if (sku.getSpuId() != null) {

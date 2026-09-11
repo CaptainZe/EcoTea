@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>商品详情</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-detail.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/site-footer.css"/>
+</head>
+<body>
+  <header class="nav">
+    <a class="nav-back" href="/h5/chai/sale.html" id="backLink">← 价格目录</a>
+    <h1 class="nav-title">商品详情</h1>
+    <span class="nav-spacer" aria-hidden="true"></span>
+  </header>
+
+  <p class="status" id="status">加载中…</p>
+
+  <main class="detail" id="detail" hidden>
+    <section class="carousel" id="carousel" aria-label="商品图片">
+      <div class="carousel-track" id="carouselTrack"></div>
+      <span class="carousel-index" id="carouselIndex" hidden></span>
+    </section>
+
+    <section class="card card-main" id="cardMain">
+      <span class="brand" id="brand" hidden></span>
+      <h2 class="sku-name" id="skuName"></h2>
+      <div class="price-row">
+        <span class="sale" id="salePrice"></span>
+        <span class="official" id="officialPrice" hidden></span>
+        <span class="discount" id="discount" hidden></span>
+      </div>
+      <p class="stock" id="stock"></p>
+    </section>
+
+    <section class="card card-attrs" id="cardAttrs"></section>
+
+    <section class="card card-mp" id="cardMp">
+      <div id="detailMp" class="detail-mp"></div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <footer class="bar" id="bar" hidden>
+    <a class="bar-same" id="sameBtn" hidden href="#">查看同款</a>
+    <a class="bar-cs" href="/h5/about.html">立即咨询</a>
+  </footer>
+
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-sale-detail.js"></script>
+  <script src="/h5/assets/js/site-footer.js"></script>
+</body>
+</html>

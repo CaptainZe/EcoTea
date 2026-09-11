@@ -98,6 +98,29 @@
     return urls;
   }
 
+  function formatSalePlain(item) {
+    if (item.salePrice != null && item.salePrice !== "") {
+      var n = Number(item.salePrice);
+      if (!isNaN(n)) {
+        return "¥ " + String(n);
+      }
+    }
+    if (item.salePriceShow) {
+      return String(item.salePriceShow).replace(/\(.*$/, "").trim();
+    }
+    return "询价";
+  }
+
+  function formatOfficialShort(item) {
+    if (!item.officialPriceShow || item.officialPriceShow === "-") {
+      return "";
+    }
+    if (item.officialPriceShow === "非卖品") {
+      return "官方 非卖品";
+    }
+    return "官方 ¥" + String(item.officialPriceShow).replace(/元$/, "");
+  }
+
   function renderItem(item) {
     var urls = imageUrlsOf(item);
     var coverHtml;
@@ -136,13 +159,27 @@
         '">看同款</button>';
     }
 
+    var detailHref =
+      item.id != null
+        ? "/h5/chai/sale-detail.html?id=" + encodeURIComponent(item.id)
+        : "";
+
+    var officialShort = formatOfficialShort(item);
+    var discountHtml = item.discountShow
+      ? '<span class="discount">' + escapeHtml(item.discountShow) + "</span>"
+      : "";
+
     return (
       '<li class="card" data-images="' +
       escapeHtml(JSON.stringify(urls)) +
-      '">' +
+      '"' +
+      (detailHref ? ' data-detail="' + escapeHtml(detailHref) + '"' : "") +
+      ">" +
       same +
       coverHtml +
-      '<div class="body">' +
+      '<a class="body" href="' +
+      escapeHtml(detailHref || "#") +
+      '">' +
       '<p class="title">' +
       escapeHtml(item.title || item.name || "") +
       "</p>" +
@@ -151,17 +188,18 @@
       "</div>" +
       '<div class="row-price">' +
       '<span class="sale">' +
-      escapeHtml(item.salePriceShow || "询价") +
+      escapeHtml(formatSalePlain(item)) +
       "</span>" +
-      (item.officialPriceShow
-        ? '<span class="official">官方 ' + escapeHtml(item.officialPriceShow) + "</span>"
+      (officialShort
+        ? '<span class="official">' + escapeHtml(officialShort) + "</span>"
         : "") +
+      discountHtml +
       "</div>" +
       '<div class="stock">库存 ' +
       escapeHtml(item.totalQty != null ? item.totalQty : 0) +
       dmg +
       "</div>" +
-      "</div></li>"
+      "</a></li>"
     );
   }
 

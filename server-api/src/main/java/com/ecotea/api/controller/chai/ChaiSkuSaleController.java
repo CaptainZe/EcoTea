@@ -2,6 +2,7 @@ package com.ecotea.api.controller.chai;
 
 import com.ecotea.api.common.result.ApiResult;
 import com.ecotea.api.service.chai.ChaiSkuSaleQueryService;
+import com.ecotea.api.vo.chai.ChaiSkuSaleItemVO;
 import com.ecotea.api.vo.chai.ChaiSkuSalePageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,5 +30,17 @@ public class ChaiSkuSaleController {
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(keyword, spuId, page, size));
+    }
+
+    /**
+     * 有货上架 SKU 详情。
+     */
+    @GetMapping("/detail")
+    public ApiResult<ChaiSkuSaleItemVO> detail(@RequestParam Long id) {
+        ChaiSkuSaleItemVO vo = chaiSkuSaleQueryService.getSaleDetail(id);
+        if (vo == null) {
+            return ApiResult.fail("商品不存在或暂不可售");
+        }
+        return ApiResult.ok(vo);
     }
 }

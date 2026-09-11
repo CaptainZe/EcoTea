@@ -131,17 +131,18 @@ CREATE TABLE `wx_mp_menu` (
 | 茶叶回收 | view | `https://api.ecotea.cn/h5/chai/recycle.html` |
 | 联系我们 | view | `https://api.ecotea.cn/h5/about.html` |
 
-### 4.1 销售 `sale.html`
+### 4.1 销售 `sale.html` / `sale-detail.html`
 
 - 条件：`status=上架`、`deleted=0`、**全仓 `totalQty > 0`**  
 - 排序：与 admin skuView 一致 — `year DESC, prodBatch DESC, id DESC`  
 - 展示：现有销售信息 + **库存总数**；若 `damageQty > 0` 则展示**破损数量**  
 - **看同款**：`sameSpuSaleCount > 1` 时展示；`?spuId=` 筛选同 SPU 有货 SKU  
+- **SKU 详情**：列表正文进详情；`sale-detail.html?id=`；轮播可滑可放大；模块分价格/属性/公众号；底栏「查看同款」（无同款则隐藏）+「立即咨询」→ 客服页；不可售则提示并回列表  
 - 不露回收价  
 - 关键词匹配：品牌名完全匹配 → 否则 SKU 名称模糊  
 - 弹窗/顶栏文案来自 `wx_global_config` type=4（`notice_title`/`notice_body` 弹窗，`banner_text` 顶栏）  
-- API：`GET /chai/sku/sale/list?keyword=&spuId=&page=&size=`；文案 `GET /wx/globalConfig/saleH5Copy`  
-- 页面：`https://api.ecotea.cn/h5/chai/sale.html`  
+- API：`GET /chai/sku/sale/list?keyword=&spuId=&page=&size=`；`GET /chai/sku/sale/detail?id=`（含 `discountShow`）；文案 `GET /wx/globalConfig/saleH5Copy`  
+- 页面：`https://api.ecotea.cn/h5/chai/sale.html`、`…/sale-detail.html?id=`  
 - 旧试跑页 `price.html`：**已删除**，不再保留  
 
 ### 4.2 回收 `recycle.html`
