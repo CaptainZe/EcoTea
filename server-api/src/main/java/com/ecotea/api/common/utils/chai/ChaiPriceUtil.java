@@ -37,9 +37,12 @@ public final class ChaiPriceUtil {
     }
 
     /**
-     * 折扣文案，如「3.5折」；官方价无效或售价为空时返回 null。算法：sale × 10 / official。
+     * 折扣文案，如「3.5折」；非卖品、官方价无效或售价为空时返回 null。算法：sale × 10 / official。
      */
-    public static String formatDiscountShow(BigDecimal salePrice, BigDecimal officialPrice) {
+    public static String formatDiscountShow(Integer nonSale, BigDecimal salePrice, BigDecimal officialPrice) {
+        if (isNonSale(nonSale)) {
+            return null;
+        }
         if (salePrice == null || officialPrice == null
                 || officialPrice.compareTo(DISCOUNT_MIN_OFFICIAL) <= 0) {
             return null;
@@ -50,14 +53,14 @@ public final class ChaiPriceUtil {
     }
 
     /**
-     * 特价展示；官方价有效时追加「(x折)」。
+     * 特价展示；非卖品不追加折扣；官方价有效时追加「(x折)」。
      */
-    public static String formatSaleWithDiscount(BigDecimal salePrice, BigDecimal officialPrice) {
+    public static String formatSaleWithDiscount(Integer nonSale, BigDecimal salePrice, BigDecimal officialPrice) {
         if (salePrice == null) {
             return "-";
         }
         String show = plain(salePrice) + "元";
-        String discountShow = formatDiscountShow(salePrice, officialPrice);
+        String discountShow = formatDiscountShow(nonSale, salePrice, officialPrice);
         if (discountShow != null) {
             show += "(" + discountShow + ")";
         }

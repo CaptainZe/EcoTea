@@ -213,6 +213,10 @@ body {
   line-height: 1.2;
 }
 
+.discount[hidden] {
+  display: none !important;
+}
+
 .stock-wrap {
   margin: 0.15rem 0 0;
 }

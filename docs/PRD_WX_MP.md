@@ -146,6 +146,14 @@ CREATE TABLE `wx_mp_menu` (
 - 页面：`https://api.ecotea.cn/h5/chai/sale.html`、`…/sale-detail.html?id=`  
 - 旧试跑页 `price.html`：**已删除**，不再保留  
 
+### 4.1.1 内部价目 `inner-sale.html` / `inner-sale-detail.html`（销售工具，不上菜单）
+
+- 复用公开 API：`/chai/sku/sale/list`、`/detail`；**无鉴权**（信息与对外价目同级，不含回收价）  
+- 列表：无弹窗/banner/眉头 MP/询价/备案；有搜索、库存分层、看同款、**复制对外详情链接**  
+- 内部详情顺序：品名售价 → 基础信息 → 展示图九宫格（≤9，仅 `showImageUrls`）→ MP 二维码；底栏复制对外链接；下载转图：`DomToImage`（modern-screenshot）截 `#detail`（不含页眉底栏）→ 预览长按保存  
+- 对外详情地址：`/h5/chai/sale-detail.html?id=`  
+- 页面：`https://api.ecotea.cn/h5/chai/inner-sale.html`、`…/inner-sale-detail.html?id=`  
+
 ### 4.2 回收 `recycle.html`
 
 - 回收说明 + 引流（加微信 / 跳转联系我们）  

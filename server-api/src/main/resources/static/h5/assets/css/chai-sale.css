@@ -313,6 +313,10 @@ body {
   line-height: 1.2;
 }
 
+.discount[hidden] {
+  display: none !important;
+}
+
 .card-foot {
   display: flex;
   flex-direction: column;

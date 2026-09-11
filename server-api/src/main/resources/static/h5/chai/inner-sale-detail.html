@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>商品详情（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner-sale-detail.css"/>
+</head>
+<body>
+  <header class="nav">
+    <a class="nav-back" href="/h5/chai/inner-sale.html" id="backLink" aria-label="返回内部价目">
+      <img class="nav-back-img" src="/h5/assets/image/back.png" alt=""/>
+    </a>
+    <h1 class="nav-title">商品详情 <span class="inner-tag">内部</span></h1>
+    <span class="nav-spacer" aria-hidden="true"></span>
+  </header>
+
+  <p class="status" id="status">加载中…</p>
+
+  <main class="detail" id="detail" hidden>
+    <section class="card card-main">
+      <span class="brand" id="brand" hidden></span>
+      <h2 class="sku-name" id="skuName"></h2>
+      <div class="price-row">
+        <span class="sale" id="salePrice"></span>
+        <span class="official" id="officialPrice" hidden></span>
+        <span class="discount" id="discount" hidden></span>
+      </div>
+      <div class="stock-wrap" id="stock"></div>
+    </section>
+
+    <section class="card card-attrs" id="cardAttrs"></section>
+
+    <section class="card card-gallery" id="cardGallery">
+      <h3 class="card-h">商品图片</h3>
+      <div class="grid9" id="grid9"></div>
+      <p class="grid-empty" id="gridEmpty" hidden>暂无展示图</p>
+    </section>
+
+    <section class="card card-mp">
+      <div id="detailMp" class="detail-mp"></div>
+    </section>
+  </main>
+
+  <footer class="bar" id="bar" hidden>
+    <a class="bar-same" id="sameBtn" hidden href="#">看同款</a>
+    <button type="button" class="bar-copy" id="copyBtn">复制对外链接</button>
+    <button type="button" class="bar-dl" id="dlBtn">下载图片</button>
+  </footer>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-mask" data-lb-close="1"></div>
+    <button type="button" class="lightbox-close" data-lb-close="1" aria-label="关闭">×</button>
+    <img class="lightbox-img" id="lightboxImg" alt=""/>
+  </div>
+
+  <!-- 离屏导出画布：不参与页面交互，仅供截图 -->
+  <div id="exportCaptureRoot" class="export-capture-root" aria-hidden="true"></div>
+
+  <div class="capture-preview" id="capturePreview" hidden>
+    <div class="capture-preview-mask" data-cap-close="1"></div>
+    <div class="capture-preview-panel" role="dialog" aria-modal="true">
+      <div class="capture-preview-head">
+        <h2 class="capture-preview-title">预览图片</h2>
+        <button type="button" class="capture-preview-x" data-cap-close="1" aria-label="关闭">×</button>
+      </div>
+      <p class="capture-preview-hint" id="captureHint">长按下方图片可保存到相册</p>
+      <div class="capture-preview-body">
+        <img class="capture-preview-img" id="captureImg" alt="商品详情截图"/>
+      </div>
+      <div class="capture-preview-actions">
+        <button type="button" class="capture-preview-close" data-cap-close="1">关闭</button>
+        <button type="button" class="capture-preview-save" id="captureSave" hidden>保存文件</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/h5/assets/vendor/modern-screenshot.js"></script>
+  <script src="/h5/assets/js/dom-to-image.js"></script>
+  <script src="/h5/assets/js/chai-sale-stock.js"></script>
+  <script src="/h5/assets/js/chai-inner-util.js"></script>
+  <script src="/h5/assets/js/chai-inner-sale-detail.js"></script>
+</body>
+</html>

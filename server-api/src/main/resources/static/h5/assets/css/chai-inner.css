@@ -1,0 +1,40 @@
+/* 内部价目共用 */
+
+.inner-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(4rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(0.5rem);
+  z-index: 120;
+  max-width: 80vw;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(28, 36, 28, 0.88);
+  color: #fff;
+  font-size: 0.86rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.inner-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.inner-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 650;
+  vertical-align: middle;
+}
+
+body.inner-sale {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}

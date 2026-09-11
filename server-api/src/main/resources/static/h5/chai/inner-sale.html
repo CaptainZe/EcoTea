@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>在售价目（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css"/>
+</head>
+<body class="inner-sale">
+  <header class="top">
+    <div class="top-main">
+      <div class="top-text">
+        <h1>在售价目 <span class="inner-tag">内部</span></h1>
+        <p class="sub">销售查询</p>
+      </div>
+    </div>
+  </header>
+
+  <form class="search" id="searchForm">
+    <input type="search" id="keyword" name="keyword" placeholder="品牌/品名/关键词" autocomplete="off"/>
+    <button type="submit">搜索</button>
+  </form>
+
+  <div class="filter-bar" id="filterBar" hidden>
+    <span id="filterText"></span>
+    <button type="button" class="link-btn" id="clearFilterBtn">返回全部</button>
+  </div>
+
+  <p class="meta" id="meta"></p>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>暂无有货商品</p>
+  <div class="pager" id="pager" hidden>
+    <button type="button" id="prevBtn">上一页</button>
+    <span id="pageInfo"></span>
+    <button type="button" id="nextBtn">下一页</button>
+  </div>
+
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-sale-stock.js"></script>
+  <script src="/h5/assets/js/chai-inner-util.js"></script>
+  <script src="/h5/assets/js/chai-inner-sale.js"></script>
+</body>
+</html>

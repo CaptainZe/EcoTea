@@ -267,8 +267,10 @@ public class ChaiSkuSaleQueryService {
         vo.setOfficialPrice(sku.getOfficialPrice());
         vo.setSalePrice(sku.getSalePrice());
         vo.setOfficialPriceShow(ChaiPriceUtil.formatOfficialPrice(sku.getNonSale(), sku.getOfficialPrice()));
-        vo.setSalePriceShow(ChaiPriceUtil.formatSaleWithDiscount(sku.getSalePrice(), sku.getOfficialPrice()));
-        vo.setDiscountShow(ChaiPriceUtil.formatDiscountShow(sku.getSalePrice(), sku.getOfficialPrice()));
+        vo.setSalePriceShow(ChaiPriceUtil.formatSaleWithDiscount(
+                sku.getNonSale(), sku.getSalePrice(), sku.getOfficialPrice()));
+        vo.setDiscountShow(ChaiPriceUtil.formatDiscountShow(
+                sku.getNonSale(), sku.getSalePrice(), sku.getOfficialPrice()));
         vo.setTotalQty(totalQty);
         vo.setDamageQty(damageQty);
         if (sku.getSpuId() != null) {
