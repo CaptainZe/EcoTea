@@ -7,6 +7,8 @@
     total: 0
   };
 
+  var itemMap = {};
+
   var gallery = {
     urls: [],
     index: 0,
@@ -121,6 +123,72 @@
     return "官方 ¥" + String(item.officialPriceShow).replace(/元$/, "");
   }
 
+  function isInCart(id) {
+    if (!window.ChaiInquiryCart || id == null) {
+      return false;
+    }
+    var items = window.ChaiInquiryCart.getItems();
+    for (var i = 0; i < items.length; i++) {
+      if (String(items[i].id) === String(id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function stockHtml(item) {
+    var qty = item.totalQty != null ? Number(item.totalQty) : 0;
+    if (isNaN(qty) || qty < 0) {
+      qty = 0;
+    }
+    var scarce = qty <= 3;
+    var label = scarce ? "仅剩 " + qty + " 件" : "现货 " + qty + " 件";
+    var dmg = "";
+    if (item.damageQty != null && item.damageQty > 0) {
+      dmg =
+        '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
+    }
+    return (
+      '<span class="stock ' +
+      (scarce ? "scarce" : "normal") +
+      '">' +
+      escapeHtml(label) +
+      dmg +
+      "</span>"
+    );
+  }
+
+  function addCartBtnHtml(item) {
+    if (item.id == null) {
+      return "";
+    }
+    var inCart = isInCart(item.id);
+    return (
+      '<button type="button" class="add-cart-btn' +
+      (inCart ? " is-in-cart" : "") +
+      '" data-add-id="' +
+      escapeHtml(item.id) +
+      '">' +
+      (inCart ? "已加入" : "加入询价") +
+      "</button>"
+    );
+  }
+
+  function syncAddButtons() {
+    var buttons = els.list.querySelectorAll("[data-add-id]");
+    Array.prototype.forEach.call(buttons, function (btn) {
+      var id = btn.getAttribute("data-add-id");
+      var inCart = isInCart(id);
+      if (inCart) {
+        btn.classList.add("is-in-cart");
+        btn.textContent = "已加入";
+      } else {
+        btn.classList.remove("is-in-cart");
+        btn.textContent = "加入询价";
+      }
+    });
+  }
+
   function renderItem(item) {
     var urls = imageUrlsOf(item);
     var coverHtml;
@@ -146,11 +214,6 @@
       tagHtml(item.prodBatchShow) +
       tagHtml(item.expirationName);
 
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg = '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
-    }
-
     var same = "";
     if (item.spuId && item.sameSpuSaleCount != null && item.sameSpuSaleCount > 1) {
       same =
@@ -175,8 +238,10 @@
       '"' +
       (detailHref ? ' data-detail="' + escapeHtml(detailHref) + '"' : "") +
       ">" +
-      same +
+      '<div class="card-media">' +
       coverHtml +
+      "</div>" +
+      '<div class="card-main">' +
       '<a class="body" href="' +
       escapeHtml(detailHref || "#") +
       '">' +
@@ -195,17 +260,25 @@
         : "") +
       discountHtml +
       "</div>" +
-      '<div class="stock">库存 ' +
-      escapeHtml(item.totalQty != null ? item.totalQty : 0) +
-      dmg +
-      "</div>" +
-      "</a></li>"
+      "</a>" +
+      '<div class="card-foot">' +
+      stockHtml(item) +
+      '<div class="card-actions">' +
+      same +
+      addCartBtnHtml(item) +
+      "</div></div></div></li>"
     );
   }
 
   function render(data) {
     state.total = data.total || 0;
     var list = data.list || [];
+    itemMap = {};
+    list.forEach(function (item) {
+      if (item && item.id != null) {
+        itemMap[String(item.id)] = item;
+      }
+    });
     els.list.innerHTML = list.map(renderItem).join("");
     els.empty.hidden = list.length > 0;
 
@@ -218,8 +291,13 @@
     } else if (data.matchType === "spu") {
       matchHint = "（同款）";
     }
-    els.meta.textContent =
-      "共 " + state.total + " 件有货" + matchHint + (state.keyword ? " · " + state.keyword : "");
+    var kwHint = state.keyword ? " · " + escapeHtml(state.keyword) : "";
+    els.meta.innerHTML =
+      "共 <span class=\"meta-num\">" +
+      escapeHtml(state.total) +
+      "</span> 款现货" +
+      escapeHtml(matchHint) +
+      kwHint;
 
     els.pager.hidden = state.total <= state.size;
     els.pageInfo.textContent = state.page + " / " + pages;
@@ -334,6 +412,22 @@
   });
 
   els.list.addEventListener("click", function (e) {
+    var addBtn = e.target.closest("[data-add-id]");
+    if (addBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var addId = addBtn.getAttribute("data-add-id");
+      var item = itemMap[String(addId)];
+      if (!item || !window.ChaiInquiryCart) {
+        return;
+      }
+      var already = isInCart(item.id);
+      window.ChaiInquiryCart.add(item, 1);
+      window.ChaiInquiryCart.toast(already ? "数量 +1" : "已加入询价单");
+      syncAddButtons();
+      return;
+    }
+
     var sameBtn = e.target.closest(".same-btn");
     if (sameBtn) {
       var spu = sameBtn.getAttribute("data-spu");
@@ -494,4 +588,8 @@
   updateFilterBar();
   loadCopy();
   load();
+  if (window.ChaiInquiryCart) {
+    window.ChaiInquiryCart.mountFab();
+    window.ChaiInquiryCart.onChange(syncAddButtons);
+  }
 })();

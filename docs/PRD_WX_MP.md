@@ -137,7 +137,8 @@ CREATE TABLE `wx_mp_menu` (
 - 排序：与 admin skuView 一致 — `year DESC, prodBatch DESC, id DESC`  
 - 展示：现有销售信息 + **库存总数**；若 `damageQty > 0` 则展示**破损数量**  
 - **看同款**：`sameSpuSaleCount > 1` 时展示；`?spuId=` 筛选同 SPU 有货 SKU  
-- **SKU 详情**：列表正文进详情；`sale-detail.html?id=`；轮播可滑可放大；模块分价格/属性/公众号；底栏「查看同款」（无同款则隐藏）+「立即咨询」→ 客服页；不可售则提示并回列表  
+- **SKU 详情**：列表正文进详情；`sale-detail.html?id=`；轮播可滑可放大；模块分价格/属性/公众号；底栏「查看同款」（无同款则隐藏）+「加入询价单」+「立即咨询」→ 客服页；不可售则提示并回列表  
+- **询价单（本地）**：`localStorage`；列表行 `+` / 详情加入；右下角浮标（`cart.png`）角标=SKU 种类数；页 `sale-cart.html` 可改数量、复制询价单、立即咨询；无支付、无服务端  
 - 不露回收价  
 - 关键词匹配：品牌名完全匹配 → 否则 SKU 名称模糊  
 - 弹窗/顶栏文案来自 `wx_global_config` type=4（`notice_title`/`notice_body` 弹窗，`banner_text` 顶栏）  
@@ -184,7 +185,7 @@ CREATE TABLE `wx_mp_menu` (
 
 | 输入 | 行为 |
 |------|------|
-| 品牌全称 / 品名 | 查可售列表，被动回复最多 **10** 条摘要；更多/过长 → a 标签链到 `sale.html?keyword=` |
+| 品牌全称 / 品名 | 查可售列表，被动回复最多 **10** 条；每条多行（品名链详情、等级/规格/批次/保质期/官方/售价/库存数量[破损]）；条目间空行；过长截断 → a 标签链到 `sale.html?keyword=` |
 | 客服（等约定词） | 短文案 + a 标签链到「联系我们」H5 |
 
 实现（api）：

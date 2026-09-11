@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>询价单</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css"/>
+</head>
+<body>
+  <header class="nav">
+    <a class="nav-back" href="/h5/chai/sale.html">← 价格目录</a>
+    <h1 class="nav-title">询价单</h1>
+    <span class="nav-spacer" aria-hidden="true"></span>
+  </header>
+
+  <p class="meta" id="meta"></p>
+  <div class="cart-toolbar" id="cartToolbar" hidden>
+    <button type="button" class="nav-clear" id="clearBtn">清空</button>
+  </div>
+  <ul class="list cart-list" id="list"></ul>
+  <p class="empty" id="empty" hidden>
+    询价单是空的<br/>
+    <a href="/h5/chai/sale.html">去价格目录看看</a>
+  </p>
+
+  <footer class="cart-bar" id="cartBar" hidden>
+    <button type="button" class="cart-copy" id="copyBtn">复制询价单</button>
+    <a class="cart-cs" href="/h5/about.html">立即咨询</a>
+  </footer>
+
+  <div class="modal" id="clearModal" hidden>
+    <div class="modal-mask" data-clear-close="1"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
+      <h2 class="modal-title" id="clearTitle">清空询价单</h2>
+      <div class="modal-body">确定清空询价单？清空后需重新添加商品。</div>
+      <div class="modal-actions">
+        <button type="button" class="modal-cancel" id="clearCancel" data-clear-close="1">取消</button>
+        <button type="button" class="modal-ok modal-ok-danger" id="clearOk">清空</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/h5/assets/js/chai-inquiry-cart.js"></script>
+  <script src="/h5/assets/js/chai-sale-cart.js"></script>
+</body>
+</html>

@@ -17,6 +17,7 @@
     cardAttrs: document.getElementById("cardAttrs"),
     bar: document.getElementById("bar"),
     sameBtn: document.getElementById("sameBtn"),
+    addCartBtn: document.getElementById("addCartBtn"),
     gallery: document.getElementById("gallery"),
     galleryImg: document.getElementById("galleryImg"),
     galleryIndex: document.getElementById("galleryIndex"),
@@ -25,6 +26,7 @@
   };
 
   var state = { urls: [], index: 0, galleryOpen: false };
+  var currentItem = null;
   var touchX = null;
   var suppressClick = false;
 
@@ -75,9 +77,9 @@
       return "";
     }
     if (item.officialPriceShow === "非卖品") {
-      return "官方建议价 非卖品";
+      return "官方价 非卖品";
     }
-    return "官方建议价 ¥" + String(item.officialPriceShow).replace(/元$/, "");
+    return "官方价 ¥" + String(item.officialPriceShow).replace(/元$/, "");
   }
 
   function showUnavailable(msg) {
@@ -249,6 +251,7 @@
   }
 
   function render(item) {
+    currentItem = item;
     var urls = imageUrlsOf(item);
     document.title = (item.name || item.title || "商品详情") + " · 在售";
 
@@ -412,4 +415,18 @@
 
   load();
   mountDetailMp();
+
+  if (els.addCartBtn) {
+    els.addCartBtn.addEventListener("click", function () {
+      if (!currentItem || !window.ChaiInquiryCart) {
+        return;
+      }
+      window.ChaiInquiryCart.add(currentItem, 1);
+      window.ChaiInquiryCart.toast("已加入询价单");
+    });
+  }
+
+  if (window.ChaiInquiryCart) {
+    window.ChaiInquiryCart.mountFab();
+  }
 })();

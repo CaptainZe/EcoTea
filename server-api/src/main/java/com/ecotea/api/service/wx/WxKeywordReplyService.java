@@ -98,7 +98,7 @@ public class WxKeywordReplyService {
 
         int shown = 0;
         for (ChaiSkuSaleItemVO item : list) {
-            String block = formatSaleItem(shown + 1, item);
+            String block = formatSaleItem(item);
             // 多行条目更长，预留页脚与空行
             if (sb.length() + block.length() + 100 > WxConstant.TEXT_SOFT_MAX_CHARS) {
                 break;
@@ -117,14 +117,19 @@ public class WxKeywordReplyService {
     }
 
     /**
-     * 单条商品多行展示（条目间由调用方追加空行）；品名链接待详情页再加。
+     * 单条商品多行展示（条目间由调用方追加空行；无序号）。
      * <pre>
-     * 1. 品牌 · 品名
-     * 规格 · 批次
-     * 售价 · 库存[ 破损]
+     * &lt;a href="详情"&gt;品牌 · 品名&lt;/a&gt;
+     * 等级：…
+     * 规格：…
+     * 批次：…
+     * 保质期：…
+     * 官方：…
+     * 售价：…
+     * 库存数量：n[，破损：m]
      * </pre>
      */
-    private String formatSaleItem(int index, ChaiSkuSaleItemVO item) {
+    private String formatSaleItem(ChaiSkuSaleItemVO item) {
         String title;
         if (StringUtils.hasText(item.getTitle())) {
             title = item.getTitle().trim();
@@ -134,43 +139,42 @@ public class WxKeywordReplyService {
             title = "商品";
         }
 
-        StringBuilder mid = new StringBuilder();
-        if (StringUtils.hasText(item.getSpecShow())) {
-            mid.append(item.getSpecShow().trim());
-        }
-        if (StringUtils.hasText(item.getProdBatchShow())) {
-            if (mid.length() > 0) {
-                mid.append(" · ");
-            }
-            mid.append(item.getProdBatchShow().trim());
-        }
-
-        StringBuilder bottom = new StringBuilder();
-        if (StringUtils.hasText(item.getSalePriceShow())) {
-            bottom.append(item.getSalePriceShow().trim());
-        }
-        if (item.getTotalQty() != null) {
-            if (bottom.length() > 0) {
-                bottom.append(" · ");
-            }
-            bottom.append("库存").append(item.getTotalQty());
-        }
-        if (item.getDamageQty() != null && item.getDamageQty() > 0) {
-            if (bottom.length() > 0) {
-                bottom.append(" · ");
-            }
-            bottom.append("破损").append(item.getDamageQty());
-        }
-
         StringBuilder block = new StringBuilder();
-        block.append(index).append(". ").append(title);
-        if (mid.length() > 0) {
-            block.append('\n').append(mid);
+        if (item.getId() != null) {
+            block.append(wxHref(saleDetailUrl(item.getId()), title));
+        } else {
+            block.append(title);
         }
-        if (bottom.length() > 0) {
-            block.append('\n').append(bottom);
+
+        appendLabeledLine(block, "等级", item.getGradeName());
+        appendLabeledLine(block, "规格", item.getSpecShow());
+        appendLabeledLine(block, "批次", item.getProdBatchShow());
+        appendLabeledLine(block, "保质期", item.getExpirationName());
+        appendLabeledLine(block, "官方", formatPriceLine(item.getOfficialPriceShow()));
+        appendLabeledLine(block, "售价", formatPriceLine(item.getSalePriceShow()));
+
+        if (item.getTotalQty() != null) {
+            block.append('\n').append("库存数量：").append(item.getTotalQty());
+            if (item.getDamageQty() != null && item.getDamageQty() > 0) {
+                block.append("，破损：").append(item.getDamageQty());
+            }
         }
         return block.toString();
+    }
+
+    private static void appendLabeledLine(StringBuilder block, String label, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        block.append('\n').append(label).append('：').append(value.trim());
+    }
+
+    /** 半角括号改为全角，贴近展示文案。 */
+    private static String formatPriceLine(String show) {
+        if (!StringUtils.hasText(show)) {
+            return null;
+        }
+        return show.trim().replace('(', '（').replace(')', '）');
     }
 
     /**
@@ -178,6 +182,10 @@ public class WxKeywordReplyService {
      */
     private static String wxHref(String url, String label) {
         return "<a href=\"" + url + "\">" + label + "</a>";
+    }
+
+    private String saleDetailUrl(Long id) {
+        return absUrl(WxConstant.H5_SALE_DETAIL_PATH) + "?id=" + id;
     }
 
     private String saleListUrl(String keyword) {

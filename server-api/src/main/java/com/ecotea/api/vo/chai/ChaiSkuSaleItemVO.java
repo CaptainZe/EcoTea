@@ -16,6 +16,8 @@ public class ChaiSkuSaleItemVO implements Serializable {
 
     private Long id;
     private Long spuId;
+    /** SKU 编码 */
+    private String skuCode;
     /** 标题：品牌 + 品名 */
     private String title;
     private String name;

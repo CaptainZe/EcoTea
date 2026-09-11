@@ -1,0 +1,69 @@
+/* 询价单浮标 / 角标 / toast / 列表加购按钮 */
+
+.inquiry-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(28, 36, 28, 0.18);
+  border: 1px solid #e2e7df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.inquiry-fab[hidden] {
+  display: none !important;
+}
+
+.inquiry-fab-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+.inquiry-fab-badge {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #c2410c;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.inquiry-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(0.5rem);
+  z-index: 120;
+  max-width: 80vw;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(28, 36, 28, 0.88);
+  color: #fff;
+  font-size: 0.86rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.inquiry-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

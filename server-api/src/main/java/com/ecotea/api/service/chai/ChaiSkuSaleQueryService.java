@@ -252,6 +252,7 @@ public class ChaiSkuSaleQueryService {
         ChaiSkuSaleItemVO vo = new ChaiSkuSaleItemVO();
         vo.setId(sku.getId());
         vo.setSpuId(sku.getSpuId());
+        vo.setSkuCode(sku.getSkuCode());
         vo.setTitle(title);
         vo.setName(sku.getName());
         vo.setBrandName(brandName);
