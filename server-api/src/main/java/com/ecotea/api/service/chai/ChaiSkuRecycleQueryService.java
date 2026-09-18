@@ -62,6 +62,17 @@ public class ChaiSkuRecycleQueryService {
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款。
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId, long page, long size) {
+        return pageRecycleList(keyword, spuId, Collections.emptyList(), Collections.emptyList(), page, size);
+    }
+
+    /**
+     * 上架、未删除 SKU 分页（不按库存过滤）。
+     * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；
+     * brandIds / types：多选筛选。
+     */
+    public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId,
+                                                List<Long> brandIds, List<Integer> types,
+                                                long page, long size) {
         if (page < 1) {
             page = 1;
         }
@@ -73,7 +84,9 @@ public class ChaiSkuRecycleQueryService {
         }
 
         String kw = keyword == null ? null : keyword.trim();
-        Long brandId = resolveBrandIdExact(kw);
+        List<Long> brandIdList = brandIds == null ? Collections.emptyList() : brandIds;
+        List<Integer> typeList = types == null ? Collections.emptyList() : types;
+        Long brandIdFromKw = brandIdList.isEmpty() ? resolveBrandIdExact(kw) : null;
 
         LambdaQueryWrapper<ChaiSku> wrapper = new LambdaQueryWrapper<ChaiSku>()
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
@@ -84,8 +97,20 @@ public class ChaiSkuRecycleQueryService {
             wrapper.eq(ChaiSku::getSpuId, spuId);
             matchType = "spu";
         }
-        if (brandId != null) {
-            wrapper.eq(ChaiSku::getBrand, brandId);
+
+        if (!brandIdList.isEmpty()) {
+            wrapper.in(ChaiSku::getBrand, brandIdList);
+            if (!"spu".equals(matchType)) {
+                matchType = "brand_filter";
+            }
+            if (StringUtils.hasText(kw)) {
+                wrapper.like(ChaiSku::getName, kw);
+                if (!"spu".equals(matchType)) {
+                    matchType = "name_like";
+                }
+            }
+        } else if (brandIdFromKw != null) {
+            wrapper.eq(ChaiSku::getBrand, brandIdFromKw);
             if (!"spu".equals(matchType)) {
                 matchType = "brand_exact";
             }
@@ -94,6 +119,10 @@ public class ChaiSkuRecycleQueryService {
             if (!"spu".equals(matchType)) {
                 matchType = "name_like";
             }
+        }
+
+        if (!typeList.isEmpty()) {
+            wrapper.in(ChaiSku::getType, typeList);
         }
 
         wrapper.orderByDesc(ChaiSku::getYear)
@@ -121,8 +150,8 @@ public class ChaiSkuRecycleQueryService {
         result.setSpuId(spuId);
         result.setList(list);
 
-        log.info("chai sku recycle list, keyword={}, spuId={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku recycle list, keyword={}, spuId={}, brandIds={}, types={}, matchType={}, page={}, size={}, total={}",
+                kw, spuId, brandIdList, typeList, matchType, page, size, mpPage.getTotal());
         return result;
     }
 

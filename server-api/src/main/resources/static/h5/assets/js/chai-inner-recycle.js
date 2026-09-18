@@ -1,5 +1,5 @@
 /**
- * 内部回收价目列表：搜索 + 分页 + 看同款；无「新回收/仓」筛选。
+ * 内部回收价目列表：搜索 + 分页 + 看同款；筛选（品牌/茶类）。
  */
 (function () {
   var LIST_URL_KEY = "chai.innerRecycle.listUrl";
@@ -8,8 +8,27 @@
     size: 20,
     keyword: "",
     spuId: null,
+    brandIds: [],
+    types: [],
     total: 0,
   };
+
+  var filterMeta = {
+    brands: [],
+    types: [],
+    loaded: false,
+    loading: false,
+  };
+
+  var filterDraft = {
+    brandIds: [],
+    types: [],
+    brandKw: "",
+    brandExpanded: false,
+  };
+
+  var FILTER_ICON_OFF = "/h5/assets/image/filter_off.png";
+  var FILTER_ICON_ON = "/h5/assets/image/filter_on.png";
 
   var gallery = { urls: [], index: 0 };
   var listAbort = null;
@@ -38,6 +57,14 @@
     galleryIndex: document.getElementById("galleryIndex"),
     galleryPrev: document.getElementById("galleryPrev"),
     galleryNext: document.getElementById("galleryNext"),
+    filterEntryBtn: document.getElementById("filterEntryBtn"),
+    filterEntryIcon: document.getElementById("filterEntryIcon"),
+    filterDrawer: document.getElementById("filterDrawer"),
+    brandFilterKw: document.getElementById("brandFilterKw"),
+    brandTags: document.getElementById("brandTags"),
+    typeTags: document.getElementById("typeTags"),
+    filterResetBtn: document.getElementById("filterResetBtn"),
+    filterConfirmBtn: document.getElementById("filterConfirmBtn"),
   };
 
   function qs(name) {
@@ -54,6 +81,12 @@
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
     }
+    if (state.brandIds && state.brandIds.length) {
+      params.set("brandIds", state.brandIds.join(","));
+    }
+    if (state.types && state.types.length) {
+      params.set("types", state.types.join(","));
+    }
     if (state.page > 1) {
       params.set("page", String(state.page));
     }
@@ -64,6 +97,217 @@
       window.location.pathname + (q ? "?" + q : "")
     );
     rememberListUrl();
+  }
+
+  function parseIdList(raw, asInt) {
+    if (!raw) {
+      return [];
+    }
+    var parts = String(raw).split(",");
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < parts.length; i++) {
+      var s = String(parts[i] || "").trim();
+      if (!s) {
+        continue;
+      }
+      var n = asInt ? parseInt(s, 10) : Number(s);
+      if (isNaN(n)) {
+        continue;
+      }
+      var key = String(n);
+      if (seen[key]) {
+        continue;
+      }
+      seen[key] = true;
+      out.push(n);
+    }
+    return out;
+  }
+
+  function hasActiveDrawerFilter() {
+    return (
+      (state.brandIds && state.brandIds.length > 0) ||
+      (state.types && state.types.length > 0)
+    );
+  }
+
+  function updateFilterEntryIcon() {
+    if (!els.filterEntryIcon) {
+      return;
+    }
+    els.filterEntryIcon.src = hasActiveDrawerFilter()
+      ? FILTER_ICON_ON
+      : FILTER_ICON_OFF;
+  }
+
+  function cloneIdList(list) {
+    return (list || []).slice();
+  }
+
+  function draftFromState() {
+    filterDraft.brandIds = cloneIdList(state.brandIds);
+    filterDraft.types = cloneIdList(state.types);
+    filterDraft.brandKw = "";
+    filterDraft.brandExpanded = false;
+    if (els.brandFilterKw) {
+      els.brandFilterKw.value = "";
+    }
+  }
+
+  function idInList(list, id) {
+    if (window.ChaiListFilter && window.ChaiListFilter.idInList) {
+      return window.ChaiListFilter.idInList(list, id);
+    }
+    var key = String(id);
+    for (var i = 0; i < (list || []).length; i++) {
+      if (String(list[i]) === key) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function toggleIdInList(list, id) {
+    var key = String(id);
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i]) === key) {
+        list.splice(i, 1);
+        return;
+      }
+    }
+    list.push(id);
+  }
+
+  function renderBrandTags() {
+    if (!els.brandTags) {
+      return;
+    }
+    if (!window.ChaiListFilter || !window.ChaiListFilter.renderBrandTagsHtml) {
+      els.brandTags.innerHTML = '<p class="filter-tags-empty">加载中…</p>';
+      return;
+    }
+    els.brandTags.innerHTML = window.ChaiListFilter.renderBrandTagsHtml({
+      brands: filterMeta.brands || [],
+      selectedIds: filterDraft.brandIds,
+      keyword: filterDraft.brandKw,
+      expanded: filterDraft.brandExpanded,
+      escapeHtml: escapeHtml,
+    });
+  }
+
+  function renderTypeTags() {
+    if (!els.typeTags) {
+      return;
+    }
+    var html = [];
+    var types = filterMeta.types || [];
+    for (var i = 0; i < types.length; i++) {
+      var t = types[i];
+      if (!t || t.code == null || t.code === "") {
+        continue;
+      }
+      var codeNum = parseInt(t.code, 10);
+      var codeVal = isNaN(codeNum) ? t.code : codeNum;
+      var on = idInList(filterDraft.types, codeVal);
+      html.push(
+        '<button type="button" class="filter-tag' +
+          (on ? " is-on" : "") +
+          '" data-type-code="' +
+          escapeHtml(t.code) +
+          '">' +
+          escapeHtml(t.text || t.code) +
+          "</button>"
+      );
+    }
+    if (!html.length) {
+      els.typeTags.innerHTML = '<p class="filter-tags-empty">暂无茶类</p>';
+      return;
+    }
+    els.typeTags.innerHTML = html.join("");
+  }
+
+  function renderFilterDraft() {
+    renderBrandTags();
+    renderTypeTags();
+  }
+
+  function ensureFilterMeta() {
+    if (filterMeta.loaded || filterMeta.loading) {
+      return Promise.resolve();
+    }
+    filterMeta.loading = true;
+    return Promise.all([
+      fetch("/chai/brand/online").then(function (res) {
+        return res.json();
+      }),
+      fetch("/chai/dict/options?label=CHAI_TYPE").then(function (res) {
+        return res.json();
+      }),
+    ])
+      .then(function (parts) {
+        filterMeta.loading = false;
+        filterMeta.loaded = true;
+        var brandBody = parts[0];
+        var typeBody = parts[1];
+        filterMeta.brands =
+          brandBody && brandBody.code === 0 && brandBody.data
+            ? brandBody.data
+            : [];
+        filterMeta.types =
+          typeBody && typeBody.code === 0 && typeBody.data ? typeBody.data : [];
+      })
+      .catch(function () {
+        filterMeta.loading = false;
+        filterMeta.loaded = true;
+        filterMeta.brands = [];
+        filterMeta.types = [];
+      });
+  }
+
+  function openFilterDrawer() {
+    if (!els.filterDrawer) {
+      return;
+    }
+    draftFromState();
+    els.filterDrawer.hidden = false;
+    document.body.style.overflow = "hidden";
+    ensureFilterMeta().then(function () {
+      renderFilterDraft();
+    });
+    renderFilterDraft();
+  }
+
+  function closeFilterDrawer() {
+    if (!els.filterDrawer) {
+      return;
+    }
+    els.filterDrawer.hidden = true;
+    if (els.gallery && !els.gallery.hidden) {
+      return;
+    }
+    document.body.style.overflow = "";
+  }
+
+  function applyFilterDraftAndReload() {
+    state.brandIds = cloneIdList(filterDraft.brandIds);
+    state.types = cloneIdList(filterDraft.types);
+    state.page = 1;
+    updateFilterEntryIcon();
+    closeFilterDrawer();
+    syncUrl();
+    load();
+  }
+
+  function resetFilterDraft() {
+    filterDraft.brandIds = [];
+    filterDraft.types = [];
+    filterDraft.brandKw = "";
+    filterDraft.brandExpanded = false;
+    if (els.brandFilterKw) {
+      els.brandFilterKw.value = "";
+    }
+    renderFilterDraft();
   }
 
   function rememberListUrl() {
@@ -408,6 +652,12 @@
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
     }
+    if (state.brandIds && state.brandIds.length) {
+      params.set("brandIds", state.brandIds.join(","));
+    }
+    if (state.types && state.types.length) {
+      params.set("types", state.types.join(","));
+    }
 
     els.meta.textContent = "加载中…";
     var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
@@ -444,6 +694,7 @@
     gallery.urls = urls;
     gallery.index = index || 0;
     els.gallery.hidden = false;
+    document.body.style.overflow = "hidden";
     paintGallery();
   }
 
@@ -451,6 +702,10 @@
     els.gallery.hidden = true;
     gallery.urls = [];
     gallery.index = 0;
+    if (els.filterDrawer && !els.filterDrawer.hidden) {
+      return;
+    }
+    document.body.style.overflow = "";
   }
 
   function paintGallery() {
@@ -482,6 +737,78 @@
     updateFilterBar();
     syncUrl();
     load();
+  });
+
+  if (els.filterEntryBtn) {
+    els.filterEntryBtn.addEventListener("click", function () {
+      openFilterDrawer();
+    });
+  }
+
+  if (els.filterDrawer) {
+    els.filterDrawer.addEventListener("click", function (e) {
+      if (e.target && e.target.getAttribute("data-filter-close") === "1") {
+        closeFilterDrawer();
+        return;
+      }
+      var brandBtn = e.target.closest("[data-brand-id]");
+      if (brandBtn && els.brandTags && els.brandTags.contains(brandBtn)) {
+        var bid = Number(brandBtn.getAttribute("data-brand-id"));
+        if (!isNaN(bid)) {
+          toggleIdInList(filterDraft.brandIds, bid);
+          renderBrandTags();
+        }
+        return;
+      }
+      var moreBtn = e.target.closest("[data-brand-more]");
+      if (moreBtn && els.brandTags && els.brandTags.contains(moreBtn)) {
+        filterDraft.brandExpanded = true;
+        renderBrandTags();
+        return;
+      }
+      var lessBtn = e.target.closest("[data-brand-less]");
+      if (lessBtn && els.brandTags && els.brandTags.contains(lessBtn)) {
+        filterDraft.brandExpanded = false;
+        renderBrandTags();
+        return;
+      }
+      var typeBtn = e.target.closest("[data-type-code]");
+      if (typeBtn && els.typeTags && els.typeTags.contains(typeBtn)) {
+        var codeRaw = typeBtn.getAttribute("data-type-code");
+        var codeNum = parseInt(codeRaw, 10);
+        var codeVal = isNaN(codeNum) ? codeRaw : codeNum;
+        toggleIdInList(filterDraft.types, codeVal);
+        renderTypeTags();
+      }
+    });
+  }
+
+  if (els.brandFilterKw) {
+    els.brandFilterKw.addEventListener("input", function () {
+      filterDraft.brandKw = els.brandFilterKw.value || "";
+      if (!String(filterDraft.brandKw).trim()) {
+        filterDraft.brandExpanded = false;
+      }
+      renderBrandTags();
+    });
+  }
+
+  if (els.filterResetBtn) {
+    els.filterResetBtn.addEventListener("click", function () {
+      resetFilterDraft();
+    });
+  }
+
+  if (els.filterConfirmBtn) {
+    els.filterConfirmBtn.addEventListener("click", function () {
+      applyFilterDraftAndReload();
+    });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (els.filterDrawer && !els.filterDrawer.hidden && e.key === "Escape") {
+      closeFilterDrawer();
+    }
   });
 
   els.clearFilterBtn.addEventListener("click", function () {
@@ -600,10 +927,14 @@
   if (state.spuId && isNaN(state.spuId)) {
     state.spuId = null;
   }
+  state.brandIds = parseIdList(qs("brandIds"), false);
+  state.types = parseIdList(qs("types"), true);
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
   updateFilterBar();
+  updateFilterEntryIcon();
   rememberListUrl();
+  ensureFilterMeta();
   load();
   if (window.ChaiRecycleQuote && window.ChaiRecycleQuote.mountFab) {
     window.ChaiRecycleQuote.mountFab();

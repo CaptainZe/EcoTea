@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -66,17 +67,31 @@ public class ChaiSkuSaleQueryService {
      * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
-        return pageSaleList(keyword, spuId, null, false, false, page, size);
+        return pageSaleList(keyword, spuId, null, false, false,
+                Collections.emptyList(), Collections.emptyList(), null, null, page, size);
+    }
+
+    /**
+     * 兼容仅仓/新回收筛选的旧调用。
+     */
+    public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
+                                          boolean includeWh, boolean recycleRecent,
+                                          long page, long size) {
+        return pageSaleList(keyword, spuId, whId, includeWh, recycleRecent,
+                Collections.emptyList(), Collections.emptyList(), null, null, page, size);
     }
 
     /**
      * 上架、未删除、有货 SKU 分页。
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；whId：该仓 qty&gt;0；
      * includeWh：列表填充有货仓简称（无数量）；
-     * recycleRecent：近 {@link ChaiConstant#RECYCLE_RECENT_DAYS} 日回收入库，并按最近回收时间倒序。
+     * recycleRecent：近 {@link ChaiConstant#RECYCLE_RECENT_DAYS} 日回收入库，并按最近回收时间倒序；
+     * brandIds / types：多选；priceMin / priceMax：售价区间。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
+                                          List<Long> brandIds, List<Integer> types,
+                                          BigDecimal priceMin, BigDecimal priceMax,
                                           long page, long size) {
         if (page < 1) {
             page = 1;
@@ -89,7 +104,17 @@ public class ChaiSkuSaleQueryService {
         }
 
         String kw = keyword == null ? null : keyword.trim();
-        Long brandId = resolveBrandIdExact(kw);
+        List<Long> brandIdList = brandIds == null ? Collections.emptyList() : brandIds;
+        List<Integer> typeList = types == null ? Collections.emptyList() : types;
+        BigDecimal min = priceMin;
+        BigDecimal max = priceMax;
+        if (min != null && max != null && min.compareTo(max) > 0) {
+            BigDecimal tmp = min;
+            min = max;
+            max = tmp;
+        }
+
+        Long brandIdFromKw = brandIdList.isEmpty() ? resolveBrandIdExact(kw) : null;
         String stockInSql = stockInSql(whId);
         long recycleCutoffMs = recycleRecent ? recycleRecentCutoffMs() : 0L;
 
@@ -107,8 +132,20 @@ public class ChaiSkuSaleQueryService {
             wrapper.eq(ChaiSku::getSpuId, spuId);
             matchType = "spu";
         }
-        if (brandId != null) {
-            wrapper.eq(ChaiSku::getBrand, brandId);
+
+        if (!brandIdList.isEmpty()) {
+            wrapper.in(ChaiSku::getBrand, brandIdList);
+            if (!"spu".equals(matchType)) {
+                matchType = "brand_filter";
+            }
+            if (StringUtils.hasText(kw)) {
+                wrapper.like(ChaiSku::getName, kw);
+                if (!"spu".equals(matchType)) {
+                    matchType = "name_like";
+                }
+            }
+        } else if (brandIdFromKw != null) {
+            wrapper.eq(ChaiSku::getBrand, brandIdFromKw);
             if (!"spu".equals(matchType)) {
                 matchType = "brand_exact";
             }
@@ -117,6 +154,16 @@ public class ChaiSkuSaleQueryService {
             if (!"spu".equals(matchType)) {
                 matchType = "name_like";
             }
+        }
+
+        if (!typeList.isEmpty()) {
+            wrapper.in(ChaiSku::getType, typeList);
+        }
+        if (min != null) {
+            wrapper.ge(ChaiSku::getSalePrice, min);
+        }
+        if (max != null) {
+            wrapper.le(ChaiSku::getSalePrice, max);
         }
 
         if (recycleRecent) {
@@ -160,8 +207,9 @@ public class ChaiSkuSaleQueryService {
         result.setRecycleRecent(recycleRecent);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, whId, includeWh, recycleRecent, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, matchType={}, page={}, size={}, total={}",
+                kw, spuId, whId, includeWh, recycleRecent, brandIdList, typeList, min, max,
+                matchType, page, size, mpPage.getTotal());
         return result;
     }
 

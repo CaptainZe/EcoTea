@@ -4,17 +4,18 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>回收价目（内部）</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=202609188"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=202609188"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=202609188"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260918c"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20260918c"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260918c"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260918c"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=20260918c"/>
 </head>
 <body class="inner-recycle">
   <header class="top">
     <div class="top-main">
       <div class="top-text">
         <h1>回收价目 <span class="inner-tag">内部</span></h1>
-        <p class="sub">内部回收参考价 · 上架未删</p>
+        <p class="sub">内部回收参考价</p>
       </div>
     </div>
   </header>
@@ -27,6 +28,14 @@
       </div>
     </div>
   </form>
+
+  <div class="list-toolbar" id="listToolbar">
+    <div class="list-toolbar-left"></div>
+    <button type="button" class="filter-entry" id="filterEntryBtn" aria-label="筛选">
+      <img class="filter-entry-icon" id="filterEntryIcon" src="/h5/assets/image/filter_off.png" alt=""/>
+      <span>筛选</span>
+    </button>
+  </div>
 
   <div class="filter-bar" id="filterBar" hidden>
     <span id="filterText"></span>
@@ -47,6 +56,31 @@
     <button type="button" id="nextBtn">下一页</button>
   </div>
 
+  <div class="filter-drawer" id="filterDrawer" hidden>
+    <div class="filter-drawer-mask" data-filter-close="1"></div>
+    <div class="filter-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="filterDrawerTitle">
+      <div class="filter-drawer-hd">
+        <h2 id="filterDrawerTitle">筛选</h2>
+        <button type="button" class="filter-drawer-close" data-filter-close="1" aria-label="关闭">×</button>
+      </div>
+      <div class="filter-drawer-bd">
+        <section class="filter-section">
+          <h3 class="filter-section-title">品牌</h3>
+          <input type="search" class="filter-brand-search" id="brandFilterKw" placeholder="搜索品牌" autocomplete="off"/>
+          <div class="filter-tags" id="brandTags"></div>
+        </section>
+        <section class="filter-section">
+          <h3 class="filter-section-title">茶类</h3>
+          <div class="filter-tags" id="typeTags"></div>
+        </section>
+      </div>
+      <div class="filter-drawer-ft">
+        <button type="button" class="filter-btn-reset" id="filterResetBtn">重置</button>
+        <button type="button" class="filter-btn-ok" id="filterConfirmBtn">确定</button>
+      </div>
+    </div>
+  </div>
+
   <div class="gallery" id="gallery" hidden>
     <div class="gallery-mask" data-gallery-close="1"></div>
     <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
@@ -56,8 +90,9 @@
     <p class="gallery-index" id="galleryIndex"></p>
   </div>
 
-  <script src="/h5/assets/js/chai-inner-util.js?v=202609188"></script>
-  <script src="/h5/assets/js/chai-recycle-quote.js?v=202609188"></script>
-  <script src="/h5/assets/js/chai-inner-recycle.js?v=202609188"></script>
+  <script src="/h5/assets/js/chai-list-filter.js?v=20260918c"></script>
+  <script src="/h5/assets/js/chai-inner-util.js?v=20260918c"></script>
+  <script src="/h5/assets/js/chai-recycle-quote.js?v=20260918c"></script>
+  <script src="/h5/assets/js/chai-inner-recycle.js?v=20260918c"></script>
 </body>
 </html>
