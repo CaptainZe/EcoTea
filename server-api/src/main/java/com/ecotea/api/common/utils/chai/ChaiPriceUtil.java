@@ -66,4 +66,43 @@ public final class ChaiPriceUtil {
         }
         return show;
     }
+
+    /**
+     * 外观破损后的回收价：回收价 × (1 - 压价%)；缺参返回 null。
+     */
+    public static BigDecimal recycleAfterDamage(BigDecimal recyclePrice, Integer reducePer) {
+        if (recyclePrice == null || reducePer == null) {
+            return null;
+        }
+        BigDecimal reduceAmount = recyclePrice
+                .multiply(BigDecimal.valueOf(reducePer))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        return recyclePrice.subtract(reduceAmount).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 回收价展示；相对官方价可追加「(x折)」（算法同售价折扣）。
+     */
+    public static String formatRecycleWithDiscount(Integer nonSale, BigDecimal recyclePrice, BigDecimal officialPrice) {
+        if (recyclePrice == null) {
+            return "-";
+        }
+        String show = plain(recyclePrice) + "元";
+        String discountShow = formatDiscountShow(nonSale, recyclePrice, officialPrice);
+        if (discountShow != null) {
+            show += "(" + discountShow + ")";
+        }
+        return show;
+    }
+
+    /**
+     * 破损回收价展示，如「268元」；无法计算时返回 null。
+     */
+    public static String formatRecycleDamagePriceShow(BigDecimal recyclePrice, Integer reducePer) {
+        BigDecimal damaged = recycleAfterDamage(recyclePrice, reducePer);
+        if (damaged == null) {
+            return null;
+        }
+        return plain(damaged) + "元";
+    }
 }

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>回收价目（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=202609188"/>
+</head>
+<body class="inner-recycle">
+  <header class="top">
+    <div class="top-main">
+      <div class="top-text">
+        <h1>回收价目 <span class="inner-tag">内部</span></h1>
+        <p class="sub">内部回收参考价 · 上架未删</p>
+      </div>
+    </div>
+  </header>
+
+  <form class="inner-search" id="searchForm">
+    <div class="inner-search-row">
+      <div class="inner-search-field">
+        <input type="search" id="keyword" name="keyword" placeholder="品牌/品名" autocomplete="off"/>
+        <button type="submit">搜索</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="filter-bar" id="filterBar" hidden>
+    <span id="filterText"></span>
+    <button type="button" class="link-btn" id="clearFilterBtn">返回全部</button>
+  </div>
+
+  <p class="meta" id="meta"></p>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>暂无商品</p>
+  <div class="pager" id="pager" hidden>
+    <button type="button" id="prevBtn">上一页</button>
+    <span class="pager-mid">
+      <input type="number" class="page-input" id="pageInput" min="1" inputmode="numeric" aria-label="页码"/>
+      <span class="page-sep">/</span>
+      <span id="pageTotal">1</span>
+      <button type="button" class="page-go" id="pageGoBtn">跳转</button>
+    </span>
+    <button type="button" id="nextBtn">下一页</button>
+  </div>
+
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-inner-util.js?v=202609188"></script>
+  <script src="/h5/assets/js/chai-recycle-quote.js?v=202609188"></script>
+  <script src="/h5/assets/js/chai-inner-recycle.js?v=202609188"></script>
+</body>
+</html>

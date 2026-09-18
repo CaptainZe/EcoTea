@@ -35,16 +35,19 @@
   vertical-align: middle;
 }
 
-body.inner-sale {
+body.inner-sale,
+body.inner-recycle {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
 /* 内部搜索：[全部/新回收][全部仓][输入框内嵌搜索]；下拉变更即查 */
-body.inner-sale .inner-search {
+body.inner-sale .inner-search,
+body.inner-recycle .inner-search {
   padding: 0.5rem 1rem 0.75rem;
 }
 
-body.inner-sale .inner-search-row {
+body.inner-sale .inner-search-row,
+body.inner-recycle .inner-search-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -83,7 +86,15 @@ body.inner-sale .inner-search-field {
   min-width: 0;
 }
 
-body.inner-sale .inner-search input {
+body.inner-recycle .inner-search-field {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+}
+
+body.inner-sale .inner-search input,
+body.inner-recycle .inner-search input {
   display: block;
   width: 100%;
   height: 2.5rem;
@@ -95,11 +106,13 @@ body.inner-sale .inner-search input {
   outline: none;
 }
 
-body.inner-sale .inner-search input:focus {
+body.inner-sale .inner-search input:focus,
+body.inner-recycle .inner-search input:focus {
   border-color: var(--accent);
 }
 
-body.inner-sale .inner-search button {
+body.inner-sale .inner-search button,
+body.inner-recycle .inner-search button {
   position: absolute;
   right: 0.3rem;
   top: 50%;
@@ -115,6 +128,15 @@ body.inner-sale .inner-search button {
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* 回收价目列表：破损价 / 无提袋扣减辅文 */
+body.inner-recycle .recycle-extra {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #8b5a3c;
+  font-weight: 550;
 }
 
 /* 列表有货仓简称胶囊 */

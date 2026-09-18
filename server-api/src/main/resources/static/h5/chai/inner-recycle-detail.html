@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>回收详情（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-detail.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner-sale-detail.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner-recycle-detail.css?v=202609188"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=202609188"/>
+</head>
+<body class="inner-recycle-detail">
+  <header class="nav">
+    <a class="nav-back" href="/h5/chai/inner-recycle.html" id="backLink" aria-label="返回回收价目">
+      <img class="nav-back-img" src="/h5/assets/image/back.png?v=202609188" alt=""/>
+    </a>
+    <h1 class="nav-title">回收详情 <span class="inner-tag">内部</span></h1>
+    <span class="nav-spacer" aria-hidden="true"></span>
+  </header>
+
+  <p class="status" id="status">加载中…</p>
+
+  <main class="detail" id="detail" hidden>
+    <section class="carousel" id="carousel" aria-label="商品图片">
+      <div class="carousel-track" id="carouselTrack"></div>
+      <span class="carousel-index" id="carouselIndex" hidden></span>
+    </section>
+
+    <section class="card card-main">
+      <span class="brand" id="brand" hidden></span>
+      <h2 class="sku-name" id="skuName"></h2>
+      <div class="price-row">
+        <span class="sale" id="recyclePrice"></span>
+        <span class="official" id="officialPrice" hidden></span>
+        <span class="discount" id="discount" hidden></span>
+      </div>
+      <p class="recycle-extra" id="recycleExtra" hidden></p>
+      <div class="stock-wrap" id="stock"></div>
+    </section>
+
+    <section class="card card-attrs" id="cardAttrs"></section>
+    <section class="card card-wh-stock" id="cardWhStock" hidden></section>
+  </main>
+
+  <footer class="bar" id="bar" hidden>
+    <a class="bar-same" id="sameBtn" hidden href="#">看同款</a>
+    <button type="button" class="bar-quote" id="quoteBtn">加入报价单</button>
+  </footer>
+
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
+  </div>
+
+  <script src="/h5/assets/js/chai-inner-util.js?v=202609188"></script>
+  <script src="/h5/assets/js/chai-recycle-quote.js?v=202609188"></script>
+  <script src="/h5/assets/js/chai-inner-recycle-detail.js?v=202609188"></script>
+</body>
+</html>

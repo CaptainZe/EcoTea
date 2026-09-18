@@ -1,0 +1,73 @@
+/* 回收报价单浮标 / toast */
+
+.recycle-quote-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+body.inner-recycle-detail .recycle-quote-fab {
+  bottom: calc(5.2rem + env(safe-area-inset-bottom));
+}
+
+.recycle-quote-fab[hidden] {
+  display: none !important;
+}
+
+.recycle-quote-fab-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+.recycle-quote-fab-badge {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #c2410c;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.recycle-quote-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(0.5rem);
+  z-index: 120;
+  max-width: 80vw;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(28, 36, 28, 0.88);
+  color: #fff;
+  font-size: 0.86rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.recycle-quote-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

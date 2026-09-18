@@ -1,0 +1,56 @@
+/* 内部回收详情：辅文 + 底栏「加入报价单」 */
+
+body.inner-recycle-detail .recycle-extra {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #8b5a3c;
+  font-weight: 550;
+}
+
+body.inner-recycle-detail .recycle-extra[hidden] {
+  display: none !important;
+}
+
+body.inner-recycle-detail .bar-same,
+body.inner-recycle-detail .bar-quote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.55rem;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.86rem;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0 0.5rem;
+  cursor: pointer;
+}
+
+body.inner-recycle-detail .bar-same {
+  flex: 0 0 auto;
+  min-width: 4.8rem;
+  border: 1px solid var(--accent);
+  background: #fff;
+  color: var(--accent);
+}
+
+body.inner-recycle-detail .bar-same[hidden] {
+  display: none !important;
+}
+
+body.inner-recycle-detail .bar-quote {
+  flex: 1;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+}
+
+body.inner-recycle-detail .bar-quote:disabled,
+body.inner-recycle-detail .bar-quote.is-in-quote {
+  background: #e8efe6;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  cursor: default;
+}
