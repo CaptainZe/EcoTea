@@ -22,18 +22,23 @@ public class ChaiSkuSaleController {
 
     /**
      * 有货上架 SKU 分页。keyword：品牌精确优先，否则名称模糊；spuId：同款。
+     * whId：按仓有货筛选；includeWh=1：列表带回有货仓简称（无数量）。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuSalePageVO> list(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long spuId,
+            @RequestParam(required = false) Long whId,
+            @RequestParam(required = false) Integer includeWh,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
-        return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(keyword, spuId, page, size));
+        boolean withWhNames = includeWh != null && includeWh != 0;
+        return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(
+                keyword, spuId, whId, withWhNames, page, size));
     }
 
     /**
-     * 有货上架 SKU 详情。
+     * 有货上架 SKU 详情（含分仓有货明细 warehouseStocks）。
      */
     @GetMapping("/detail")
     public ApiResult<ChaiSkuSaleItemVO> detail(@RequestParam Long id) {

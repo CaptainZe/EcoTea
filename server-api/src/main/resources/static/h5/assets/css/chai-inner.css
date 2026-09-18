@@ -38,3 +38,100 @@
 body.inner-sale {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
+
+/* 内部搜索：[仓库][输入框内嵌搜索按钮]；点搜索才查询 */
+body.inner-sale .inner-search {
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+body.inner-sale .inner-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+body.inner-sale .inner-search #whSelect {
+  flex: 0 0 auto;
+  width: 5.2rem;
+  height: 2.5rem;
+  padding: 0 1.35rem 0 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background-color: var(--card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b756c' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+body.inner-sale .inner-search #whSelect:focus {
+  border-color: var(--accent);
+}
+
+body.inner-sale .inner-search-field {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+body.inner-sale .inner-search input {
+  display: block;
+  width: 100%;
+  height: 2.5rem;
+  padding: 0 4.4rem 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font: inherit;
+  outline: none;
+}
+
+body.inner-sale .inner-search input:focus {
+  border-color: var(--accent);
+}
+
+body.inner-sale .inner-search button {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2rem;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 列表有货仓简称胶囊 */
+.wh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin: 0;
+}
+
+.wh-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: #334155;
+  background: #eef2f7;
+  border: 1px solid #d5dde8;
+  padding: 0.12rem 0.48rem;
+  border-radius: 999px;
+  line-height: 1.3;
+}

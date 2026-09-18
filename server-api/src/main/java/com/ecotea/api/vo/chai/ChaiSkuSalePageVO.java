@@ -18,5 +18,7 @@ public class ChaiSkuSalePageVO implements Serializable {
     private String matchType;
     private String keyword;
     private Long spuId;
+    /** 按仓筛选时回显 */
+    private Long whId;
     private List<ChaiSkuSaleItemVO> list = Collections.emptyList();
 }

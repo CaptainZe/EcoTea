@@ -13,12 +13,17 @@ import com.ecotea.api.domain.chai.ChaiBrand;
 import com.ecotea.api.domain.chai.ChaiExpiration;
 import com.ecotea.api.domain.chai.ChaiSku;
 import com.ecotea.api.domain.chai.ChaiStock;
+import com.ecotea.api.domain.chai.ChaiStockWh;
+import com.ecotea.api.domain.chai.ChaiWarehouse;
 import com.ecotea.api.mapper.chai.ChaiBrandMapper;
 import com.ecotea.api.mapper.chai.ChaiExpirationMapper;
 import com.ecotea.api.mapper.chai.ChaiSkuMapper;
 import com.ecotea.api.mapper.chai.ChaiStockMapper;
+import com.ecotea.api.mapper.chai.ChaiStockWhMapper;
+import com.ecotea.api.mapper.chai.ChaiWarehouseMapper;
 import com.ecotea.api.vo.chai.ChaiSkuSaleItemVO;
 import com.ecotea.api.vo.chai.ChaiSkuSalePageVO;
+import com.ecotea.api.vo.chai.ChaiSkuSaleWhStockVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,12 +56,23 @@ public class ChaiSkuSaleQueryService {
     private final ChaiBrandMapper chaiBrandMapper;
     private final ChaiExpirationMapper chaiExpirationMapper;
     private final ChaiStockMapper chaiStockMapper;
+    private final ChaiStockWhMapper chaiStockWhMapper;
+    private final ChaiWarehouseMapper chaiWarehouseMapper;
 
     /**
-     * 上架、未删除、全仓有货 SKU 分页。
-     * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款筛选（可与 keyword 组合）。
+     * 兼容关键词回复等旧调用：全仓有货、不分仓字段。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
+        return pageSaleList(keyword, spuId, null, false, page, size);
+    }
+
+    /**
+     * 上架、未删除、有货 SKU 分页。
+     * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；whId：该仓 qty&gt;0；
+     * includeWh：列表填充有货仓简称（无数量）。
+     */
+    public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
+                                          boolean includeWh, long page, long size) {
         if (page < 1) {
             page = 1;
         }
@@ -68,11 +85,12 @@ public class ChaiSkuSaleQueryService {
 
         String kw = keyword == null ? null : keyword.trim();
         Long brandId = resolveBrandIdExact(kw);
+        String stockInSql = stockInSql(whId);
 
         LambdaQueryWrapper<ChaiSku> wrapper = new LambdaQueryWrapper<ChaiSku>()
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
-                .inSql(ChaiSku::getId, STOCK_IN_SQL);
+                .inSql(ChaiSku::getId, stockInSql);
 
         String matchType = "none";
         if (spuId != null) {
@@ -101,11 +119,18 @@ public class ChaiSkuSaleQueryService {
         Map<Long, String> brandNameMap = loadBrandNameMap(records);
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
-        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, whId);
+        Map<Long, List<String>> whShortNamesMap = includeWh
+                ? loadWhShortNamesBySkuId(records, stockMap)
+                : Collections.emptyMap();
 
         List<ChaiSkuSaleItemVO> list = new ArrayList<>();
         for (ChaiSku sku : records) {
-            list.add(toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap));
+            ChaiSkuSaleItemVO vo = toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
+            if (includeWh) {
+                vo.setWhShortNames(whShortNamesMap.getOrDefault(sku.getId(), Collections.emptyList()));
+            }
+            list.add(vo);
         }
 
         ChaiSkuSalePageVO result = new ChaiSkuSalePageVO();
@@ -115,15 +140,16 @@ public class ChaiSkuSaleQueryService {
         result.setMatchType(matchType);
         result.setKeyword(kw);
         result.setSpuId(spuId);
+        result.setWhId(whId);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, spuId={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, matchType={}, page={}, size={}, total={}",
+                kw, spuId, whId, includeWh, matchType, page, size, mpPage.getTotal());
         return result;
     }
 
     /**
-     * 有货上架 SKU 详情；不存在或不可售返回 null。
+     * 有货上架 SKU 详情；不存在或不可售返回 null。始终带分仓有货明细。
      */
     public ChaiSkuSaleItemVO getSaleDetail(Long id) {
         if (id == null) {
@@ -142,8 +168,23 @@ public class ChaiSkuSaleQueryService {
         Map<Long, String> brandNameMap = loadBrandNameMap(records);
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
-        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records);
-        return toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, null);
+        ChaiSkuSaleItemVO vo = toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
+        Map<Long, List<ChaiSkuSaleWhStockVO>> whStockMap = loadWarehouseStocksBySkuId(records, stockMap);
+        vo.setWarehouseStocks(whStockMap.getOrDefault(sku.getId(), Collections.emptyList()));
+        return vo;
+    }
+
+    /**
+     * 全仓有货，或指定仓 qty &gt; 0。whId 为 Long，拼接安全。
+     */
+    private static String stockInSql(Long whId) {
+        if (whId == null) {
+            return STOCK_IN_SQL;
+        }
+        return "SELECT s.sku_id FROM chai_stock s "
+                + "INNER JOIN chai_stock_wh w ON w.stock_id = s.id "
+                + "WHERE w.wh_id = " + whId + " AND w.qty > 0";
     }
 
     private Long resolveBrandIdExact(String keyword) {
@@ -204,9 +245,9 @@ public class ChaiSkuSaleQueryService {
     }
 
     /**
-     * 各 spuId 下「上架+未删+有货」SKU 数量。
+     * 各 spuId 下「上架+未删+有货」SKU 数量；有 whId 时按该仓有货计。
      */
-    private Map<Long, Integer> loadSameSpuSaleCountMap(List<ChaiSku> records) {
+    private Map<Long, Integer> loadSameSpuSaleCountMap(List<ChaiSku> records, Long whId) {
         Set<Long> spuIds = records.stream()
                 .map(ChaiSku::getSpuId)
                 .filter(Objects::nonNull)
@@ -219,7 +260,7 @@ public class ChaiSkuSaleQueryService {
                 .in(ChaiSku::getSpuId, spuIds)
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
-                .inSql(ChaiSku::getId, STOCK_IN_SQL));
+                .inSql(ChaiSku::getId, stockInSql(whId)));
         Map<Long, Integer> map = new HashMap<>();
         for (ChaiSku sku : sameList) {
             if (sku.getSpuId() == null) {
@@ -228,6 +269,94 @@ public class ChaiSkuSaleQueryService {
             map.merge(sku.getSpuId(), 1, Integer::sum);
         }
         return map;
+    }
+
+    private Map<Long, List<String>> loadWhShortNamesBySkuId(List<ChaiSku> records,
+                                                            Map<Long, ChaiStock> stockMap) {
+        List<WhLine> lines = loadPositiveWhLines(records, stockMap);
+        if (lines.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<String>> map = new HashMap<>();
+        for (WhLine line : lines) {
+            map.computeIfAbsent(line.skuId, k -> new ArrayList<>()).add(line.shortName);
+        }
+        return map;
+    }
+
+    private Map<Long, List<ChaiSkuSaleWhStockVO>> loadWarehouseStocksBySkuId(List<ChaiSku> records,
+                                                                            Map<Long, ChaiStock> stockMap) {
+        List<WhLine> lines = loadPositiveWhLines(records, stockMap);
+        if (lines.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<ChaiSkuSaleWhStockVO>> map = new HashMap<>();
+        for (WhLine line : lines) {
+            ChaiSkuSaleWhStockVO vo = new ChaiSkuSaleWhStockVO();
+            vo.setWhId(line.whId);
+            vo.setShortName(line.shortName);
+            vo.setQty(line.qty);
+            vo.setDamageQty(line.damageQty);
+            map.computeIfAbsent(line.skuId, k -> new ArrayList<>()).add(vo);
+        }
+        return map;
+    }
+
+    /**
+     * 当前页 SKU 的有货分仓行，按仓库 orderNum 降序、whId 升序。
+     */
+    private List<WhLine> loadPositiveWhLines(List<ChaiSku> records, Map<Long, ChaiStock> stockMap) {
+        if (CollectionUtils.isEmpty(records) || stockMap.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<Long, Long> stockIdToSkuId = new HashMap<>();
+        for (ChaiSku sku : records) {
+            ChaiStock stock = stockMap.get(sku.getId());
+            if (stock != null && stock.getId() != null) {
+                stockIdToSkuId.put(stock.getId(), sku.getId());
+            }
+        }
+        if (stockIdToSkuId.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ChaiStockWh> whRows = chaiStockWhMapper.selectList(new LambdaQueryWrapper<ChaiStockWh>()
+                .in(ChaiStockWh::getStockId, stockIdToSkuId.keySet())
+                .gt(ChaiStockWh::getQty, 0));
+        if (CollectionUtils.isEmpty(whRows)) {
+            return Collections.emptyList();
+        }
+        Set<Long> whIds = whRows.stream()
+                .map(ChaiStockWh::getWhId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        if (whIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<Long, ChaiWarehouse> whMap = new HashMap<>();
+        for (ChaiWarehouse wh : chaiWarehouseMapper.selectBatchIds(whIds)) {
+            whMap.put(wh.getId(), wh);
+        }
+
+        List<WhLine> lines = new ArrayList<>();
+        for (ChaiStockWh row : whRows) {
+            Long skuId = stockIdToSkuId.get(row.getStockId());
+            ChaiWarehouse wh = row.getWhId() == null ? null : whMap.get(row.getWhId());
+            if (skuId == null || wh == null || !StringUtils.hasText(wh.getShortName())) {
+                continue;
+            }
+            WhLine line = new WhLine();
+            line.skuId = skuId;
+            line.whId = wh.getId();
+            line.shortName = wh.getShortName();
+            line.qty = row.getQty() == null ? 0 : row.getQty();
+            line.damageQty = row.getDamageQty() == null ? 0 : row.getDamageQty();
+            line.orderNum = wh.getOrderNum() == null ? 0 : wh.getOrderNum();
+            lines.add(line);
+        }
+        lines.sort(Comparator
+                .comparingInt((WhLine l) -> l.orderNum).reversed()
+                .thenComparing(l -> l.whId, Comparator.nullsLast(Long::compareTo)));
+        return lines;
     }
 
     private ChaiSkuSaleItemVO toSaleVo(ChaiSku sku,
@@ -295,5 +424,14 @@ public class ChaiSkuSaleQueryService {
             return year + "年";
         }
         return batchName;
+    }
+
+    private static final class WhLine {
+        private Long skuId;
+        private Long whId;
+        private String shortName;
+        private int qty;
+        private int damageQty;
+        private int orderNum;
     }
 }

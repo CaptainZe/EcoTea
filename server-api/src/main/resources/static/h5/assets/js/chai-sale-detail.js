@@ -1,4 +1,5 @@
 (function () {
+  var LIST_URL_KEY = "chai.sale.listUrl";
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
 
@@ -23,6 +24,7 @@
     galleryIndex: document.getElementById("galleryIndex"),
     galleryPrev: document.getElementById("galleryPrev"),
     galleryNext: document.getElementById("galleryNext"),
+    backLink: document.getElementById("backLink"),
   };
 
   var state = { urls: [], index: 0, galleryOpen: false };
@@ -86,9 +88,31 @@
     els.detail.hidden = true;
     els.bar.hidden = true;
     els.status.hidden = false;
+    var back =
+      (els.backLink && els.backLink.getAttribute("href")) ||
+      "/h5/chai/sale.html";
     els.status.innerHTML =
       escapeHtml(msg || "暂不可售") +
-      '<br/><br/><a href="/h5/chai/sale.html">返回价格目录</a>';
+      '<br/><br/><a href="' +
+      escapeHtml(back) +
+      '">返回价格目录</a>';
+  }
+
+  function bindListBack(defaultHref) {
+    if (!els.backLink) {
+      return;
+    }
+    var saved = null;
+    try {
+      saved = sessionStorage.getItem(LIST_URL_KEY);
+    } catch (e) {
+      saved = null;
+    }
+    if (saved && saved.indexOf("/h5/chai/sale.html") === 0) {
+      els.backLink.href = saved;
+    } else {
+      els.backLink.href = defaultHref || "/h5/chai/sale.html";
+    }
   }
 
   function paintCarouselIndex() {
@@ -409,6 +433,7 @@
   });
 
   load();
+  bindListBack("/h5/chai/sale.html");
   mountDetailMp();
 
   if (els.addCartBtn) {

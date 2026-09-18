@@ -38,6 +38,14 @@ public class ChaiSkuSaleItemVO implements Serializable {
     private Integer totalQty;
     /** 破损数量；仅 >0 时有意义，前端按需展示 */
     private Integer damageQty;
+    /**
+     * 有货仓简称列表（无数量）。列表在 includeWh=1 时填充；详情一般为空。
+     */
+    private List<String> whShortNames;
+    /**
+     * 分仓有货明细（简称 + 数量）。详情填充；列表一般为空。
+     */
+    private List<ChaiSkuSaleWhStockVO> warehouseStocks;
     /** 同 SPU 下有货可售 SKU 数（含自身）；>1 可展示「看同款」 */
     private Integer sameSpuSaleCount;
     /** 首图（展示图列表第一张） */

@@ -1,22 +1,28 @@
 (function () {
+  var LIST_URL_KEY = "chai.innerSale.listUrl";
   var state = {
     page: 1,
     size: 20,
     keyword: "",
     spuId: null,
+    whId: null,
     total: 0,
   };
 
   var gallery = { urls: [], index: 0, touchX: null };
+  var warehouses = [];
 
   var els = {
     form: document.getElementById("searchForm"),
     keyword: document.getElementById("keyword"),
+    whSelect: document.getElementById("whSelect"),
     meta: document.getElementById("meta"),
     list: document.getElementById("list"),
     empty: document.getElementById("empty"),
     pager: document.getElementById("pager"),
-    pageInfo: document.getElementById("pageInfo"),
+    pageInput: document.getElementById("pageInput"),
+    pageTotal: document.getElementById("pageTotal"),
+    pageGoBtn: document.getElementById("pageGoBtn"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     filterBar: document.getElementById("filterBar"),
@@ -43,6 +49,9 @@
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
     }
+    if (state.whId) {
+      params.set("whId", String(state.whId));
+    }
     if (state.page > 1) {
       params.set("page", String(state.page));
     }
@@ -52,6 +61,39 @@
       "",
       window.location.pathname + (q ? "?" + q : "")
     );
+    rememberListUrl();
+  }
+
+  function rememberListUrl() {
+    try {
+      sessionStorage.setItem(
+        LIST_URL_KEY,
+        window.location.pathname + window.location.search
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function jumpToPage() {
+    var pages = Math.max(1, Math.ceil(state.total / state.size));
+    var n = parseInt(els.pageInput && els.pageInput.value, 10);
+    if (isNaN(n) || n < 1) {
+      n = 1;
+    }
+    if (n > pages) {
+      n = pages;
+    }
+    if (els.pageInput) {
+      els.pageInput.value = String(n);
+    }
+    if (n === state.page) {
+      return;
+    }
+    state.page = n;
+    syncUrl();
+    load();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function updateFilterBar() {
@@ -59,6 +101,72 @@
     els.filterBar.hidden = !inSameSpu;
     els.clearFilterBtn.hidden = !inSameSpu;
     els.filterText.textContent = inSameSpu ? "正在查看同款现货" : "";
+  }
+
+  function readWhIdFromSelect() {
+    if (!els.whSelect) {
+      return null;
+    }
+    var v = (els.whSelect.value || "").trim();
+    if (!v) {
+      return null;
+    }
+    var n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function whShortLabel(whId) {
+    for (var i = 0; i < warehouses.length; i++) {
+      if (String(warehouses[i].id) === String(whId)) {
+        return warehouses[i].shortName || warehouses[i].name || "";
+      }
+    }
+    return "";
+  }
+
+  function fillWhSelect() {
+    if (!els.whSelect) {
+      return;
+    }
+    var html = '<option value="">全部仓</option>';
+    for (var i = 0; i < warehouses.length; i++) {
+      var w = warehouses[i];
+      var label = w.shortName || w.name || String(w.id);
+      html +=
+        '<option value="' +
+        escapeHtml(w.id) +
+        '" title="' +
+        escapeHtml(w.name || "") +
+        '">' +
+        escapeHtml(label) +
+        "</option>";
+    }
+    els.whSelect.innerHTML = html;
+    if (state.whId) {
+      els.whSelect.value = String(state.whId);
+      if (els.whSelect.value !== String(state.whId)) {
+        state.whId = null;
+      }
+    }
+  }
+
+  function loadWarehouses() {
+    return fetch("/chai/warehouse/online")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (body) {
+        if (body && body.code === 0 && Array.isArray(body.data)) {
+          warehouses = body.data;
+        } else {
+          warehouses = [];
+        }
+        fillWhSelect();
+      })
+      .catch(function () {
+        warehouses = [];
+        fillWhSelect();
+      });
   }
 
   function escapeHtml(s) {
@@ -74,6 +182,25 @@
       return "";
     }
     return '<span class="tag">' + escapeHtml(text) + "</span>";
+  }
+
+  function whChipsHtml(item) {
+    var names = item.whShortNames || item.wh_short_names || [];
+    if (!names.length) {
+      return "";
+    }
+    var chips = names
+      .map(function (name) {
+        if (!name) {
+          return "";
+        }
+        return '<span class="wh-chip">' + escapeHtml(name) + "</span>";
+      })
+      .join("");
+    if (!chips) {
+      return "";
+    }
+    return '<div class="wh-chips">' + chips + "</div>";
   }
 
   function imageUrlsOf(item) {
@@ -186,6 +313,7 @@
       "</a>" +
       '<div class="card-foot">' +
       stockHtml(item) +
+      whChipsHtml(item) +
       '<div class="card-actions">' +
       same +
       "</div></div></div></li>"
@@ -208,15 +336,29 @@
       matchHint = "（同款）";
     }
     var kwHint = state.keyword ? " · " + escapeHtml(state.keyword) : "";
+    var whHint = "";
+    if (state.whId) {
+      var label = whShortLabel(state.whId);
+      whHint = label
+        ? " · 仓 " + escapeHtml(label)
+        : " · 仓筛选";
+    }
     els.meta.innerHTML =
       "共 <span class=\"meta-num\">" +
       escapeHtml(state.total) +
       "</span> 款现货" +
       escapeHtml(matchHint) +
-      kwHint;
+      kwHint +
+      whHint;
 
     els.pager.hidden = state.total <= state.size;
-    els.pageInfo.textContent = state.page + " / " + pages;
+    if (els.pageInput) {
+      els.pageInput.value = String(state.page);
+      els.pageInput.max = String(pages);
+    }
+    if (els.pageTotal) {
+      els.pageTotal.textContent = String(pages);
+    }
     els.prevBtn.disabled = state.page <= 1;
     els.nextBtn.disabled = state.page >= pages;
   }
@@ -225,11 +367,15 @@
     var params = new URLSearchParams();
     params.set("page", String(state.page));
     params.set("size", String(state.size));
+    params.set("includeWh", "1");
     if (state.keyword) {
       params.set("keyword", state.keyword);
     }
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
+    }
+    if (state.whId) {
+      params.set("whId", String(state.whId));
     }
 
     els.meta.textContent = "加载中…";
@@ -293,6 +439,7 @@
   els.form.addEventListener("submit", function (e) {
     e.preventDefault();
     state.keyword = (els.keyword.value || "").trim();
+    state.whId = readWhIdFromSelect();
     state.spuId = null;
     state.page = 1;
     updateFilterBar();
@@ -326,6 +473,18 @@
     syncUrl();
     load();
   });
+
+  if (els.pageGoBtn) {
+    els.pageGoBtn.addEventListener("click", jumpToPage);
+  }
+  if (els.pageInput) {
+    els.pageInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        jumpToPage();
+      }
+    });
+  }
 
   els.list.addEventListener("click", function (e) {
     var sameBtn = e.target.closest(".same-btn");
@@ -384,8 +543,16 @@
   if (state.spuId && isNaN(state.spuId)) {
     state.spuId = null;
   }
+  var whRaw = qs("whId");
+  state.whId = whRaw ? Number(whRaw) : null;
+  if (state.whId && isNaN(state.whId)) {
+    state.whId = null;
+  }
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
   updateFilterBar();
-  load();
+  rememberListUrl();
+  loadWarehouses().then(function () {
+    load();
+  });
 })();

@@ -38,7 +38,12 @@
   <p class="empty" id="empty" hidden>暂无有货商品</p>
   <div class="pager" id="pager" hidden>
     <button type="button" id="prevBtn">上一页</button>
-    <span id="pageInfo"></span>
+    <span class="pager-mid">
+      <input type="number" class="page-input" id="pageInput" min="1" inputmode="numeric" aria-label="页码"/>
+      <span class="page-sep">/</span>
+      <span id="pageTotal">1</span>
+      <button type="button" class="page-go" id="pageGoBtn">跳转</button>
+    </span>
     <button type="button" id="nextBtn">下一页</button>
   </div>
 

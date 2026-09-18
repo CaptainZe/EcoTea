@@ -1,10 +1,14 @@
 (function () {
+  var LIST_URL_KEY = "chai.innerSale.listUrl";
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
 
   var els = {
     status: document.getElementById("status"),
     detail: document.getElementById("detail"),
+    carousel: document.getElementById("carousel"),
+    carouselTrack: document.getElementById("carouselTrack"),
+    carouselIndex: document.getElementById("carouselIndex"),
     brand: document.getElementById("brand"),
     skuName: document.getElementById("skuName"),
     salePrice: document.getElementById("salePrice"),
@@ -12,22 +16,56 @@
     discount: document.getElementById("discount"),
     stock: document.getElementById("stock"),
     cardAttrs: document.getElementById("cardAttrs"),
-    grid9: document.getElementById("grid9"),
-    gridEmpty: document.getElementById("gridEmpty"),
+    cardWhStock: document.getElementById("cardWhStock"),
     bar: document.getElementById("bar"),
-    sameBtn: document.getElementById("sameBtn"),
+    copyInfoBtn: document.getElementById("copyInfoBtn"),
     copyBtn: document.getElementById("copyBtn"),
     dlBtn: document.getElementById("dlBtn"),
-    lightbox: document.getElementById("lightbox"),
-    lightboxImg: document.getElementById("lightboxImg"),
+    gallery: document.getElementById("gallery"),
+    galleryImg: document.getElementById("galleryImg"),
+    galleryIndex: document.getElementById("galleryIndex"),
+    galleryPrev: document.getElementById("galleryPrev"),
+    galleryNext: document.getElementById("galleryNext"),
     capturePreview: document.getElementById("capturePreview"),
     captureImg: document.getElementById("captureImg"),
     captureHint: document.getElementById("captureHint"),
     captureSave: document.getElementById("captureSave"),
+    backLink: document.getElementById("backLink"),
   };
 
   var currentItem = null;
   var lastCaptureDataUrl = null;
+  var viewState = { urls: [], index: 0, galleryOpen: false };
+  var touchX = null;
+  var suppressClick = false;
+
+  var ICONS = {
+    grade:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.9 7.2 18l.9-5.4L4.2 8.7l5.4-.8L12 3z"/></svg>',
+    spec:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>',
+    batch:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
+    expiration:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg>',
+  };
+
+  function bindListBack(defaultHref) {
+    if (!els.backLink) {
+      return;
+    }
+    var saved = null;
+    try {
+      saved = sessionStorage.getItem(LIST_URL_KEY);
+    } catch (e) {
+      saved = null;
+    }
+    if (saved && saved.indexOf("/h5/chai/inner-sale.html") === 0) {
+      els.backLink.href = saved;
+    } else {
+      els.backLink.href = defaultHref || "/h5/chai/inner-sale.html";
+    }
+  }
 
   function escapeHtml(s) {
     return String(s == null ? "" : s)
@@ -37,12 +75,21 @@
       .replace(/"/g, "&quot;");
   }
 
+  /** 导出最多 9 张；页面轮播可用全部 */
   function imageUrlsOf(item) {
     var urls = item.imageUrls || item.image_urls || [];
     if (!urls.length && (item.coverImage || item.cover_image)) {
       return [item.coverImage || item.cover_image];
     }
     return urls.slice(0, 9);
+  }
+
+  function displayImageUrls(item) {
+    var urls = item.imageUrls || item.image_urls || [];
+    if (!urls.length && (item.coverImage || item.cover_image)) {
+      return [item.coverImage || item.cover_image];
+    }
+    return urls.slice();
   }
 
   function formatSalePlain(item) {
@@ -70,36 +117,215 @@
     );
   }
 
+  function formatPriceLineForCopy(show) {
+    if (!show) {
+      return "";
+    }
+    return String(show).trim().replace(/\(/g, "（").replace(/\)/g, "）");
+  }
+
+  /** 对齐微信关键词单条文案（无链接） */
+  function formatKeywordPlainText(item) {
+    var title = "";
+    if (item.title) {
+      title = String(item.title).trim();
+    } else if (item.name) {
+      title = String(item.name).trim();
+    } else {
+      title = "商品";
+    }
+    var lines = [title];
+    function push(label, value) {
+      if (value) {
+        lines.push(label + "：" + String(value).trim());
+      }
+    }
+    push("等级", item.gradeName);
+    push("规格", item.specShow);
+    push("批次", item.prodBatchShow);
+    push("保质期", item.expirationName);
+    push("官方", formatPriceLineForCopy(item.officialPriceShow));
+    push("售价", formatPriceLineForCopy(item.salePriceShow));
+    if (item.totalQty != null) {
+      var stock = "库存数量：" + item.totalQty;
+      if (item.damageQty != null && item.damageQty > 0) {
+        stock += "，破损：" + item.damageQty;
+      }
+      lines.push(stock);
+    }
+    return lines.join("\n");
+  }
+
   function showUnavailable(msg) {
     els.detail.hidden = true;
     els.bar.hidden = true;
     els.status.hidden = false;
+    var back =
+      (els.backLink && els.backLink.getAttribute("href")) ||
+      "/h5/chai/inner-sale.html";
     els.status.innerHTML =
       escapeHtml(msg || "暂不可售") +
-      '<br/><br/><a href="/h5/chai/inner-sale.html">返回内部价目</a>';
+      '<br/><br/><a href="' +
+      escapeHtml(back) +
+      '">返回内部价目</a>';
   }
 
-  function attrRow(label, value) {
+  function paintCarouselIndex() {
+    if (!els.carouselIndex) {
+      return;
+    }
+    if (viewState.urls.length <= 1) {
+      els.carouselIndex.hidden = true;
+      return;
+    }
+    els.carouselIndex.hidden = false;
+    els.carouselIndex.textContent =
+      viewState.index + 1 + " / " + viewState.urls.length;
+  }
+
+  function syncCarouselScroll() {
+    if (!els.carouselTrack) {
+      return;
+    }
+    var slides = els.carouselTrack.querySelectorAll(".carousel-slide");
+    if (!slides.length || !slides[viewState.index]) {
+      return;
+    }
+    els.carouselTrack.scrollTo({
+      left: slides[viewState.index].offsetLeft,
+      behavior: "auto",
+    });
+  }
+
+  function setViewIndex(next, scroll) {
+    if (!viewState.urls.length) {
+      return;
+    }
+    viewState.index =
+      ((next % viewState.urls.length) + viewState.urls.length) %
+      viewState.urls.length;
+    paintCarouselIndex();
+    if (scroll) {
+      syncCarouselScroll();
+    }
+    if (viewState.galleryOpen) {
+      paintGallery();
+    }
+  }
+
+  function paintGallery() {
+    if (!viewState.urls.length || !els.galleryImg) {
+      return;
+    }
+    els.galleryImg.src = viewState.urls[viewState.index];
+    els.galleryIndex.textContent =
+      viewState.index + 1 + " / " + viewState.urls.length;
+    var multi = viewState.urls.length > 1;
+    els.galleryPrev.hidden = !multi;
+    els.galleryNext.hidden = !multi;
+  }
+
+  function openGallery() {
+    if (!viewState.urls.length) {
+      return;
+    }
+    viewState.galleryOpen = true;
+    els.gallery.hidden = false;
+    paintGallery();
+  }
+
+  function closeGallery() {
+    viewState.galleryOpen = false;
+    els.gallery.hidden = true;
+    syncCarouselScroll();
+    paintCarouselIndex();
+  }
+
+  function galleryStep(delta) {
+    setViewIndex(viewState.index + delta, true);
+  }
+
+  function onCarouselScroll() {
+    var w = els.carouselTrack.clientWidth || 1;
+    var idx = Math.round(els.carouselTrack.scrollLeft / w);
+    if (idx < 0) {
+      idx = 0;
+    }
+    if (idx >= viewState.urls.length) {
+      idx = viewState.urls.length - 1;
+    }
+    if (idx !== viewState.index) {
+      viewState.index = idx;
+      paintCarouselIndex();
+    }
+  }
+
+  function renderCarousel(urls) {
+    viewState.urls = urls;
+    viewState.index = 0;
+    if (!urls.length) {
+      els.carouselTrack.innerHTML =
+        '<div class="carousel-placeholder">暂无图</div>';
+      els.carouselIndex.hidden = true;
+      return;
+    }
+    els.carouselTrack.innerHTML = urls
+      .map(function (url, i) {
+        return (
+          '<div class="carousel-slide" data-i="' +
+          i +
+          '"><img src="' +
+          escapeHtml(url) +
+          '" alt="" loading="' +
+          (i === 0 ? "eager" : "lazy") +
+          '"/></div>'
+        );
+      })
+      .join("");
+    paintCarouselIndex();
+    Array.prototype.forEach.call(
+      els.carouselTrack.querySelectorAll("img"),
+      function (img) {
+        img.addEventListener("click", function () {
+          if (suppressClick) {
+            return;
+          }
+          var slide = img.closest(".carousel-slide");
+          var i = slide ? Number(slide.getAttribute("data-i")) : 0;
+          if (!isNaN(i)) {
+            viewState.index = i;
+          }
+          openGallery();
+        });
+      }
+    );
+  }
+
+  function attrRow(iconKey, label, value) {
     if (!value) {
       return "";
     }
     return (
       '<li class="attr-row">' +
+      '<span class="attr-icon">' +
+      (ICONS[iconKey] || "") +
+      "</span>" +
+      '<div class="attr-body">' +
       '<span class="attr-label">' +
       escapeHtml(label) +
       "</span>" +
       '<span class="attr-value">' +
       escapeHtml(value) +
-      "</span></li>"
+      "</span></div></li>"
     );
   }
 
   function renderAttrs(item) {
     var html =
-      attrRow("等级", item.gradeName) +
-      attrRow("规格", item.specShow) +
-      attrRow("批次", item.prodBatchShow) +
-      attrRow("保质期", item.expirationName);
+      attrRow("grade", "等级", item.gradeName) +
+      attrRow("spec", "规格", item.specShow) +
+      attrRow("batch", "批次", item.prodBatchShow) +
+      attrRow("expiration", "保质期", item.expirationName);
     if (!html) {
       els.cardAttrs.hidden = true;
       els.cardAttrs.innerHTML = "";
@@ -109,45 +335,62 @@
     els.cardAttrs.innerHTML = '<ul class="attr-list">' + html + "</ul>";
   }
 
-  function renderGrid(urls) {
-    if (!urls.length) {
-      els.grid9.innerHTML = "";
-      els.gridEmpty.hidden = false;
+  function renderWhStock(item) {
+    if (!els.cardWhStock) {
       return;
     }
-    els.gridEmpty.hidden = true;
-    els.grid9.innerHTML = urls
-      .map(function (url, i) {
+    var rows = item.warehouseStocks || item.warehouse_stocks || [];
+    if (!rows.length) {
+      els.cardWhStock.hidden = true;
+      els.cardWhStock.innerHTML = "";
+      return;
+    }
+    var listHtml = rows
+      .map(function (row) {
+        if (!row || row.qty == null || Number(row.qty) <= 0) {
+          return "";
+        }
+        var name = row.shortName || row.short_name || "";
+        if (!name) {
+          return "";
+        }
+        var dmg = "";
+        if (row.damageQty != null && Number(row.damageQty) > 0) {
+          dmg =
+            '<span class="wh-stock-dmg">破损 ' +
+            escapeHtml(row.damageQty) +
+            "</span>";
+        }
         return (
-          '<button type="button" class="grid9-item" data-i="' +
-          i +
-          '"><img src="' +
-          escapeHtml(url) +
-          '" alt="" loading="' +
-          (i < 3 ? "eager" : "lazy") +
-          '"/></button>'
+          '<li class="wh-stock-row">' +
+          '<span class="wh-stock-name">' +
+          escapeHtml(name) +
+          "</span>" +
+          '<span class="wh-stock-qty">' +
+          escapeHtml(row.qty) +
+          " 件" +
+          dmg +
+          "</span></li>"
         );
       })
       .join("");
-  }
-
-  function mountMp() {
-    var mount = document.getElementById("detailMp");
-    if (!mount || mount.querySelector("img")) {
+    if (!listHtml) {
+      els.cardWhStock.hidden = true;
+      els.cardWhStock.innerHTML = "";
       return;
     }
-    var img = document.createElement("img");
-    img.src = "/h5/assets/image/rcch_mp_x.png";
-    img.alt = "关注榕城茶话";
-    img.className = "site-mp-img";
-    mount.appendChild(img);
+    els.cardWhStock.hidden = false;
+    els.cardWhStock.innerHTML =
+      '<ul class="wh-stock-list">' + listHtml + "</ul>";
   }
 
   function render(item) {
     currentItem = item;
-    var urls = imageUrlsOf(item);
+    var urls = displayImageUrls(item);
     document.title =
       (item.name || item.title || "商品详情") + " · 内部";
+
+    renderCarousel(urls);
 
     if (item.brandName) {
       els.brand.hidden = false;
@@ -181,19 +424,7 @@
     }
 
     renderAttrs(item);
-    renderGrid(urls);
-    mountMp();
-
-    if (item.spuId && item.sameSpuSaleCount != null && item.sameSpuSaleCount > 1) {
-      els.sameBtn.hidden = false;
-      els.sameBtn.href =
-        "/h5/chai/inner-sale.html?spuId=" + encodeURIComponent(item.spuId);
-      els.bar.classList.remove("same-hidden");
-    } else {
-      els.sameBtn.hidden = true;
-      els.sameBtn.removeAttribute("href");
-      els.bar.classList.add("same-hidden");
-    }
+    renderWhStock(item);
 
     els.status.hidden = true;
     els.detail.hidden = false;
@@ -223,32 +454,79 @@
       });
   }
 
-  els.grid9.addEventListener("click", function (e) {
-    var btn = e.target.closest(".grid9-item");
-    if (!btn || !currentItem) {
-      return;
-    }
-    var urls = imageUrlsOf(currentItem);
-    var i = Number(btn.getAttribute("data-i")) || 0;
-    if (!urls[i]) {
-      return;
-    }
-    els.lightboxImg.src = urls[i];
-    els.lightbox.hidden = false;
-  });
+  if (els.copyBtn) {
+    els.copyBtn.addEventListener("click", function () {
+      if (!currentItem || currentItem.id == null || !window.ChaiInnerUtil) {
+        return;
+      }
+      window.ChaiInnerUtil.copyPublicDetail(currentItem.id);
+    });
+  }
 
-  els.lightbox.addEventListener("click", function (e) {
-    if (e.target && e.target.getAttribute("data-lb-close") === "1") {
-      els.lightbox.hidden = true;
-    }
-  });
+  if (els.copyInfoBtn) {
+    els.copyInfoBtn.addEventListener("click", function () {
+      if (!currentItem || !window.ChaiInnerUtil) {
+        return;
+      }
+      var text = formatKeywordPlainText(currentItem);
+      window.ChaiInnerUtil.copyText(text).then(
+        function () {
+          window.ChaiInnerUtil.toast("已复制商品信息");
+        },
+        function () {
+          window.ChaiInnerUtil.toast("复制失败");
+        }
+      );
+    });
+  }
 
-  els.copyBtn.addEventListener("click", function () {
-    if (!currentItem || currentItem.id == null || !window.ChaiInnerUtil) {
-      return;
-    }
-    window.ChaiInnerUtil.copyPublicDetail(currentItem.id);
-  });
+  if (els.gallery) {
+    els.gallery.addEventListener("click", function (e) {
+      if (e.target && e.target.getAttribute("data-gallery-close") === "1") {
+        closeGallery();
+      }
+    });
+  }
+  if (els.galleryPrev) {
+    els.galleryPrev.addEventListener("click", function (e) {
+      e.stopPropagation();
+      galleryStep(-1);
+    });
+  }
+  if (els.galleryNext) {
+    els.galleryNext.addEventListener("click", function (e) {
+      e.stopPropagation();
+      galleryStep(1);
+    });
+  }
+  if (els.carouselTrack) {
+    els.carouselTrack.addEventListener("scroll", onCarouselScroll, {
+      passive: true,
+    });
+  }
+  if (els.galleryImg) {
+    els.galleryImg.addEventListener("touchstart", function (e) {
+      if (!e.touches || !e.touches.length) {
+        return;
+      }
+      touchX = e.touches[0].clientX;
+    });
+    els.galleryImg.addEventListener("touchend", function (e) {
+      if (touchX == null || !e.changedTouches || !e.changedTouches.length) {
+        return;
+      }
+      var dx = e.changedTouches[0].clientX - touchX;
+      touchX = null;
+      if (Math.abs(dx) < 40) {
+        return;
+      }
+      suppressClick = true;
+      setTimeout(function () {
+        suppressClick = false;
+      }, 300);
+      galleryStep(dx < 0 ? 1 : -1);
+    });
+  }
 
   function closeCapturePreview() {
     if (els.capturePreview) {
@@ -328,8 +606,7 @@
     return brand || name || "";
   }
 
-  function buildExportPriceCard(item) {
-    var title = buildExportTitle(item);
+  function buildExportInfoRows(item) {
     var officialAmt = exportYenAmount(item, "official");
     var saleAmt = exportYenAmount(item, "sale");
     var qty = item.totalQty != null ? Number(item.totalQty) : 0;
@@ -337,14 +614,13 @@
       qty = 0;
     }
 
-    var officialRow = "";
+    var rows = "";
     if (officialAmt === "非卖品") {
-      officialRow = attrExportRow("官方价", escapeHtml("非卖品"));
+      rows += attrExportRow("官方价", escapeHtml("非卖品"));
     } else if (officialAmt) {
-      officialRow = attrExportRow("官方价", escapeHtml("¥" + officialAmt));
+      rows += attrExportRow("官方价", escapeHtml("¥" + officialAmt));
     }
 
-    var saleRow = "";
     if (saleAmt) {
       var saleHtml =
         '<span class="ex-meta-sale">' +
@@ -353,12 +629,12 @@
       if (item.discountShow) {
         saleHtml +=
           '<span class="ex-meta-disc">' +
-          escapeHtml("（" + item.discountShow + "）") +
+          escapeHtml(item.discountShow) +
           "</span>";
       }
-      saleRow = attrExportRow("销售价", saleHtml);
+      rows += attrExportRow("销售价", saleHtml);
     } else {
-      saleRow = attrExportRow(
+      rows += attrExportRow(
         "销售价",
         '<span class="ex-meta-sale">' + escapeHtml("询价") + "</span>"
       );
@@ -368,63 +644,76 @@
     if (item.damageQty != null && Number(item.damageQty) > 0) {
       qtyText += "（破损 " + Number(item.damageQty) + "）";
     }
-    var qtyRow = attrExportRow("数量", escapeHtml(qtyText));
+    rows += attrExportRow("数量", escapeHtml(qtyText));
+    rows += attrExportRow(
+      "等级",
+      item.gradeName ? escapeHtml(item.gradeName) : ""
+    );
+    rows += attrExportRow(
+      "规格",
+      item.specShow ? escapeHtml(item.specShow) : ""
+    );
+    rows += attrExportRow(
+      "批次",
+      item.prodBatchShow ? escapeHtml(item.prodBatchShow) : ""
+    );
+    rows += attrExportRow(
+      "保质期",
+      item.expirationName ? escapeHtml(item.expirationName) : ""
+    );
+    return rows;
+  }
 
+  function buildExportGallery(urls) {
+    var n = urls.length;
+    if (!n) {
+      return '<div class="ex-gallery ex-gallery-empty"><p class="ex-grid-empty">暂无展示图</p></div>';
+    }
+    var cells = urls
+      .map(function (url) {
+        return (
+          '<div class="ex-grid-cell"><img src="' +
+          escapeHtml(url) +
+          '" alt="" loading="eager"/></div>'
+        );
+      })
+      .join("");
     return (
-      '<section class="ex-card">' +
-      (title
-        ? '<h2 class="ex-title">' + escapeHtml(title) + "</h2>"
-        : "") +
-      '<ul class="ex-attrs">' +
-      officialRow +
-      saleRow +
-      qtyRow +
-      "</ul></section>"
+      '<div class="ex-gallery n-' +
+      n +
+      '">' +
+      cells +
+      "</div>"
     );
   }
 
-  /** 用业务数据拼离屏导出 DOM，不碰页面 #detail */
+  /** 固定高海报：z3 底 + z2 票券（不拉伸）+ DOM 叠内容 */
   function buildExportMarkup(item) {
     var urls = imageUrlsOf(item);
-    var attrs =
-      attrExportRow("等级", item.gradeName ? escapeHtml(item.gradeName) : "") +
-      attrExportRow("规格", item.specShow ? escapeHtml(item.specShow) : "") +
-      attrExportRow(
-        "批次",
-        item.prodBatchShow ? escapeHtml(item.prodBatchShow) : ""
-      ) +
-      attrExportRow(
-        "保质期",
-        item.expirationName ? escapeHtml(item.expirationName) : ""
-      );
+    var title = buildExportTitle(item);
+    var infoRows = buildExportInfoRows(item);
 
-    var gallery;
-    if (!urls.length) {
-      gallery = '<p class="ex-grid-empty">暂无展示图</p>';
-    } else {
-      gallery =
-        '<div class="ex-grid">' +
-        urls
-          .map(function (url) {
-            return (
-              '<div class="ex-grid-cell"><img src="' +
-              escapeHtml(url) +
-              '" alt="" loading="eager"/></div>'
-            );
-          })
-          .join("") +
-        "</div>";
-    }
+    var titleHtml = title
+      ? '<h2 class="ex-title">' +
+        '<img class="ex-leaf" src="/h5/assets/image/sku_sale_z1.png" alt="" width="18" height="18"/>' +
+        '<span class="ex-title-text">' +
+        escapeHtml(title) +
+        "</span></h2>"
+      : "";
 
     return (
-      buildExportPriceCard(item) +
-      (attrs
-        ? '<section class="ex-card"><ul class="ex-attrs">' + attrs + "</ul></section>"
-        : "") +
-      '<section class="ex-card"><h3 class="ex-h">商品图片</h3>' +
-      gallery +
-      "</section>" +
-      '<section class="ex-card ex-mp"><img src="/h5/assets/image/rcch_mp_x.png" alt="关注榕城茶话" loading="eager"/></section>'
+      '<div class="ex-poster">' +
+      '<img class="ex-bg" src="/h5/assets/image/sku_sale_z3.png" alt="" loading="eager"/>' +
+      '<div class="ex-stage">' +
+      '<div class="ex-ticket">' +
+      '<img class="ex-ticket-img" src="/h5/assets/image/sku_sale_z2.png" alt="" loading="eager"/>' +
+      '<div class="ex-ticket-ui">' +
+      '<div class="ex-info">' +
+      titleHtml +
+      (infoRows ? '<ul class="ex-attrs">' + infoRows + "</ul>" : "") +
+      "</div>" +
+      buildExportGallery(urls) +
+      "</div></div></div></div>"
     );
   }
 
@@ -551,10 +840,11 @@
       .then(function (corsFail) {
         return window.DomToImage.captureElement(root, {
           scale: 2,
-          backgroundColor: "#f5f6f4",
+          backgroundColor: "#315E46",
           timeout: 12000,
           imagesTimeoutContinue: true,
           width: 375,
+          height: 812,
         }).then(function (dataUrl) {
           return { dataUrl: dataUrl, corsFail: corsFail };
         });
@@ -648,5 +938,6 @@
     });
   }
 
+  bindListBack("/h5/chai/inner-sale.html");
   load();
 })();

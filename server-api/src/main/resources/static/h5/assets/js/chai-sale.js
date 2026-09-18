@@ -1,4 +1,5 @@
 (function () {
+  var LIST_URL_KEY = "chai.sale.listUrl";
   var state = {
     page: 1,
     size: 20,
@@ -22,7 +23,9 @@
     list: document.getElementById("list"),
     empty: document.getElementById("empty"),
     pager: document.getElementById("pager"),
-    pageInfo: document.getElementById("pageInfo"),
+    pageInput: document.getElementById("pageInput"),
+    pageTotal: document.getElementById("pageTotal"),
+    pageGoBtn: document.getElementById("pageGoBtn"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     filterBar: document.getElementById("filterBar"),
@@ -68,6 +71,39 @@
     var q = params.toString();
     var next = window.location.pathname + (q ? "?" + q : "");
     window.history.replaceState(null, "", next);
+    rememberListUrl();
+  }
+
+  function rememberListUrl() {
+    try {
+      sessionStorage.setItem(
+        LIST_URL_KEY,
+        window.location.pathname + window.location.search
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function jumpToPage() {
+    var pages = Math.max(1, Math.ceil(state.total / state.size));
+    var n = parseInt(els.pageInput && els.pageInput.value, 10);
+    if (isNaN(n) || n < 1) {
+      n = 1;
+    }
+    if (n > pages) {
+      n = pages;
+    }
+    if (els.pageInput) {
+      els.pageInput.value = String(n);
+    }
+    if (n === state.page) {
+      return;
+    }
+    state.page = n;
+    syncUrl();
+    load();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function updateFilterBar() {
@@ -285,7 +321,13 @@
       kwHint;
 
     els.pager.hidden = state.total <= state.size;
-    els.pageInfo.textContent = state.page + " / " + pages;
+    if (els.pageInput) {
+      els.pageInput.value = String(state.page);
+      els.pageInput.max = String(pages);
+    }
+    if (els.pageTotal) {
+      els.pageTotal.textContent = String(pages);
+    }
     els.prevBtn.disabled = state.page <= 1;
     els.nextBtn.disabled = state.page >= pages;
   }
@@ -395,6 +437,18 @@
     syncUrl();
     load();
   });
+
+  if (els.pageGoBtn) {
+    els.pageGoBtn.addEventListener("click", jumpToPage);
+  }
+  if (els.pageInput) {
+    els.pageInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        jumpToPage();
+      }
+    });
+  }
 
   els.list.addEventListener("click", function (e) {
     var addBtn = e.target.closest("[data-add-id]");
@@ -571,6 +625,7 @@
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
   updateFilterBar();
+  rememberListUrl();
   loadCopy();
   load();
   if (window.ChaiInquiryCart) {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>商品详情（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-detail.css"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner.css"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner-sale-detail.css"/>
@@ -20,6 +21,11 @@
   <p class="status" id="status">加载中…</p>
 
   <main class="detail" id="detail" hidden>
+    <section class="carousel" id="carousel" aria-label="商品图片">
+      <div class="carousel-track" id="carouselTrack"></div>
+      <span class="carousel-index" id="carouselIndex" hidden></span>
+    </section>
+
     <section class="card card-main">
       <span class="brand" id="brand" hidden></span>
       <h2 class="sku-name" id="skuName"></h2>
@@ -32,28 +38,22 @@
     </section>
 
     <section class="card card-attrs" id="cardAttrs"></section>
-
-    <section class="card card-gallery" id="cardGallery">
-      <h3 class="card-h">商品图片</h3>
-      <div class="grid9" id="grid9"></div>
-      <p class="grid-empty" id="gridEmpty" hidden>暂无展示图</p>
-    </section>
-
-    <section class="card card-mp">
-      <div id="detailMp" class="detail-mp"></div>
-    </section>
+    <section class="card card-wh-stock" id="cardWhStock" hidden></section>
   </main>
 
   <footer class="bar" id="bar" hidden>
-    <a class="bar-same" id="sameBtn" hidden href="#">看同款</a>
+    <button type="button" class="bar-info" id="copyInfoBtn">复制商品信息</button>
     <button type="button" class="bar-copy" id="copyBtn">复制对外链接</button>
     <button type="button" class="bar-dl" id="dlBtn">下载图片</button>
   </footer>
 
-  <div class="lightbox" id="lightbox" hidden>
-    <div class="lightbox-mask" data-lb-close="1"></div>
-    <button type="button" class="lightbox-close" data-lb-close="1" aria-label="关闭">×</button>
-    <img class="lightbox-img" id="lightboxImg" alt=""/>
+  <div class="gallery" id="gallery" hidden>
+    <div class="gallery-mask" data-gallery-close="1"></div>
+    <button type="button" class="gallery-close" data-gallery-close="1" aria-label="关闭">×</button>
+    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="上一张">‹</button>
+    <img class="gallery-img" id="galleryImg" alt=""/>
+    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="下一张">›</button>
+    <p class="gallery-index" id="galleryIndex"></p>
   </div>
 
   <!-- 离屏导出画布：不参与页面交互，仅供截图 -->
