@@ -77,6 +77,16 @@ public class ChaiWarehouseController {
         if (chaiWarehouseService.isNameTakenByOther(saveItem.getName(), saveItem.getId())) {
             return ResultVoUtil.error("仓库名称已存在，请更换后重试");
         }
+        if (StringUtils.isBlank(saveItem.getShortName())) {
+            return ResultVoUtil.error("仓库简称必填");
+        }
+        saveItem.setShortName(saveItem.getShortName().trim());
+        if (saveItem.getShortName().length() > 16) {
+            return ResultVoUtil.error("仓库简称最多16个字符");
+        }
+        if (chaiWarehouseService.isShortNameTakenByOther(saveItem.getShortName(), saveItem.getId())) {
+            return ResultVoUtil.error("仓库简称已存在，请更换后重试");
+        }
         if (saveItem.getStatus() == null) {
             return ResultVoUtil.error("状态必选");
         }

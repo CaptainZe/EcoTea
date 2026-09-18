@@ -14,9 +14,9 @@
         <div class="layui-row timo-card-screen">
             <div class="layui-form pull-left layui-form-pane timo-search-box">
                 <div class="layui-inline">
-                    <label class="layui-form-label">仓库名称</label>
+                    <label class="layui-form-label">名称/简称</label>
                     <div class="layui-input-block">
-                        <input type="text" name="name" th:value="${param.name}" placeholder="模糊查询"
+                        <input type="text" name="name" th:value="${param.name}" placeholder="名称或简称模糊"
                                autocomplete="off" class="layui-input">
                     </div>
                 </div>
@@ -91,6 +91,7 @@
                     <th width="100">操作</th>
                     <th width="90" class="sortable" data-field="status">状态</th>
                     <th width="160">仓库名称</th>
+                    <th width="90">简称</th>
                     <th width="220">省市区</th>
                     <th width="200">详细地址</th>
                     <th width="110" class="sortable" data-field="orderNum">排序号（大到小）</th>
@@ -116,6 +117,7 @@
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td th:text="${item.shortName}" th:title="${item.shortName}"></td>
                     <td th:text="${(item.provinceName != null and !#strings.isEmpty(item.provinceName) ? item.provinceName : '')
                         + (item.cityName != null and !#strings.isEmpty(item.cityName) ? item.cityName : '')
                         + (item.districtName != null and !#strings.isEmpty(item.districtName) ? item.districtName : '')}"></td>

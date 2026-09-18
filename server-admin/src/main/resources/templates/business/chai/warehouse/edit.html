@@ -51,6 +51,15 @@
         </div>
 
         <div class="layui-form-item">
+            <label class="layui-form-label required">仓库简称</label>
+            <div class="layui-input-block">
+                <input type="text" name="shortName" class="layui-input" th:value="${editItem?.shortName}"
+                       required lay-verify="required" maxlength="16" placeholder="如: 福">
+                <div class="field-tip">内部价目列表/筛选展示用，必填且不可与其它仓重复</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
             <label class="layui-form-label">省市区</label>
             <div class="layui-input-block">
                 <div class="wh-pca-row">

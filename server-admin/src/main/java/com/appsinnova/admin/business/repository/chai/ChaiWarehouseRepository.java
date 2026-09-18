@@ -17,6 +17,10 @@ public interface ChaiWarehouseRepository extends JpaRepository<ChaiWarehouse, Lo
 
     boolean existsByNameAndIdNot(String name, Long id);
 
+    Optional<ChaiWarehouse> findFirstByShortName(String shortName);
+
+    boolean existsByShortNameAndIdNot(String shortName, Long id);
+
     @Query(value = "SELECT COUNT(1) FROM chai_stock_wh WHERE wh_id = :whId", nativeQuery = true)
     long countStockWhByWhId(@Param("whId") Long whId);
 

@@ -71,6 +71,17 @@ public class ChaiWarehouseService {
         return chaiWarehouseRepository.existsByNameAndIdNot(trimmed, excludeId);
     }
 
+    public boolean isShortNameTakenByOther(String shortName, Long excludeId) {
+        if (!StringUtils.hasText(shortName)) {
+            return false;
+        }
+        String trimmed = shortName.trim();
+        if (excludeId == null) {
+            return chaiWarehouseRepository.findFirstByShortName(trimmed).isPresent();
+        }
+        return chaiWarehouseRepository.existsByShortNameAndIdNot(trimmed, excludeId);
+    }
+
     public boolean isReferenced(Long whId) {
         if (whId == null) {
             return false;
@@ -143,7 +154,10 @@ public class ChaiWarehouseService {
             return preList;
         }
         if (StringUtils.hasText(param.getName())) {
-            preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));
+            String nameLike = "%" + param.getName().trim() + "%";
+            preList.add(cb.or(
+                    cb.like(root.get("name").as(String.class), nameLike),
+                    cb.like(root.get("shortName").as(String.class), nameLike)));
         }
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));

@@ -21,6 +21,9 @@ public class ChaiWarehouse implements Serializable {
     private Long id;
 
     private String name;
+    /** 列表/筛选展示用简称，必填且唯一 */
+    @Column(name = "short_name", nullable = false, length = 16)
+    private String shortName;
     private String province;
     private String city;
     private String district;
