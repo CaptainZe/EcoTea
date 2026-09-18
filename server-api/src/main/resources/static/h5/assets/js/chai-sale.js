@@ -15,6 +15,10 @@
     index: 0,
     touchX: null
   };
+  var listAbort = null;
+  var listLoadTimer = null;
+  var listLoadToken = 0;
+  var LIST_LOAD_DEBOUNCE_MS = 120;
 
   var els = {
     form: document.getElementById("searchForm"),
@@ -332,7 +336,42 @@
     els.nextBtn.disabled = state.page >= pages;
   }
 
+  function isAbortError(err) {
+    return !!(
+      err &&
+      (err.name === "AbortError" ||
+        err.code === 20 ||
+        (typeof DOMException !== "undefined" &&
+          err instanceof DOMException &&
+          err.name === "AbortError"))
+    );
+  }
+
   function load() {
+    if (listLoadTimer) {
+      clearTimeout(listLoadTimer);
+      listLoadTimer = null;
+    }
+    listLoadTimer = setTimeout(function () {
+      listLoadTimer = null;
+      loadNow();
+    }, LIST_LOAD_DEBOUNCE_MS);
+  }
+
+  function loadNow() {
+    if (listAbort) {
+      try {
+        listAbort.abort();
+      } catch (e) {
+        /* ignore */
+      }
+      listAbort = null;
+    }
+    var ctrl =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    listAbort = ctrl;
+    var token = ++listLoadToken;
+
     var params = new URLSearchParams();
     params.set("page", String(state.page));
     params.set("size", String(state.size));
@@ -344,11 +383,15 @@
     }
 
     els.meta.textContent = "加载中…";
-    fetch("/chai/sku/sale/list?" + params.toString())
+    var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
+    fetch("/chai/sku/sale/list?" + params.toString(), fetchOpts)
       .then(function (res) {
         return res.json();
       })
       .then(function (body) {
+        if (token !== listLoadToken) {
+          return;
+        }
         if (!body || body.code !== 0 || !body.data) {
           els.meta.textContent = "加载失败";
           els.list.innerHTML = "";
@@ -357,7 +400,10 @@
         }
         render(body.data);
       })
-      .catch(function () {
+      .catch(function (err) {
+        if (token !== listLoadToken || isAbortError(err)) {
+          return;
+        }
         els.meta.textContent = "网络异常";
         els.list.innerHTML = "";
         els.empty.hidden = false;
