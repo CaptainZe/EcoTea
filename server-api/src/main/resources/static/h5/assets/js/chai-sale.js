@@ -5,6 +5,7 @@
     size: 20,
     keyword: "",
     spuId: null,
+    recycleRecent: false,
     total: 0
   };
 
@@ -23,6 +24,7 @@
   var els = {
     form: document.getElementById("searchForm"),
     keyword: document.getElementById("keyword"),
+    recycleSelect: document.getElementById("recycleSelect"),
     meta: document.getElementById("meta"),
     list: document.getElementById("list"),
     empty: document.getElementById("empty"),
@@ -69,6 +71,9 @@
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
     }
+    if (state.recycleRecent) {
+      params.set("recycleRecent", "1");
+    }
     if (state.page > 1) {
       params.set("page", String(state.page));
     }
@@ -76,6 +81,17 @@
     var next = window.location.pathname + (q ? "?" + q : "");
     window.history.replaceState(null, "", next);
     rememberListUrl();
+  }
+
+  function readRecycleRecentFromSelect() {
+    if (!els.recycleSelect) {
+      return false;
+    }
+    return (els.recycleSelect.value || "").trim() === "1";
+  }
+
+  function syncKeywordFromInput() {
+    state.keyword = (els.keyword.value || "").trim();
   }
 
   function rememberListUrl() {
@@ -381,6 +397,9 @@
     if (state.spuId) {
       params.set("spuId", String(state.spuId));
     }
+    if (state.recycleRecent) {
+      params.set("recycleRecent", "1");
+    }
 
     els.meta.textContent = "加载中…";
     var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
@@ -450,12 +469,23 @@
   els.form.addEventListener("submit", function (e) {
     e.preventDefault();
     state.keyword = (els.keyword.value || "").trim();
+    state.recycleRecent = readRecycleRecentFromSelect();
     state.spuId = null;
     state.page = 1;
     updateFilterBar();
     syncUrl();
     load();
   });
+
+  if (els.recycleSelect) {
+    els.recycleSelect.addEventListener("change", function () {
+      syncKeywordFromInput();
+      state.recycleRecent = readRecycleRecentFromSelect();
+      state.page = 1;
+      syncUrl();
+      load();
+    });
+  }
 
   els.clearFilterBtn.addEventListener("click", function () {
     state.spuId = null;
@@ -667,6 +697,10 @@
   state.spuId = spuRaw ? Number(spuRaw) : null;
   if (state.spuId && isNaN(state.spuId)) {
     state.spuId = null;
+  }
+  state.recycleRecent = qs("recycleRecent") === "1";
+  if (els.recycleSelect) {
+    els.recycleSelect.value = state.recycleRecent ? "1" : "";
   }
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;

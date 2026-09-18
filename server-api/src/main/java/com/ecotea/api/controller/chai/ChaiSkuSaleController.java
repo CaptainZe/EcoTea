@@ -22,7 +22,8 @@ public class ChaiSkuSaleController {
 
     /**
      * 有货上架 SKU 分页。keyword：品牌精确优先，否则名称模糊；spuId：同款。
-     * whId：按仓有货筛选；includeWh=1：列表带回有货仓简称（无数量）。
+     * whId：按仓有货筛选；includeWh=1：列表带回有货仓简称（无数量）；
+     * recycleRecent=1：近 N 日回收入库（N 见 ChaiConstant.RECYCLE_RECENT_DAYS），按最近回收倒序。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuSalePageVO> list(
@@ -30,11 +31,13 @@ public class ChaiSkuSaleController {
             @RequestParam(required = false) Long spuId,
             @RequestParam(required = false) Long whId,
             @RequestParam(required = false) Integer includeWh,
+            @RequestParam(required = false) Integer recycleRecent,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         boolean withWhNames = includeWh != null && includeWh != 0;
+        boolean recycleRecentFlag = recycleRecent != null && recycleRecent != 0;
         return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(
-                keyword, spuId, whId, withWhNames, page, size));
+                keyword, spuId, whId, withWhNames, recycleRecentFlag, page, size));
     }
 
     /**

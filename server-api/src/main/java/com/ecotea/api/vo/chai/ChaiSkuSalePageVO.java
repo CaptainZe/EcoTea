@@ -20,5 +20,7 @@ public class ChaiSkuSalePageVO implements Serializable {
     private Long spuId;
     /** 按仓筛选时回显 */
     private Long whId;
+    /** 新回收筛选时回显 */
+    private Boolean recycleRecent;
     private List<ChaiSkuSaleItemVO> list = Collections.emptyList();
 }

@@ -39,7 +39,7 @@ body.inner-sale {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
-/* 内部搜索：[仓库][输入框内嵌搜索按钮]；点搜索才查询 */
+/* 内部搜索：[全部/新回收][全部仓][输入框内嵌搜索]；下拉变更即查 */
 body.inner-sale .inner-search {
   padding: 0.5rem 1rem 0.75rem;
 }
@@ -50,6 +50,7 @@ body.inner-sale .inner-search-row {
   gap: 0.4rem;
 }
 
+body.inner-sale .inner-search #recycleSelect,
 body.inner-sale .inner-search #whSelect {
   flex: 0 0 auto;
   width: 5.2rem;
@@ -71,6 +72,7 @@ body.inner-sale .inner-search #whSelect {
   cursor: pointer;
 }
 
+body.inner-sale .inner-search #recycleSelect:focus,
 body.inner-sale .inner-search #whSelect:focus {
   border-color: var(--accent);
 }

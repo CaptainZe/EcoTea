@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ecotea.api.common.constant.ChaiConstant;
 import com.ecotea.api.common.enums.base.YesOrNo;
 import com.ecotea.api.common.enums.chai.ChaiStatus;
+import com.ecotea.api.common.enums.chai.ChaiStockBillStatus;
+import com.ecotea.api.common.enums.chai.ChaiStockBillType;
+import com.ecotea.api.common.enums.chai.ChaiStockReason;
 import com.ecotea.api.common.utils.DictUtils;
 import com.ecotea.api.common.utils.chai.ChaiPriceUtil;
 import com.ecotea.api.common.utils.chai.ChaiSpecUtil;
@@ -60,19 +63,21 @@ public class ChaiSkuSaleQueryService {
     private final ChaiWarehouseMapper chaiWarehouseMapper;
 
     /**
-     * 兼容关键词回复等旧调用：全仓有货、不分仓字段。
+     * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
-        return pageSaleList(keyword, spuId, null, false, page, size);
+        return pageSaleList(keyword, spuId, null, false, false, page, size);
     }
 
     /**
      * 上架、未删除、有货 SKU 分页。
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；whId：该仓 qty&gt;0；
-     * includeWh：列表填充有货仓简称（无数量）。
+     * includeWh：列表填充有货仓简称（无数量）；
+     * recycleRecent：近 {@link ChaiConstant#RECYCLE_RECENT_DAYS} 日回收入库，并按最近回收时间倒序。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
-                                          boolean includeWh, long page, long size) {
+                                          boolean includeWh, boolean recycleRecent,
+                                          long page, long size) {
         if (page < 1) {
             page = 1;
         }
@@ -86,11 +91,16 @@ public class ChaiSkuSaleQueryService {
         String kw = keyword == null ? null : keyword.trim();
         Long brandId = resolveBrandIdExact(kw);
         String stockInSql = stockInSql(whId);
+        long recycleCutoffMs = recycleRecent ? recycleRecentCutoffMs() : 0L;
 
         LambdaQueryWrapper<ChaiSku> wrapper = new LambdaQueryWrapper<ChaiSku>()
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
                 .inSql(ChaiSku::getId, stockInSql);
+
+        if (recycleRecent) {
+            wrapper.inSql(ChaiSku::getId, recycleRecentSkuSql(recycleCutoffMs));
+        }
 
         String matchType = "none";
         if (spuId != null) {
@@ -109,17 +119,23 @@ public class ChaiSkuSaleQueryService {
             }
         }
 
-        // 与 admin skuView 一致
-        wrapper.orderByDesc(ChaiSku::getYear)
-                .orderByDesc(ChaiSku::getProdBatch)
-                .orderByDesc(ChaiSku::getId);
+        if (recycleRecent) {
+            // 越新回收的越靠前
+            wrapper.last(orderByRecentRecycleSql(recycleCutoffMs));
+        } else {
+            // 与 admin skuView 一致
+            wrapper.orderByDesc(ChaiSku::getYear)
+                    .orderByDesc(ChaiSku::getProdBatch)
+                    .orderByDesc(ChaiSku::getId);
+        }
 
         Page<ChaiSku> mpPage = chaiSkuMapper.selectPage(new Page<>(page, size), wrapper);
         List<ChaiSku> records = mpPage.getRecords();
         Map<Long, String> brandNameMap = loadBrandNameMap(records);
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
-        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, whId);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(
+                records, whId, recycleRecent, recycleCutoffMs);
         Map<Long, List<String>> whShortNamesMap = includeWh
                 ? loadWhShortNamesBySkuId(records, stockMap)
                 : Collections.emptyMap();
@@ -141,10 +157,11 @@ public class ChaiSkuSaleQueryService {
         result.setKeyword(kw);
         result.setSpuId(spuId);
         result.setWhId(whId);
+        result.setRecycleRecent(recycleRecent);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, whId, includeWh, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, matchType={}, page={}, size={}, total={}",
+                kw, spuId, whId, includeWh, recycleRecent, matchType, page, size, mpPage.getTotal());
         return result;
     }
 
@@ -168,7 +185,7 @@ public class ChaiSkuSaleQueryService {
         Map<Long, String> brandNameMap = loadBrandNameMap(records);
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
-        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, null);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, null, false, 0L);
         ChaiSkuSaleItemVO vo = toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
         Map<Long, List<ChaiSkuSaleWhStockVO>> whStockMap = loadWarehouseStocksBySkuId(records, stockMap);
         vo.setWarehouseStocks(whStockMap.getOrDefault(sku.getId(), Collections.emptyList()));
@@ -185,6 +202,37 @@ public class ChaiSkuSaleQueryService {
         return "SELECT s.sku_id FROM chai_stock s "
                 + "INNER JOIN chai_stock_wh w ON w.stock_id = s.id "
                 + "WHERE w.wh_id = " + whId + " AND w.qty > 0";
+    }
+
+    private static long recycleRecentCutoffMs() {
+        return System.currentTimeMillis()
+                - ChaiConstant.RECYCLE_RECENT_DAYS * 24L * 60L * 60L * 1000L;
+    }
+
+    /**
+     * 近 N 日事由=回收入库（已过账/归档）的 SKU。
+     */
+    private static String recycleRecentSkuSql(long cutoffMs) {
+        return "SELECT DISTINCT i.sku_id FROM chai_stock_bill_item i "
+                + "INNER JOIN chai_stock_bill b ON b.id = i.bill_id "
+                + "WHERE b.bill_type = " + ChaiStockBillType.IN.getCode()
+                + " AND b.reason = " + ChaiStockReason.RECYCLE.getCode()
+                + " AND b.status IN (" + ChaiStockBillStatus.effectiveCodesCsv() + ")"
+                + " AND b.create_time >= " + cutoffMs;
+    }
+
+    /**
+     * 按该 SKU 最近一次符合条件的回收入库时间倒序。
+     */
+    private static String orderByRecentRecycleSql(long cutoffMs) {
+        return "ORDER BY (SELECT MAX(b.create_time) FROM chai_stock_bill_item i "
+                + "INNER JOIN chai_stock_bill b ON b.id = i.bill_id "
+                + "WHERE i.sku_id = chai_sku.id"
+                + " AND b.bill_type = " + ChaiStockBillType.IN.getCode()
+                + " AND b.reason = " + ChaiStockReason.RECYCLE.getCode()
+                + " AND b.status IN (" + ChaiStockBillStatus.effectiveCodesCsv() + ")"
+                + " AND b.create_time >= " + cutoffMs
+                + ") DESC, id DESC";
     }
 
     private Long resolveBrandIdExact(String keyword) {
@@ -245,9 +293,10 @@ public class ChaiSkuSaleQueryService {
     }
 
     /**
-     * 各 spuId 下「上架+未删+有货」SKU 数量；有 whId 时按该仓有货计。
+     * 各 spuId 下「上架+未删+有货」SKU 数量；有 whId / 新回收时与列表同一口径。
      */
-    private Map<Long, Integer> loadSameSpuSaleCountMap(List<ChaiSku> records, Long whId) {
+    private Map<Long, Integer> loadSameSpuSaleCountMap(List<ChaiSku> records, Long whId,
+                                                       boolean recycleRecent, long recycleCutoffMs) {
         Set<Long> spuIds = records.stream()
                 .map(ChaiSku::getSpuId)
                 .filter(Objects::nonNull)
@@ -255,12 +304,16 @@ public class ChaiSkuSaleQueryService {
         if (spuIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<ChaiSku> sameList = chaiSkuMapper.selectList(new LambdaQueryWrapper<ChaiSku>()
+        LambdaQueryWrapper<ChaiSku> sameWrapper = new LambdaQueryWrapper<ChaiSku>()
                 .select(ChaiSku::getId, ChaiSku::getSpuId)
                 .in(ChaiSku::getSpuId, spuIds)
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
-                .inSql(ChaiSku::getId, stockInSql(whId)));
+                .inSql(ChaiSku::getId, stockInSql(whId));
+        if (recycleRecent) {
+            sameWrapper.inSql(ChaiSku::getId, recycleRecentSkuSql(recycleCutoffMs));
+        }
+        List<ChaiSku> sameList = chaiSkuMapper.selectList(sameWrapper);
         Map<Long, Integer> map = new HashMap<>();
         for (ChaiSku sku : sameList) {
             if (sku.getSpuId() == null) {

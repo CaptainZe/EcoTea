@@ -711,6 +711,7 @@
       '<div class="ex-info">' +
       titleHtml +
       (infoRows ? '<ul class="ex-attrs">' + infoRows + "</ul>" : "") +
+      '<p class="ex-disclaimer">回收转售 · 非官方 · 以咨询为准</p>' +
       "</div>" +
       buildExportGallery(urls) +
       "</div></div></div></div>"

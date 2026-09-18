@@ -4,9 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>在售价目（内部）</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=202609181"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=202609181"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=202609181"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=202609185"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=202609185"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=202609185"/>
 </head>
 <body class="inner-sale">
   <header class="top">
@@ -20,6 +20,10 @@
 
   <form class="inner-search" id="searchForm">
     <div class="inner-search-row">
+      <select id="recycleSelect" name="recycleRecent" aria-label="列表范围">
+        <option value="">全部</option>
+        <option value="1">新回收</option>
+      </select>
       <select id="whSelect" name="whId" aria-label="仓库筛选">
         <option value="">全部仓</option>
       </select>
@@ -58,8 +62,8 @@
     <p class="gallery-index" id="galleryIndex"></p>
   </div>
 
-  <script src="/h5/assets/js/chai-sale-stock.js?v=202609181"></script>
-  <script src="/h5/assets/js/chai-inner-util.js?v=202609181"></script>
-  <script src="/h5/assets/js/chai-inner-sale.js?v=202609181"></script>
+  <script src="/h5/assets/js/chai-sale-stock.js?v=202609185"></script>
+  <script src="/h5/assets/js/chai-inner-util.js?v=202609185"></script>
+  <script src="/h5/assets/js/chai-inner-sale.js?v=202609185"></script>
 </body>
 </html>

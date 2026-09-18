@@ -10,4 +10,9 @@ public interface ChaiConstant {
 
     /** 生产批次字典 */
     String DICT_PROD_BATCH = "CHAI_PROD_BATCH";
+
+    /**
+     * 「新回收」筛选：回收入库回溯天数（程序决定，不对用户展示具体天数文案）。
+     */
+    int RECYCLE_RECENT_DAYS = 3;
 }

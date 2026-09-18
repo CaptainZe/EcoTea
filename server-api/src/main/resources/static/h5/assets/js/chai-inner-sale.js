@@ -6,6 +6,7 @@
     keyword: "",
     spuId: null,
     whId: null,
+    recycleRecent: false,
     total: 0,
   };
 
@@ -19,6 +20,7 @@
   var els = {
     form: document.getElementById("searchForm"),
     keyword: document.getElementById("keyword"),
+    recycleSelect: document.getElementById("recycleSelect"),
     whSelect: document.getElementById("whSelect"),
     meta: document.getElementById("meta"),
     list: document.getElementById("list"),
@@ -55,6 +57,9 @@
     }
     if (state.whId) {
       params.set("whId", String(state.whId));
+    }
+    if (state.recycleRecent) {
+      params.set("recycleRecent", "1");
     }
     if (state.page > 1) {
       params.set("page", String(state.page));
@@ -117,6 +122,26 @@
     }
     var n = Number(v);
     return isNaN(n) ? null : n;
+  }
+
+  function readRecycleRecentFromSelect() {
+    if (!els.recycleSelect) {
+      return false;
+    }
+    return (els.recycleSelect.value || "").trim() === "1";
+  }
+
+  function syncKeywordFromInput() {
+    state.keyword = (els.keyword.value || "").trim();
+  }
+
+  function applyFiltersAndReload() {
+    syncKeywordFromInput();
+    state.whId = readWhIdFromSelect();
+    state.recycleRecent = readRecycleRecentFromSelect();
+    state.page = 1;
+    syncUrl();
+    load();
   }
 
   function whShortLabel(whId) {
@@ -416,6 +441,9 @@
     if (state.whId) {
       params.set("whId", String(state.whId));
     }
+    if (state.recycleRecent) {
+      params.set("recycleRecent", "1");
+    }
 
     els.meta.textContent = "加载中…";
     var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
@@ -486,12 +514,20 @@
     e.preventDefault();
     state.keyword = (els.keyword.value || "").trim();
     state.whId = readWhIdFromSelect();
+    state.recycleRecent = readRecycleRecentFromSelect();
     state.spuId = null;
     state.page = 1;
     updateFilterBar();
     syncUrl();
     load();
   });
+
+  if (els.recycleSelect) {
+    els.recycleSelect.addEventListener("change", applyFiltersAndReload);
+  }
+  if (els.whSelect) {
+    els.whSelect.addEventListener("change", applyFiltersAndReload);
+  }
 
   els.clearFilterBtn.addEventListener("click", function () {
     state.spuId = null;
@@ -593,6 +629,10 @@
   state.whId = whRaw ? Number(whRaw) : null;
   if (state.whId && isNaN(state.whId)) {
     state.whId = null;
+  }
+  state.recycleRecent = qs("recycleRecent") === "1";
+  if (els.recycleSelect) {
+    els.recycleSelect.value = state.recycleRecent ? "1" : "";
   }
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
