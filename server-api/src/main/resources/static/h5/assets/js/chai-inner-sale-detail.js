@@ -21,6 +21,7 @@
     copyInfoBtn: document.getElementById("copyInfoBtn"),
     copyBtn: document.getElementById("copyBtn"),
     dlBtn: document.getElementById("dlBtn"),
+    quoteBtn: document.getElementById("quoteBtn"),
     gallery: document.getElementById("gallery"),
     galleryImg: document.getElementById("galleryImg"),
     galleryIndex: document.getElementById("galleryIndex"),
@@ -429,6 +430,26 @@
     els.status.hidden = true;
     els.detail.hidden = false;
     els.bar.hidden = false;
+    syncQuoteBtn();
+  }
+
+  function syncQuoteBtn() {
+    if (!els.quoteBtn) {
+      return;
+    }
+    var inQuote =
+      currentItem &&
+      window.ChaiSaleQuote &&
+      window.ChaiSaleQuote.has(currentItem.id);
+    if (inQuote) {
+      els.quoteBtn.textContent = "已加入";
+      els.quoteBtn.disabled = true;
+      els.quoteBtn.classList.add("is-in-quote");
+    } else {
+      els.quoteBtn.textContent = "加入报价";
+      els.quoteBtn.disabled = false;
+      els.quoteBtn.classList.remove("is-in-quote");
+    }
   }
 
   function load() {
@@ -941,4 +962,27 @@
 
   bindListBack("/h5/chai/inner-sale.html");
   load();
+  if (els.quoteBtn) {
+    els.quoteBtn.addEventListener("click", function () {
+      if (!currentItem || !window.ChaiSaleQuote) {
+        return;
+      }
+      if (window.ChaiSaleQuote.has(currentItem.id)) {
+        window.ChaiSaleQuote.toast("已在销售报价单中");
+        syncQuoteBtn();
+        return;
+      }
+      var ok = window.ChaiSaleQuote.add(currentItem);
+      if (window.ChaiInnerUtil) {
+        window.ChaiInnerUtil.toast(ok ? "已加入销售报价单" : "加入失败");
+      } else if (window.ChaiSaleQuote.toast) {
+        window.ChaiSaleQuote.toast(ok ? "已加入销售报价单" : "加入失败");
+      }
+      syncQuoteBtn();
+    });
+  }
+  if (window.ChaiSaleQuote && window.ChaiSaleQuote.mountFab) {
+    window.ChaiSaleQuote.mountFab();
+    window.ChaiSaleQuote.onChange(syncQuoteBtn);
+  }
 })();

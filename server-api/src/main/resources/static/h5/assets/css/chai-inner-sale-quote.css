@@ -1,6 +1,6 @@
-/* 回收报价单页：改价 / 改数 */
+﻿/* 销售报价单页：改价 / 改数 */
 
-body.inner-recycle-quote {
+body.inner-sale-quote {
   padding-bottom: calc(4.8rem + env(safe-area-inset-bottom));
 }
 
@@ -70,10 +70,51 @@ body.inner-recycle-quote {
   text-decoration: none;
 }
 
+.quote-ref-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.quote-ref-row .quote-ref {
+  margin: 0;
+}
+
 .quote-ref {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
   color: var(--muted, #6b756c);
+  line-height: 1.4;
+}
+
+.quote-list .discount {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.quote-stock {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.quote-stock.normal {
+  color: var(--accent, #2d4532);
+}
+
+.quote-stock.scarce {
+  color: #c2410c;
 }
 
 .quote-ref-extra {
@@ -471,7 +512,7 @@ body.inner-recycle-quote {
   width: 375px;
   margin: 0;
   padding: 0;
-  background: #2d523e;
+  background: #8a4b2a;
   color: #1c241c;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   font-size: 14px;
@@ -502,14 +543,14 @@ body.inner-recycle-quote {
 .quote-capture-root .qex-sheet {
   width: 375px;
   min-height: 200px;
-  background: #2d523e;
+  background: #8a4b2a;
   padding: 0 0 1rem;
 }
 
 /* 标题：报价单（实心米色）叠 QUOTATION（描边字） */
 .quote-capture-root .qex-head {
   padding: 1.15rem 1rem 1.05rem;
-  background: #2d523e;
+  background: #8a4b2a;
   color: #fff;
 }
 
@@ -532,13 +573,13 @@ body.inner-recycle-quote {
   letter-spacing: 0.04em;
   line-height: 1;
   white-space: nowrap;
-  color: rgba(180, 210, 185, 0.28);
+  color: rgba(251, 191, 136, 0.32);
 }
 
 @supports (-webkit-text-stroke: 1px #000) {
   .quote-capture-root .qex-head-en {
     color: transparent;
-    -webkit-text-stroke: 1.5px rgba(180, 210, 185, 0.42);
+    -webkit-text-stroke: 1.5px rgba(251, 191, 136, 0.48);
   }
 }
 
@@ -550,7 +591,7 @@ body.inner-recycle-quote {
   font-weight: 750;
   letter-spacing: 0.04em;
   line-height: 1.2;
-  color: #e8d5a8;
+  color: #fde68a;
   /* 安卓截图克隆时防止中文被挤成竖排 */
   white-space: nowrap;
   word-break: keep-all;
@@ -562,13 +603,13 @@ body.inner-recycle-quote {
 .quote-capture-root .qex-date {
   margin: 0.55rem 0 0;
   font-size: 0.75rem;
-  color: rgba(232, 213, 168, 0.72);
+  color: rgba(253, 230, 138, 0.78);
 }
 
 .quote-capture-root .qex-body {
   margin: 0 0.7rem;
   padding: 0.75rem 0.65rem 0.85rem;
-  background: #f5f7f4;
+  background: #faf6f1;
   border-radius: 14px 14px 12px 12px;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
 }
@@ -586,9 +627,9 @@ body.inner-recycle-quote {
   gap: 0.65rem;
   padding: 0.75rem 0.7rem 0.75rem 0.85rem;
   background: #fff;
-  border: 1px solid #d8e0d6;
+  border: 1px solid #e8d9c8;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(36, 53, 40, 0.06);
+  box-shadow: 0 1px 3px rgba(90, 40, 10, 0.07);
 }
 
 .quote-capture-root .qex-card-idx {
@@ -598,7 +639,7 @@ body.inner-recycle-quote {
   width: 0.28rem;
   height: 1.1rem;
   border-radius: 0 3px 3px 0;
-  background: #3d5a3d;
+  background: #c2410c;
   color: transparent;
   font-size: 0;
   overflow: hidden;
@@ -610,7 +651,7 @@ body.inner-recycle-quote {
   height: 4.4rem;
   border-radius: 8px;
   overflow: hidden;
-  background: #e8efe6;
+  background: #f3e7d8;
 }
 
 .quote-capture-root .qex-cover {
@@ -629,7 +670,7 @@ body.inner-recycle-quote {
   font-size: 1.1rem;
   font-weight: 700;
   color: #8a9488;
-  background: linear-gradient(145deg, #e8efe6, #dce6da);
+  background: linear-gradient(145deg, #f3e7d8, #ead9c4);
 }
 
 .quote-capture-root .qex-card-body {
@@ -683,7 +724,7 @@ body.inner-recycle-quote {
 .quote-capture-root .qex-foot {
   margin: 0.75rem 0 0;
   padding: 0.85rem 0.9rem;
-  background: #243528;
+  background: #6b3419;
   border-radius: 12px;
   color: #fff;
 }
@@ -718,10 +759,16 @@ body.inner-recycle-quote {
   flex: 0 0 auto;
   font-size: 1.35rem;
   font-weight: 750;
-  color: #f0c27a;
+  color: #fbbf24;
   letter-spacing: 0.02em;
   white-space: nowrap;
   writing-mode: horizontal-tb;
+}
+
+.quote-capture-root .qex-k {
+  flex-shrink: 0;
+  width: 3.2rem;
+  color: #6b756c;
 }
 
 .quote-capture-root .qex-note {

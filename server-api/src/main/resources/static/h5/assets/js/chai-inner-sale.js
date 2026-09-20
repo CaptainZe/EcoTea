@@ -29,6 +29,7 @@
   var FILTER_ICON_OFF = "/h5/assets/image/filter_off.png";
   var FILTER_ICON_ON = "/h5/assets/image/filter_on.png";
 
+  var itemMap = {};
   var gallery = { urls: [], index: 0, touchX: null };
   var warehouses = [];
   var listAbort = null;
@@ -511,6 +512,45 @@
     return "";
   }
 
+  function isInQuote(id) {
+    return !!(
+      window.ChaiSaleQuote &&
+      window.ChaiSaleQuote.has &&
+      window.ChaiSaleQuote.has(id)
+    );
+  }
+
+  function addQuoteBtnHtml(item) {
+    if (item.id == null) {
+      return "";
+    }
+    var inQuote = isInQuote(item.id);
+    return (
+      '<button type="button" class="add-cart-btn' +
+      (inQuote ? " is-in-cart" : "") +
+      '" data-add-quote="' +
+      escapeHtml(item.id) +
+      '">' +
+      (inQuote ? "已加入" : "加入报价") +
+      "</button>"
+    );
+  }
+
+  function syncAddButtons() {
+    var buttons = els.list.querySelectorAll("[data-add-quote]");
+    Array.prototype.forEach.call(buttons, function (btn) {
+      var id = btn.getAttribute("data-add-quote");
+      var inQuote = isInQuote(id);
+      if (inQuote) {
+        btn.classList.add("is-in-cart");
+        btn.textContent = "已加入";
+      } else {
+        btn.classList.remove("is-in-cart");
+        btn.textContent = "加入报价";
+      }
+    });
+  }
+
   function renderItem(item) {
     var urls = imageUrlsOf(item);
     var coverHtml;
@@ -586,6 +626,7 @@
       whChipsHtml(item) +
       '<div class="card-actions">' +
       same +
+      addQuoteBtnHtml(item) +
       "</div></div></div></li>"
     );
   }
@@ -593,6 +634,12 @@
   function render(data) {
     state.total = data.total || 0;
     var list = data.list || [];
+    itemMap = {};
+    list.forEach(function (it) {
+      if (it && it.id != null) {
+        itemMap[String(it.id)] = it;
+      }
+    });
     els.list.innerHTML = list.map(renderItem).join("");
     els.empty.hidden = list.length > 0;
 
@@ -893,6 +940,26 @@
   }
 
   els.list.addEventListener("click", function (e) {
+    var addBtn = e.target.closest("[data-add-quote]");
+    if (addBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var addId = addBtn.getAttribute("data-add-quote");
+      var item = itemMap[String(addId)];
+      if (!item || !window.ChaiSaleQuote) {
+        return;
+      }
+      if (window.ChaiSaleQuote.has(item.id)) {
+        window.ChaiSaleQuote.toast("已在销售报价单中");
+        syncAddButtons();
+        return;
+      }
+      var ok = window.ChaiSaleQuote.add(item);
+      window.ChaiSaleQuote.toast(ok ? "已加入销售报价单" : "加入失败");
+      syncAddButtons();
+      return;
+    }
+
     var sameBtn = e.target.closest(".same-btn");
     if (sameBtn) {
       var spu = sameBtn.getAttribute("data-spu");
@@ -969,4 +1036,8 @@
   loadWarehouses().then(function () {
     load();
   });
+  if (window.ChaiSaleQuote && window.ChaiSaleQuote.mountFab) {
+    window.ChaiSaleQuote.mountFab();
+    window.ChaiSaleQuote.onChange(syncAddButtons);
+  }
 })();

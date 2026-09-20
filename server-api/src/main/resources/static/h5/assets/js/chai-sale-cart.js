@@ -9,6 +9,7 @@
     cartToolbar: document.getElementById("cartToolbar"),
     clearModal: document.getElementById("clearModal"),
     clearOk: document.getElementById("clearOk"),
+    totalAmount: document.getElementById("totalAmount"),
   };
 
   function escapeHtml(s) {
@@ -115,6 +116,15 @@
     );
   }
 
+  function formatTotal(n) {
+    var cart = window.ChaiInquiryCart;
+    var plain =
+      cart && cart.plainAmount
+        ? cart.plainAmount(n)
+        : String(n == null ? 0 : n);
+    return "¥" + plain;
+  }
+
   function render() {
     var cart = window.ChaiInquiryCart;
     if (!cart) {
@@ -144,6 +154,11 @@
       els.cartToolbar.hidden = false;
     }
     els.meta.textContent = "共 " + kinds + " 种，合计 " + pcs + " 件 · 仅本机保存";
+    if (els.totalAmount) {
+      els.totalAmount.textContent = formatTotal(
+        cart.totalAmount ? cart.totalAmount() : 0
+      );
+    }
     els.list.innerHTML = items.map(renderItem).join("");
   }
 

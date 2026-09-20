@@ -256,7 +256,8 @@ body {
 
 .bar-info,
 .bar-copy,
-.bar-dl {
+.bar-dl,
+.bar-quote {
   flex: 1;
   display: flex;
   align-items: center;
@@ -265,10 +266,10 @@ body {
   border-radius: 10px;
   font: inherit;
   font-weight: 650;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-decoration: none;
   white-space: nowrap;
-  padding: 0 0.3rem;
+  padding: 0 0.25rem;
   cursor: pointer;
 }
 
@@ -287,7 +288,21 @@ body {
 .bar-dl {
   border: 1px solid var(--line);
   background: #fff;
-  color: var(--muted);
+  color: var(--ink);
+}
+
+.bar-quote {
+  border: none;
+  background: #c2410c;
+  color: #fff;
+}
+
+.bar-quote:disabled,
+.bar-quote.is-in-quote {
+  background: #fde8dc;
+  color: #c2410c;
+  border: 1px solid #c2410c;
+  cursor: default;
 }
 
 .bar-dl:disabled {

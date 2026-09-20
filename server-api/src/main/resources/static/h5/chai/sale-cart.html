@@ -4,9 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>询价单</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=202609185"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=202609185"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=202609185"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=20260920a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=20260920a"/>
 </head>
 <body>
   <header class="nav">
@@ -28,8 +28,14 @@
   </p>
 
   <footer class="cart-bar" id="cartBar" hidden>
-    <button type="button" class="cart-copy" id="copyBtn">复制询价单</button>
-    <a class="cart-cs" href="/h5/about.html">立即咨询</a>
+    <div class="cart-bar-sum">
+      <div class="cart-bar-total">合计<strong id="totalAmount">¥0</strong></div>
+      <div class="cart-bar-hint" id="cartBarHint">复制后发给客服咨询</div>
+    </div>
+    <div class="cart-bar-actions">
+      <button type="button" class="cart-copy" id="copyBtn">复制询价单</button>
+      <a class="cart-cs" href="/h5/about.html">立即咨询</a>
+    </div>
   </footer>
 
   <div class="modal" id="clearModal" hidden>
@@ -44,7 +50,7 @@
     </div>
   </div>
 
-  <script src="/h5/assets/js/chai-inquiry-cart.js?v=202609185"></script>
-  <script src="/h5/assets/js/chai-sale-cart.js?v=202609185"></script>
+  <script src="/h5/assets/js/chai-inquiry-cart.js?v=20260920b"></script>
+  <script src="/h5/assets/js/chai-sale-cart.js?v=20260920b"></script>
 </body>
 </html>

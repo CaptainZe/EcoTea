@@ -1,11 +1,11 @@
 /**
- * 内部回收报价单（本地 localStorage，与询价单隔离）。
- * 已加入不可再加；可改 quotePrice / qty；参考 recyclePrice 只读。
+ * 内部销售报价单（本地 localStorage，与询价单/回收报价隔离）。
+ * 已加入不可再加；可改 quotePrice / qty；数量不受库存限制。
  */
 (function (global) {
-  var KEY = "chai_recycle_quote";
-  var QUOTE_URL = "/h5/chai/inner-recycle-quote.html";
-  var FAB_ID = "recycleQuoteFab";
+  var KEY = "chai_sale_quote";
+  var QUOTE_URL = "/h5/chai/inner-sale-quote.html";
+  var FAB_ID = "saleQuoteFab";
   var listeners = [];
 
   function emptyState() {
@@ -44,17 +44,31 @@
     });
   }
 
+  function toNum(v) {
+    if (v == null || v === "") {
+      return null;
+    }
+    var n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
   function snapshotOf(item) {
     var cover = item.coverImage || item.cover_image || null;
     var urls = item.imageUrls || item.image_urls;
     if (!cover && urls && urls.length) {
       cover = urls[0];
     }
-    var recyclePrice =
-      item.recyclePrice != null
-        ? item.recyclePrice
-        : item.recycle_price != null
-          ? item.recycle_price
+    var salePrice =
+      item.salePrice != null
+        ? item.salePrice
+        : item.sale_price != null
+          ? item.sale_price
+          : null;
+    var officialPrice =
+      item.officialPrice != null
+        ? item.officialPrice
+        : item.official_price != null
+          ? item.official_price
           : null;
     return {
       id: item.id,
@@ -62,39 +76,12 @@
       name: item.name || "",
       brandName: item.brandName || item.brand_name || "",
       title: item.title || "",
-      recyclePrice: recyclePrice,
-      recyclePriceShow:
-        item.recyclePriceShow || item.recycle_price_show || "",
+      salePrice: salePrice,
+      salePriceShow: item.salePriceShow || item.sale_price_show || "",
+      officialPrice: officialPrice,
       officialPriceShow:
         item.officialPriceShow || item.official_price_show || "",
-      recycleDiscountShow:
-        item.recycleDiscountShow || item.recycle_discount_show || "",
-      recyclePriceReducePer:
-        item.recyclePriceReducePer != null
-          ? item.recyclePriceReducePer
-          : item.recycle_price_reduce_per != null
-            ? item.recycle_price_reduce_per
-            : null,
-      recycleDamagePrice:
-        item.recycleDamagePrice != null
-          ? item.recycleDamagePrice
-          : item.recycle_damage_price != null
-            ? item.recycle_damage_price
-            : null,
-      recycleDamagePriceShow:
-        item.recycleDamagePriceShow ||
-        item.recycle_damage_price_show ||
-        "",
-      recyclePriceReduceNoBag:
-        item.recyclePriceReduceNoBag != null
-          ? item.recyclePriceReduceNoBag
-          : item.recycle_price_reduce_no_bag != null
-            ? item.recycle_price_reduce_no_bag
-            : null,
-      recyclePriceReduceNoBagShow:
-        item.recyclePriceReduceNoBagShow ||
-        item.recycle_price_reduce_no_bag_show ||
-        "",
+      discountShow: item.discountShow || item.discount_show || "",
       gradeName: item.gradeName || item.grade_name || "",
       specShow: item.specShow || item.spec_show || "",
       prodBatchShow: item.prodBatchShow || item.prod_batch_show || "",
@@ -139,17 +126,6 @@
     return findIndex(read().items, id) >= 0;
   }
 
-  function toNum(v) {
-    if (v == null || v === "") {
-      return null;
-    }
-    var n = Number(v);
-    return isNaN(n) ? null : n;
-  }
-
-  /**
-   * 加入报价单。已存在则不重复加入（不改数量），返回 false。
-   */
   function add(item) {
     if (!item || item.id == null) {
       return false;
@@ -161,7 +137,7 @@
     var snap = snapshotOf(item);
     var row = snap;
     row.qty = 1;
-    row.quotePrice = toNum(snap.recyclePrice);
+    row.quotePrice = toNum(snap.salePrice);
     row.updatedAt = Date.now();
     data.items.push(row);
     write(data);
@@ -192,7 +168,7 @@
     }
     var n = toNum(price);
     if (n == null || n < 0) {
-      n = toNum(data.items[idx].recyclePrice);
+      n = toNum(data.items[idx].salePrice);
     }
     data.items[idx].quotePrice = n;
     data.items[idx].updatedAt = Date.now();
@@ -214,7 +190,7 @@
   function lineAmount(it) {
     var price = toNum(it.quotePrice);
     if (price == null) {
-      price = toNum(it.recyclePrice);
+      price = toNum(it.salePrice);
     }
     if (price == null) {
       return 0;
@@ -242,51 +218,6 @@
     return s;
   }
 
-  function formatOfficialLine(it) {
-    var show = it.officialPriceShow || it.official_price_show || "";
-    if (!show || show === "-") {
-      return "";
-    }
-    return String(show).trim();
-  }
-
-  function formatQuotePriceLine(it) {
-    var price = toNum(it.quotePrice);
-    if (price == null) {
-      price = toNum(it.recyclePrice);
-    }
-    if (price == null) {
-      return "";
-    }
-    return plainAmount(price) + "元";
-  }
-
-  /** 破损价(压价%) · 无提袋扣 ¥yy */
-  function formatRecycleExtra(it) {
-    var parts = [];
-    var dmgShow =
-      it.recycleDamagePriceShow || it.recycle_damage_price_show || "";
-    if (dmgShow) {
-      var dmg = String(dmgShow);
-      var per =
-        it.recyclePriceReducePer != null
-          ? it.recyclePriceReducePer
-          : it.recycle_price_reduce_per;
-      if (per != null && per !== "") {
-        dmg += "(" + per + "%)";
-      }
-      parts.push("破损 " + dmg);
-    }
-    var noBag =
-      it.recyclePriceReduceNoBagShow ||
-      it.recycle_price_reduce_no_bag_show ||
-      "";
-    if (noBag != null && String(noBag).trim() !== "") {
-      parts.push("无提袋扣 ¥" + String(noBag).trim());
-    }
-    return parts.join(" · ");
-  }
-
   function displayTitle(it) {
     return (
       it.title ||
@@ -295,32 +226,83 @@
     );
   }
 
+  function formatOfficialLine(it) {
+    var show = it.officialPriceShow || it.official_price_show || "";
+    if (!show || show === "-") {
+      return "";
+    }
+    return String(show).trim();
+  }
+
+  function discountParen(quotePrice, officialPrice) {
+    var q = toNum(quotePrice);
+    var o = toNum(officialPrice);
+    if (q == null || o == null || o <= 0) {
+      return "";
+    }
+    var d = (q * 10) / o;
+    var s = (Math.round(d * 100) / 100).toFixed(2).replace(/\.?0+$/, "");
+    return "（" + s + "折）";
+  }
+
+  /** 特价：2988元（3.4折） */
+  function formatQuotePriceLine(it) {
+    var price = toNum(it.quotePrice);
+    if (price == null) {
+      price = toNum(it.salePrice);
+    }
+    if (price == null) {
+      return "";
+    }
+    var line = plainAmount(price) + "元";
+    var disc = discountParen(price, it.officialPrice);
+    if (!disc && it.discountShow && price === toNum(it.salePrice)) {
+      var ds = String(it.discountShow).trim();
+      if (ds) {
+        if (ds.indexOf("折") >= 0) {
+          disc = "（" + ds.replace(/[（）()]/g, "") + "）";
+        } else {
+          disc = "（" + ds + "）";
+        }
+      }
+    }
+    return line + disc;
+  }
+
   function buildQuoteText() {
     var items = getItems();
     if (!items.length) {
       return "";
     }
-    var blocks = ["【回收报价单】"];
+    var blocks = ["【销售报价单】"];
     var totalPcs = 0;
     items.forEach(function (it) {
       var lines = [displayTitle(it)];
+      var grade = it.gradeName || it.grade_name;
       var spec = it.specShow || it.spec_show;
       var batch = it.prodBatchShow || it.prod_batch_show;
+      var exp = it.expirationName || it.expiration_name;
       var official = formatOfficialLine(it);
-      var recycle = formatQuotePriceLine(it);
+      var sale = formatQuotePriceLine(it);
       var qty = it.qty || 1;
       totalPcs += qty;
+      if (grade) {
+        lines.push("等级：" + grade);
+      }
       if (spec) {
         lines.push("规格：" + spec);
       }
       if (batch) {
         lines.push("批次：" + batch);
       }
+      if (exp) {
+        lines.push("保质期：" + exp);
+      }
       if (official) {
         lines.push("官方：" + official);
       }
-      if (recycle) {
-        lines.push("回收价：" + recycle);
+      if (sale) {
+        lines.push("特价：" + sale);
       }
       lines.push("数量：" + qty);
       blocks.push(lines.join("\n"));
@@ -349,10 +331,10 @@
       global.ChaiInnerUtil.toast(msg);
       return;
     }
-    var el = document.querySelector(".recycle-quote-toast");
+    var el = document.querySelector(".sale-quote-toast");
     if (!el) {
       el = document.createElement("div");
-      el.className = "recycle-quote-toast";
+      el.className = "sale-quote-toast";
       document.body.appendChild(el);
     }
     el.textContent = msg;
@@ -367,7 +349,7 @@
     if (!root) {
       return;
     }
-    var badge = root.querySelector(".recycle-quote-fab-badge");
+    var badge = root.querySelector(".sale-quote-fab-badge");
     if (!badge) {
       return;
     }
@@ -390,12 +372,12 @@
     }
     var a = document.createElement("a");
     a.id = FAB_ID;
-    a.className = "recycle-quote-fab";
+    a.className = "sale-quote-fab";
     a.href = QUOTE_URL;
-    a.setAttribute("aria-label", "回收报价单");
+    a.setAttribute("aria-label", "销售报价单");
     a.innerHTML =
-      '<img class="recycle-quote-fab-icon" src="/h5/assets/image/quotation.png" alt=""/>' +
-      '<span class="recycle-quote-fab-badge" hidden></span>';
+      '<img class="sale-quote-fab-icon" src="/h5/assets/image/quotation_sale.png" alt=""/>' +
+      '<span class="sale-quote-fab-badge" hidden></span>';
     document.body.appendChild(a);
     paintBadge(a);
     onChange(function () {
@@ -410,7 +392,7 @@
     return a;
   }
 
-  global.ChaiRecycleQuote = {
+  global.ChaiSaleQuote = {
     KEY: KEY,
     QUOTE_URL: QUOTE_URL,
     kindCount: kindCount,
@@ -427,7 +409,6 @@
     displayTitle: displayTitle,
     formatQuotePriceLine: formatQuotePriceLine,
     formatOfficialLine: formatOfficialLine,
-    formatRecycleExtra: formatRecycleExtra,
     plainAmount: plainAmount,
     onChange: onChange,
     toast: toast,

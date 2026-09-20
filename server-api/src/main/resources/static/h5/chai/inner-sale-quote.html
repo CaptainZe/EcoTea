@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>回收报价单（内部）</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920c"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260920c"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=20260920c"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inner-recycle-quote.css?v=20260920g"/>
+  <title>销售报价单（内部）</title>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920e"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260920e"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-quote.css?v=20260920e"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner-sale-quote.css?v=20260920g"/>
 </head>
-<body class="inner-recycle-quote">
+<body class="inner-sale-quote">
   <header class="nav">
-    <a class="nav-back" href="/h5/chai/inner-recycle.html" aria-label="返回回收价目">
-      <img class="nav-back-img" src="/h5/assets/image/back.png?v=20260920g" alt=""/>
+    <a class="nav-back" href="/h5/chai/inner-sale.html" aria-label="返回在售价目">
+      <img class="nav-back-img" src="/h5/assets/image/back.png?v=20260920e" alt=""/>
     </a>
-    <h1 class="nav-title">回收报价单 <span class="inner-tag">内部</span></h1>
+    <h1 class="nav-title">销售报价单 <span class="inner-tag">内部</span></h1>
     <span class="nav-spacer" aria-hidden="true"></span>
   </header>
 
@@ -24,8 +24,8 @@
   </div>
   <ul class="list quote-list" id="list"></ul>
   <p class="empty" id="empty" hidden>
-    回收报价单是空的<br/>
-    <a href="/h5/chai/inner-recycle.html">去回收价目看看</a>
+    销售报价单是空的<br/>
+    <a href="/h5/chai/inner-sale.html">去在售价目看看</a>
   </p>
 
   <footer class="quote-bar" id="quoteBar" hidden>
@@ -42,8 +42,8 @@
   <div class="modal" id="clearModal" hidden>
     <div class="modal-mask" data-clear-close="1"></div>
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
-      <h2 class="modal-title" id="clearTitle">清空回收报价单</h2>
-      <div class="modal-body">确定清空回收报价单？清空后需重新添加商品。</div>
+      <h2 class="modal-title" id="clearTitle">清空销售报价单</h2>
+      <div class="modal-body">确定清空销售报价单？清空后需重新添加商品。</div>
       <div class="modal-actions">
         <button type="button" class="modal-cancel" id="clearCancel" data-clear-close="1">取消</button>
         <button type="button" class="modal-ok modal-ok-danger" id="clearOk">清空</button>
@@ -62,12 +62,12 @@
     <div class="capture-preview-mask" data-cap-close="1"></div>
     <div class="capture-preview-panel" role="dialog" aria-modal="true">
       <div class="capture-preview-head">
-        <h2 class="capture-preview-title">回收报价单图片</h2>
+        <h2 class="capture-preview-title">销售报价单图片</h2>
         <button type="button" class="capture-preview-x" data-cap-close="1" aria-label="关闭">×</button>
       </div>
       <p class="capture-preview-hint" id="captureHint">长按下方图片可保存到相册</p>
       <div class="capture-preview-body">
-        <img class="capture-preview-img" id="captureImg" alt="回收报价单截图"/>
+        <img class="capture-preview-img" id="captureImg" alt="销售报价单截图"/>
       </div>
       <div class="capture-preview-actions">
         <button type="button" class="capture-preview-close" data-cap-close="1">关闭</button>
@@ -76,10 +76,10 @@
     </div>
   </div>
 
-  <script src="/h5/assets/vendor/modern-screenshot.js?v=20260920c"></script>
-  <script src="/h5/assets/js/dom-to-image.js?v=20260920c"></script>
-  <script src="/h5/assets/js/chai-inner-util.js?v=20260920c"></script>
-  <script src="/h5/assets/js/chai-recycle-quote.js?v=20260920c"></script>
-  <script src="/h5/assets/js/chai-inner-recycle-quote.js?v=20260920g"></script>
+  <script src="/h5/assets/vendor/modern-screenshot.js?v=20260920e"></script>
+  <script src="/h5/assets/js/dom-to-image.js?v=20260920e"></script>
+  <script src="/h5/assets/js/chai-inner-util.js?v=20260920e"></script>
+  <script src="/h5/assets/js/chai-sale-quote.js?v=20260920e"></script>
+  <script src="/h5/assets/js/chai-inner-sale-quote.js?v=20260920g"></script>
 </body>
 </html>

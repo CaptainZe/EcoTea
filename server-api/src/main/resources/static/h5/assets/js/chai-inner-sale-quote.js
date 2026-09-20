@@ -1,5 +1,5 @@
-/**
- * 内部回收报价单页：改价改数 + 复制文案 + 生成长图。
+﻿/**
+ * 内部销售报价单页：改价改数 + 复制文案 + 生成长图。
  */
 (function () {
   var els = {
@@ -39,8 +39,8 @@
   }
 
   function displayTitle(item) {
-    if (window.ChaiRecycleQuote && window.ChaiRecycleQuote.displayTitle) {
-      return window.ChaiRecycleQuote.displayTitle(item);
+    if (window.ChaiSaleQuote && window.ChaiSaleQuote.displayTitle) {
+      return window.ChaiSaleQuote.displayTitle(item);
     }
     return (
       item.title ||
@@ -49,17 +49,59 @@
     );
   }
 
-  function formatRecycleRef(item) {
-    if (item.recyclePrice != null && item.recyclePrice !== "") {
-      var n = Number(item.recyclePrice);
+  function formatSaleRef(item) {
+    if (item.salePrice != null && item.salePrice !== "") {
+      var n = Number(item.salePrice);
       if (!isNaN(n)) {
         return "¥" + String(n);
       }
     }
-    if (item.recyclePriceShow) {
-      return String(item.recyclePriceShow).replace(/\(.*$/, "").trim();
+    if (item.salePriceShow) {
+      return String(item.salePriceShow).replace(/\(.*$/, "").trim();
     }
     return "-";
+  }
+
+  function formatOfficialShort(item) {
+    var show = item.officialPriceShow || "";
+    if (!show || show === "-") {
+      return "";
+    }
+    if (show === "非卖品") {
+      return "官方 非卖品";
+    }
+    var s = String(show).replace(/元$/, "").trim();
+    if (s.indexOf("¥") === 0 || s.indexOf("￥") === 0) {
+      return "官方 " + s;
+    }
+    return "官方 ¥" + s;
+  }
+
+  function formatDiscountShort(item) {
+    var ds = item.discountShow ? String(item.discountShow).trim() : "";
+    if (ds) {
+      return ds.replace(/[（）()]/g, "");
+    }
+    var q =
+      item.quotePrice != null
+        ? Number(item.quotePrice)
+        : item.salePrice != null
+          ? Number(item.salePrice)
+          : NaN;
+    var o = item.officialPrice != null ? Number(item.officialPrice) : NaN;
+    if (isNaN(q) || isNaN(o) || o <= 0) {
+      return "";
+    }
+    var d = (q * 10) / o;
+    return (Math.round(d * 100) / 100).toFixed(2).replace(/\.?0+$/, "") + "折";
+  }
+
+  function formatStockLine(item) {
+    var qty = item.totalQty != null ? Number(item.totalQty) : 0;
+    if (isNaN(qty) || qty < 0) {
+      qty = 0;
+    }
+    return "库存 " + qty + " 件";
   }
 
   function quotePriceValue(item) {
@@ -69,8 +111,8 @@
         return String(n);
       }
     }
-    if (item.recyclePrice != null && item.recyclePrice !== "") {
-      var r = Number(item.recyclePrice);
+    if (item.salePrice != null && item.salePrice !== "") {
+      var r = Number(item.salePrice);
       if (!isNaN(r)) {
         return String(r);
       }
@@ -104,21 +146,25 @@
 
     var detailHref =
       item.id != null
-        ? "/h5/chai/inner-recycle-detail.html?id=" +
+        ? "/h5/chai/inner-sale-detail.html?id=" +
           encodeURIComponent(item.id)
         : "#";
 
-    var extraHtml = "";
-    if (
-      window.ChaiRecycleQuote &&
-      window.ChaiRecycleQuote.formatRecycleExtra
-    ) {
-      var extra = window.ChaiRecycleQuote.formatRecycleExtra(item);
-      if (extra) {
-        extraHtml =
-          '<p class="quote-ref-extra">' + escapeHtml(extra) + "</p>";
-      }
+    var saleRef = formatSaleRef(item);
+    var official = formatOfficialShort(item);
+    var discount = formatDiscountShort(item);
+    var refParts = ["参考售价 " + saleRef];
+    if (official) {
+      refParts.push(official);
     }
+    var discountHtml = discount
+      ? '<span class="discount">' + escapeHtml(discount) + "</span>"
+      : "";
+    var stockQty = item.totalQty != null ? Number(item.totalQty) : 0;
+    if (isNaN(stockQty) || stockQty < 0) {
+      stockQty = 0;
+    }
+    var stockClass = stockQty <= 3 ? "scarce" : "normal";
 
     return (
       '<li class="card" data-id="' +
@@ -134,10 +180,17 @@
       '<div class="tags">' +
       tags +
       "</div>" +
-      '<p class="quote-ref">参考回收价 ' +
-      escapeHtml(formatRecycleRef(item)) +
+      '<div class="quote-ref-row">' +
+      '<p class="quote-ref">' +
+      escapeHtml(refParts.join("  ")) +
       "</p>" +
-      extraHtml +
+      discountHtml +
+      "</div>" +
+      '<p class="quote-stock ' +
+      stockClass +
+      '">' +
+      escapeHtml(formatStockLine(item)) +
+      "</p>" +
       '<div class="quote-price-row">' +
       '<span class="quote-price-label">报价</span>' +
       '<input type="number" class="quote-price-input" data-act="price" min="0" step="0.01" inputmode="decimal" value="' +
@@ -158,7 +211,7 @@
   }
 
   function render() {
-    var quote = window.ChaiRecycleQuote;
+    var quote = window.ChaiSaleQuote;
     if (!quote) {
       return;
     }
@@ -194,7 +247,7 @@
   }
 
   function findRow(id) {
-    var items = window.ChaiRecycleQuote.getItems();
+    var items = window.ChaiSaleQuote.getItems();
     for (var i = 0; i < items.length; i++) {
       if (String(items[i].id) === String(id)) {
         return items[i];
@@ -205,7 +258,7 @@
 
   els.list.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-act]");
-    if (!btn || !window.ChaiRecycleQuote) {
+    if (!btn || !window.ChaiSaleQuote) {
       return;
     }
     if (btn.tagName === "INPUT") {
@@ -222,24 +275,24 @@
       return;
     }
     if (act === "inc") {
-      window.ChaiRecycleQuote.setQty(id, (row.qty || 1) + 1);
+      window.ChaiSaleQuote.setQty(id, (row.qty || 1) + 1);
     } else if (act === "dec") {
-      window.ChaiRecycleQuote.setQty(id, (row.qty || 1) - 1);
+      window.ChaiSaleQuote.setQty(id, (row.qty || 1) - 1);
     } else if (act === "remove") {
-      window.ChaiRecycleQuote.remove(id);
+      window.ChaiSaleQuote.remove(id);
     }
   });
 
   els.list.addEventListener("change", function (e) {
     var input = e.target.closest('input[data-act="price"]');
-    if (!input || !window.ChaiRecycleQuote) {
+    if (!input || !window.ChaiSaleQuote) {
       return;
     }
     var card = input.closest(".card");
     if (!card) {
       return;
     }
-    window.ChaiRecycleQuote.setQuotePrice(
+    window.ChaiSaleQuote.setQuotePrice(
       card.getAttribute("data-id"),
       input.value
     );
@@ -268,7 +321,7 @@
 
   if (els.clearBtn) {
     els.clearBtn.addEventListener("click", function () {
-      var quote = window.ChaiRecycleQuote;
+      var quote = window.ChaiSaleQuote;
       if (!quote || !quote.kindCount()) {
         return;
       }
@@ -286,26 +339,26 @@
 
   if (els.clearOk) {
     els.clearOk.addEventListener("click", function () {
-      var quote = window.ChaiRecycleQuote;
+      var quote = window.ChaiSaleQuote;
       closeClearModal();
       if (!quote) {
         return;
       }
       quote.clear();
-      quote.toast("回收报价单已清空");
+      quote.toast("销售报价单已清空");
     });
   }
 
   /* —— R5 复制 —— */
   if (els.copyBtn) {
     els.copyBtn.addEventListener("click", function () {
-      var quote = window.ChaiRecycleQuote;
+      var quote = window.ChaiSaleQuote;
       if (!quote) {
         return;
       }
       var text = quote.buildQuoteText();
       if (!text) {
-        quote.toast("回收报价单为空");
+        quote.toast("销售报价单为空");
         return;
       }
       var copyFn =
@@ -318,7 +371,7 @@
       }
       copyFn(text).then(
         function () {
-          quote.toast("回收报价单已复制");
+          quote.toast("销售报价单已复制");
         },
         function () {
           quote.toast("复制失败");
@@ -342,7 +395,7 @@
   }
 
   function buildQuoteMarkup(items, total) {
-    var quote = window.ChaiRecycleQuote;
+    var quote = window.ChaiSaleQuote;
     var now = new Date();
     function pad2(n) {
       return n < 10 ? "0" + n : String(n);
@@ -370,10 +423,12 @@
         var official = quote.formatOfficialLine(it);
         var price = quote.formatQuotePriceLine(it);
         var rows =
+          qexRow("等级", it.gradeName || it.grade_name) +
           qexRow("规格", it.specShow || it.spec_show) +
           qexRow("批次", it.prodBatchShow || it.prod_batch_show) +
+          qexRow("保质期", it.expirationName || it.expiration_name) +
           qexRow("官方", official) +
-          qexRow("回收价", price) +
+          qexRow("特价", price) +
           qexRow("数量", String(it.qty || 1));
         return (
           '<article class="qex-card">' +
@@ -399,7 +454,7 @@
       '<header class="qex-head">' +
       '<div class="qex-head-title">' +
       '<span class="qex-head-en" aria-hidden="true">QUOTATION</span>' +
-      '<span class="qex-head-zh">回收报价单</span>' +
+      '<span class="qex-head-zh">销售报价单</span>' +
       "</div>" +
       '<p class="qex-date">' +
       escapeHtml(dateStr) +
@@ -418,7 +473,7 @@
       '<div class="qex-total"><span>合计</span><strong>¥' +
       escapeHtml(quote.plainAmount(total)) +
       "</strong></div>" +
-      '<p class="qex-note">内部回收参考报价 · 以沟通确认为准</p>' +
+      '<p class="qex-note">内部销售参考报价 · 以沟通确认为准</p>' +
       "</footer></div></div>"
     );
   }
@@ -575,13 +630,13 @@
   }
 
   function runCapture() {
-    var quote = window.ChaiRecycleQuote;
+    var quote = window.ChaiSaleQuote;
     var root = document.getElementById("quoteCaptureRoot");
     if (!root) {
       return Promise.reject(new Error("缺少导出节点"));
     }
     if (!quote || !quote.kindCount()) {
-      return Promise.reject(new Error("回收报价单为空"));
+      return Promise.reject(new Error("销售报价单为空"));
     }
     var items = quote.getItems();
     root.innerHTML = buildQuoteMarkup(items, quote.totalAmount());
@@ -603,7 +658,7 @@
         );
         return window.DomToImage.captureElement(root, {
           scale: 2,
-          backgroundColor: "#2d523e",
+          backgroundColor: "#8a4b2a",
           timeout: 20000,
           imagesTimeoutContinue: true,
           width: 375,
@@ -626,10 +681,10 @@
 
   if (els.imgBtn) {
     els.imgBtn.addEventListener("click", function () {
-      var quote = window.ChaiRecycleQuote;
+      var quote = window.ChaiSaleQuote;
       if (!quote || !quote.kindCount()) {
         if (quote) {
-          quote.toast("回收报价单为空");
+          quote.toast("销售报价单为空");
         }
         return;
       }
@@ -684,12 +739,12 @@
       if (!lastCaptureDataUrl || !window.DomToImage) {
         return;
       }
-      window.DomToImage.downloadDataUrl(lastCaptureDataUrl, "recycle-quote.png");
+      window.DomToImage.downloadDataUrl(lastCaptureDataUrl, "sale-quote.png");
     });
   }
 
-  if (window.ChaiRecycleQuote) {
-    window.ChaiRecycleQuote.onChange(render);
+  if (window.ChaiSaleQuote) {
+    window.ChaiSaleQuote.onChange(render);
   }
   render();
 })();

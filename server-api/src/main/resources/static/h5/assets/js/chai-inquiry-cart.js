@@ -148,6 +148,43 @@
     write(emptyState());
   }
 
+  function toNum(v) {
+    if (v == null || v === "") {
+      return null;
+    }
+    var n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function plainAmount(n) {
+    if (n == null || n === "" || isNaN(Number(n))) {
+      return "0";
+    }
+    var s = String(Number(n));
+    if (s.indexOf(".") >= 0) {
+      s = s.replace(/\.?0+$/, "");
+    }
+    return s;
+  }
+
+  function lineAmount(it) {
+    var price = toNum(it.salePrice);
+    if (price == null) {
+      return 0;
+    }
+    var qty = Number(it.qty) || 1;
+    return price * qty;
+  }
+
+  /** Σ(salePrice × qty)；无数字售价按 0。 */
+  function totalAmount() {
+    var sum = 0;
+    getItems().forEach(function (it) {
+      sum += lineAmount(it);
+    });
+    return Math.round(sum * 100) / 100;
+  }
+
   /**
    * 用最新商品信息补全快照（不改数量）；用于旧询价单补 skuCode 等。
    */
@@ -294,7 +331,16 @@
       lines.push("购买数量：" + qty);
       blocks.push(lines.join("\n"));
     });
-    blocks.push("共 " + items.length + " 种，合计 " + totalPcs + " 件");
+    blocks.push(
+      "------------------------------\n" +
+        "共 " +
+        items.length +
+        " 种，合计 " +
+        totalPcs +
+        " 件\n" +
+        "金额合计：¥" +
+        plainAmount(totalAmount())
+    );
     return blocks.join("\n\n");
   }
 
@@ -407,6 +453,8 @@
     setQty: setQty,
     remove: remove,
     clear: clear,
+    totalAmount: totalAmount,
+    plainAmount: plainAmount,
     onChange: onChange,
     buildInquiryText: buildInquiryText,
     copyText: copyText,
