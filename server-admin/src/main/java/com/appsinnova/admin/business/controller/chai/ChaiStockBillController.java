@@ -4,6 +4,7 @@ import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockReason;
+import com.appsinnova.admin.business.common.utils.TimeUtils;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
@@ -52,6 +53,8 @@ public class ChaiStockBillController {
         if (queryParam == null) {
             queryParam = new ChaiStockBill();
         }
+        queryParam.setQueryCreateTimeStart(TimeUtils.startOfDayMs(queryParam.getQueryCreateDateStart()));
+        queryParam.setQueryCreateTimeEnd(TimeUtils.endOfDayMs(queryParam.getQueryCreateDateEnd()));
         Page<ChaiStockBill> page = chaiStockBillService.getPageList(queryParam);
         Map<Long, String> whNameMap = buildWhNameMap(page.getContent());
         page.forEach(bill -> fillBillShow(bill, whNameMap));

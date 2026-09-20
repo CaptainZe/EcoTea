@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.service.chai.dashboard;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
+import com.appsinnova.admin.business.common.utils.TimeUtils;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiStockBill;
 import com.appsinnova.admin.business.repository.chai.ChaiBrandRepository;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,7 +36,6 @@ public class ChaiDashboardService {
 
     private static final int DEFAULT_STAT_DAYS = 7;
     private static final List<Integer> ALLOWED_STAT_DAYS = Arrays.asList(7, 15, 30);
-    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
     private static final DateTimeFormatter DAY_LABEL = DateTimeFormatter.ofPattern("MM-dd");
 
     private static final String UNKNOWN_BRAND = "未知品牌";
@@ -125,7 +124,7 @@ public class ChaiDashboardService {
     }
 
     private ChaiDashboardStackedBarVo buildBillTrend(int days, List<Integer> effectiveStatuses) {
-        LocalDate endDate = LocalDate.now(ZONE);
+        LocalDate endDate = LocalDate.now(TimeUtils.ZONE_CN);
         LocalDate startDate = endDate.minusDays(days - 1L);
         List<LocalDate> dateList = new ArrayList<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
@@ -137,14 +136,14 @@ public class ChaiDashboardService {
             counterMap.put(date, new long[3]);
         }
 
-        long queryStart = startOfDayMs(startDate);
+        long queryStart = TimeUtils.startOfDayMs(startDate);
         List<ChaiStockBill> bills = chaiStockBillRepository.findByStatusInAndCreateTimeGreaterThanEqual(
                 effectiveStatuses, queryStart);
         for (ChaiStockBill bill : bills) {
             if (bill.getCreateTime() == null || bill.getBillType() == null) {
                 continue;
             }
-            LocalDate billDate = Instant.ofEpochMilli(bill.getCreateTime()).atZone(ZONE).toLocalDate();
+            LocalDate billDate = Instant.ofEpochMilli(bill.getCreateTime()).atZone(TimeUtils.ZONE_CN).toLocalDate();
             long[] counters = counterMap.get(billDate);
             if (counters == null) {
                 continue;
@@ -205,11 +204,7 @@ public class ChaiDashboardService {
     }
 
     private long startMsForDays(int days) {
-        LocalDate startDate = LocalDate.now(ZONE).minusDays(days - 1L);
-        return startOfDayMs(startDate);
-    }
-
-    private long startOfDayMs(LocalDate date) {
-        return date.atStartOfDay(ZONE).toInstant().toEpochMilli();
+        LocalDate startDate = LocalDate.now(TimeUtils.ZONE_CN).minusDays(days - 1L);
+        return TimeUtils.startOfDayMs(startDate);
     }
 }

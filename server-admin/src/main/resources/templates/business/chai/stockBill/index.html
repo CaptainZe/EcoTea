@@ -84,6 +84,19 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">过账日期</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="queryCreateDateStart" id="queryCreateDateStart"
+                               th:value="${param.queryCreateDateStart != null and !#lists.isEmpty(param.queryCreateDateStart) ? param.queryCreateDateStart[0] : ''}"
+                               placeholder="起始日期" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-input-block">
+                        <input type="text" name="queryCreateDateEnd" id="queryCreateDateEnd"
+                               th:value="${param.queryCreateDateEnd != null and !#lists.isEmpty(param.queryCreateDateEnd) ? param.queryCreateDateEnd[0] : ''}"
+                               placeholder="结束日期" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
                     </button>
@@ -169,5 +182,12 @@
     </div>
 </div>
 <script th:replace="/common/template :: script"></script>
+<script>
+    layui.use(['laydate'], function () {
+        var laydate = layui.laydate;
+        laydate.render({ elem: '#queryCreateDateStart', type: 'date' });
+        laydate.render({ elem: '#queryCreateDateEnd', type: 'date' });
+    });
+</script>
 </body>
 </html>

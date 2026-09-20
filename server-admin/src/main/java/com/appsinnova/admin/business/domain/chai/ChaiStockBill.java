@@ -43,4 +43,17 @@ public class ChaiStockBill implements Serializable {
     private String toWhName;
     @Transient
     private List<ChaiStockBillItem> itemList;
+
+    /** 查询：过账日起 yyyy-MM-dd */
+    @Transient
+    private String queryCreateDateStart;
+    /** 查询：过账日止 yyyy-MM-dd */
+    @Transient
+    private String queryCreateDateEnd;
+    /** 查询：过账时间起（毫秒，含当日 00:00） */
+    @Transient
+    private Long queryCreateTimeStart;
+    /** 查询：过账时间止（毫秒，含当日 23:59:59.999） */
+    @Transient
+    private Long queryCreateTimeEnd;
 }

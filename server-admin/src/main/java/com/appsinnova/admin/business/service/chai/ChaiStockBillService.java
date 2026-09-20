@@ -331,6 +331,14 @@ public class ChaiStockBillService {
             preList.add(cb.like(root.get("handlerName").as(String.class),
                     "%" + param.getHandlerName().trim() + "%"));
         }
+        if (param.getQueryCreateTimeStart() != null) {
+            preList.add(cb.greaterThanOrEqualTo(root.get("createTime").as(Long.class),
+                    param.getQueryCreateTimeStart()));
+        }
+        if (param.getQueryCreateTimeEnd() != null) {
+            preList.add(cb.lessThanOrEqualTo(root.get("createTime").as(Long.class),
+                    param.getQueryCreateTimeEnd()));
+        }
         return preList;
     }
 }
