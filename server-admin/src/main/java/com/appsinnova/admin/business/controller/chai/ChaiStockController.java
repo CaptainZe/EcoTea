@@ -69,6 +69,7 @@ public class ChaiStockController {
 
         model.addAttribute("list", page.getContent());
         model.addAttribute("page", page);
+        model.addAttribute("filterWhId", queryParam.getQueryWhId());
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("warehouseList", chaiWarehouseService.listOnlineOrdered());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());

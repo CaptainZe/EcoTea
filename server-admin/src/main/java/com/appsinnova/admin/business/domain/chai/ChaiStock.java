@@ -68,7 +68,16 @@ public class ChaiStock implements Serializable {
     private String querySpuCode;
     @Transient
     private Long queryWhId;
-    /** 有库存：total_qty > 0 */
+    /**
+     * 有库存筛选：未选仓时看 total_qty；选仓时看该仓 qty。
+     */
     @Transient
     private Integer queryHasQty;
+
+    /** 列表展示件数（未选仓=全仓合计；选仓=本仓 qty） */
+    @Transient
+    private Integer listQty;
+    /** 列表展示破损（未选仓=全仓破损；选仓=本仓 damageQty） */
+    @Transient
+    private Integer listDamageQty;
 }

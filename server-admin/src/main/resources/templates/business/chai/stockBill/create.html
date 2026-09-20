@@ -496,12 +496,17 @@
         };
 
         $('#btnAddSku').on('click', function () {
+            var fromWhId = parseInt($('#fromWhId').val(), 10) || 0;
+            if (!fromWhId) {
+                layer.msg(billType === 3 ? '请先选择调出仓' : (billType === 2 ? '请先选择出库仓库' : '请先选择入库仓库'));
+                return;
+            }
             layer.open({
                 type: 2,
                 title: '选择商品',
                 area: ['95%', '92%'],
                 maxmin: true,
-                content: skuPickUrl + '?billType=' + billType
+                content: skuPickUrl + '?billType=' + billType + '&fromWhId=' + fromWhId
             });
         });
 

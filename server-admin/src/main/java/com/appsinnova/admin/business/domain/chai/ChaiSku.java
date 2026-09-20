@@ -85,6 +85,22 @@ public class ChaiSku implements Serializable {
     @Transient
     private String querySpuCode;
 
+    /** 选品查询：限定仓库（出库/调拨过滤与展示本仓库存） */
+    @Transient
+    private Long queryWhId;
+
+    /** 选品查询：仅返回该仓 qty &gt; 0 的 SKU */
+    @Transient
+    private Boolean requireWhQtyPositive;
+
+    /** 选品列表展示：本仓库存件数 */
+    @Transient
+    private Integer pickWhQty;
+
+    /** 选品列表展示：本仓破损件数（计入 pickWhQty） */
+    @Transient
+    private Integer pickWhDamageQty;
+
     /** 价目视图：各仓合计库存（无结存行视为 0） */
     @Transient
     private Integer stockTotalQty;

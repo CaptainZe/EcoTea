@@ -82,11 +82,13 @@ public class ChaiStockBillController {
 
     /**
      * iframe 选品：勾选多行后由父页一次添加；带分页。
+     * 须带 fromWhId；出库/调拨仅本仓 qty&gt;0，并展示本仓库存。
      */
     @GetMapping("/skuPick")
     @RequiresPermissions("business:chai:stockBill:edit")
     public String skuPick(Model model, ChaiSku queryParam,
                           @RequestParam(value = "billType", defaultValue = "1") Integer billType,
+                          @RequestParam(value = "fromWhId", required = false) Long fromWhId,
                           javax.servlet.http.HttpServletRequest request) {
         if (queryParam == null) {
             queryParam = new ChaiSku();
@@ -97,11 +99,27 @@ public class ChaiStockBillController {
             billType = type.getCode();
         }
         boolean inbound = type == ChaiStockBillType.IN;
+        boolean showWhQty = !inbound;
+        if (fromWhId == null || fromWhId <= 0) {
+            model.addAttribute("errorMsg", inbound ? "请先选择入库仓库" : (type == ChaiStockBillType.TRANSFER
+                    ? "请先选择调出仓" : "请先选择出库仓库"));
+            model.addAttribute("list", new ArrayList<>());
+            model.addAttribute("page", Page.empty());
+            model.addAttribute("billType", billType);
+            model.addAttribute("inbound", inbound);
+            model.addAttribute("showWhQty", showWhQty);
+            model.addAttribute("fromWhId", fromWhId);
+            model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
+            model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
+            return "/business/chai/stockBill/skuPick";
+        }
         if (inbound) {
             queryParam.setDeleted(0);
         } else {
             queryParam.setDeleted(ChaiDeletedFilter.parseQueryDeleted(request.getParameter("deleted")));
+            queryParam.setRequireWhQtyPositive(true);
         }
+        queryParam.setQueryWhId(fromWhId);
         if (StringUtils.hasText(queryParam.getQuerySpuCode())) {
             ChaiSpu parent = chaiSpuService.getBySpuCodeIncludeDeleted(queryParam.getQuerySpuCode().trim());
             if (parent == null) {
@@ -113,10 +131,31 @@ public class ChaiStockBillController {
         Page<ChaiSku> page = chaiSkuService.getPageList(queryParam);
         Map<Long, String> brandNameMap = buildBrandNameMap();
         page.forEach(item -> fillSkuShowFields(item, brandNameMap));
+        if (showWhQty) {
+            List<Long> skuIds = new ArrayList<>();
+            page.forEach(item -> {
+                if (item.getId() != null) {
+                    skuIds.add(item.getId());
+                }
+            });
+            Map<Long, Map<String, Integer>> whStockMap = chaiStockService.mapWhStockBySkuIds(skuIds, fromWhId);
+            page.forEach(item -> {
+                Map<String, Integer> one = whStockMap.get(item.getId());
+                if (one == null) {
+                    item.setPickWhQty(0);
+                    item.setPickWhDamageQty(0);
+                } else {
+                    item.setPickWhQty(one.get("qty") != null ? one.get("qty") : 0);
+                    item.setPickWhDamageQty(one.get("damageQty") != null ? one.get("damageQty") : 0);
+                }
+            });
+        }
         model.addAttribute("list", page.getContent());
         model.addAttribute("page", page);
         model.addAttribute("billType", billType);
         model.addAttribute("inbound", inbound);
+        model.addAttribute("showWhQty", showWhQty);
+        model.addAttribute("fromWhId", fromWhId);
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/stockBill/skuPick";

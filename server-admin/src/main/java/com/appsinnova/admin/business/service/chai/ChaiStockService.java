@@ -222,7 +222,10 @@ public class ChaiStockService {
 
     public Page<ChaiStock> getPageList(ChaiStock param) {
         List<Sort.Order> orders = new ArrayList<>();
-        orders.add(new Sort.Order(Sort.Direction.DESC, "totalQty"));
+        // 选仓时列表展示本仓数量，排序不再按全仓 totalQty
+        if (param == null || param.getQueryWhId() == null || param.getQueryWhId() <= 0) {
+            orders.add(new Sort.Order(Sort.Direction.DESC, "totalQty"));
+        }
         orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
         PageRequest page = PageSort.pageRequest(orders);
         Page<ChaiStock> result = chaiStockRepository.findAll(
@@ -232,7 +235,41 @@ public class ChaiStockService {
                     return query.where(preList.toArray(pres)).getRestriction();
                 }, page);
         attachSkus(result.getContent());
+        fillListQty(result.getContent(), param != null ? param.getQueryWhId() : null);
         return result;
+    }
+
+    /**
+     * 列表件数：未选仓用全仓合计；选仓用该仓分仓结存。
+     */
+    private void fillListQty(List<ChaiStock> stocks, Long whId) {
+        if (stocks == null || stocks.isEmpty()) {
+            return;
+        }
+        if (whId == null || whId <= 0) {
+            for (ChaiStock stock : stocks) {
+                stock.setListQty(stock.getTotalQty() != null ? stock.getTotalQty() : 0);
+                stock.setListDamageQty(stock.getDamageQty() != null ? stock.getDamageQty() : 0);
+            }
+            return;
+        }
+        List<Long> skuIds = new ArrayList<>();
+        for (ChaiStock stock : stocks) {
+            if (stock.getSkuId() != null) {
+                skuIds.add(stock.getSkuId());
+            }
+        }
+        Map<Long, Map<String, Integer>> whMap = mapWhStockBySkuIds(skuIds, whId);
+        for (ChaiStock stock : stocks) {
+            Map<String, Integer> one = whMap.get(stock.getSkuId());
+            if (one == null) {
+                stock.setListQty(0);
+                stock.setListDamageQty(0);
+            } else {
+                stock.setListQty(one.get("qty") != null ? one.get("qty") : 0);
+                stock.setListDamageQty(one.get("damageQty") != null ? one.get("damageQty") : 0);
+            }
+        }
     }
 
     /**
@@ -355,22 +392,48 @@ public class ChaiStockService {
         if (param.getSpuId() != null) {
             preList.add(cb.equal(skuRoot.get("spuId").as(Long.class), param.getSpuId()));
         }
-        if (param.getQueryHasQty() != null) {
+        Long whId = param.getQueryWhId();
+        boolean filterByWh = whId != null && whId > 0;
+        if (filterByWh) {
+            if (YesOrNo.isYes(param.getQueryHasQty())) {
+                // 该仓 qty > 0
+                Subquery<Long> sq = query.subquery(Long.class);
+                Root<ChaiStockWh> whRoot = sq.from(ChaiStockWh.class);
+                sq.select(whRoot.get("stockId"));
+                sq.where(
+                        cb.equal(whRoot.get("stockId"), root.get("id")),
+                        cb.equal(whRoot.get("whId"), whId),
+                        cb.greaterThan(whRoot.get("qty").as(Integer.class), 0)
+                );
+                preList.add(cb.exists(sq));
+            } else if (YesOrNo.isNo(param.getQueryHasQty())) {
+                // 该仓无货：无分仓行或 qty = 0
+                Subquery<Long> sq = query.subquery(Long.class);
+                Root<ChaiStockWh> whRoot = sq.from(ChaiStockWh.class);
+                sq.select(whRoot.get("stockId"));
+                sq.where(
+                        cb.equal(whRoot.get("stockId"), root.get("id")),
+                        cb.equal(whRoot.get("whId"), whId),
+                        cb.greaterThan(whRoot.get("qty").as(Integer.class), 0)
+                );
+                preList.add(cb.not(cb.exists(sq)));
+            } else {
+                // 仅选仓：该仓有过分仓记录（含清零）
+                Subquery<Long> sq = query.subquery(Long.class);
+                Root<ChaiStockWh> whRoot = sq.from(ChaiStockWh.class);
+                sq.select(whRoot.get("stockId"));
+                sq.where(
+                        cb.equal(whRoot.get("stockId"), root.get("id")),
+                        cb.equal(whRoot.get("whId"), whId)
+                );
+                preList.add(cb.exists(sq));
+            }
+        } else if (param.getQueryHasQty() != null) {
             if (YesOrNo.isYes(param.getQueryHasQty())) {
                 preList.add(cb.greaterThan(root.get("totalQty").as(Integer.class), 0));
             } else if (YesOrNo.isNo(param.getQueryHasQty())) {
                 preList.add(cb.equal(root.get("totalQty").as(Integer.class), 0));
             }
-        }
-        if (param.getQueryWhId() != null) {
-            Subquery<Long> sq = query.subquery(Long.class);
-            Root<ChaiStockWh> whRoot = sq.from(ChaiStockWh.class);
-            sq.select(whRoot.get("stockId"));
-            sq.where(
-                    cb.equal(whRoot.get("stockId"), root.get("id")),
-                    cb.equal(whRoot.get("whId"), param.getQueryWhId())
-            );
-            preList.add(cb.exists(sq));
         }
         return preList;
     }

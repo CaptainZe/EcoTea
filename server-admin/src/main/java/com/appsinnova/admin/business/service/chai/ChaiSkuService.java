@@ -8,6 +8,8 @@ import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
+import com.appsinnova.admin.business.domain.chai.ChaiStock;
+import com.appsinnova.admin.business.domain.chai.ChaiStockWh;
 import com.appsinnova.admin.business.repository.chai.ChaiSkuRepository;
 import com.appsinnova.admin.common.data.PageSort;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -84,9 +87,31 @@ public class ChaiSkuService {
         PageRequest page = PageSort.pageRequest(orders);
         return chaiSkuRepository.findAll((Root<ChaiSku> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             List<Predicate> preList = genCondition(root, cb, param);
+            if (param != null && Boolean.TRUE.equals(param.getRequireWhQtyPositive())
+                    && param.getQueryWhId() != null && param.getQueryWhId() > 0) {
+                preList.add(existsPositiveWhQty(root, query, cb, param.getQueryWhId()));
+            }
             Predicate[] pres = new Predicate[preList.size()];
             return query.where(preList.toArray(pres)).getRestriction();
         }, page);
+    }
+
+    /**
+     * 该仓分仓结存 qty &gt; 0（经 chai_stock → chai_stock_wh）。
+     */
+    private Predicate existsPositiveWhQty(Root<ChaiSku> root, CriteriaQuery<?> query,
+                                          CriteriaBuilder cb, Long whId) {
+        Subquery<Long> sq = query.subquery(Long.class);
+        Root<ChaiStock> stockRoot = sq.from(ChaiStock.class);
+        Root<ChaiStockWh> whRoot = sq.from(ChaiStockWh.class);
+        sq.select(stockRoot.get("id"));
+        sq.where(
+                cb.equal(stockRoot.get("id"), whRoot.get("stockId")),
+                cb.equal(stockRoot.get("skuId"), root.get("id")),
+                cb.equal(whRoot.get("whId"), whId),
+                cb.greaterThan(whRoot.get("qty").as(Integer.class), 0)
+        );
+        return cb.exists(sq);
     }
 
     /**
