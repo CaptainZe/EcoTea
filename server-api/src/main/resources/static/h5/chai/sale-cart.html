@@ -4,9 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>询价单</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920a"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=20260920a"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=20260920a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260921a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=20260921a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=20260921c"/>
 </head>
 <body>
   <header class="nav">
@@ -30,10 +30,11 @@
   <footer class="cart-bar" id="cartBar" hidden>
     <div class="cart-bar-sum">
       <div class="cart-bar-total">合计<strong id="totalAmount">¥0</strong></div>
-      <div class="cart-bar-hint" id="cartBarHint">复制后发给客服咨询</div>
+      <div class="cart-bar-hint" id="cartBarHint">生成后发给客服咨询</div>
     </div>
     <div class="cart-bar-actions">
-      <button type="button" class="cart-copy" id="copyBtn">复制询价单</button>
+      <button type="button" class="cart-copy" id="copyBtn">去询价·文字</button>
+      <button type="button" class="cart-img" id="imgBtn">去询价·图片</button>
       <a class="cart-cs" href="/h5/about.html">立即咨询</a>
     </div>
   </footer>
@@ -50,7 +51,34 @@
     </div>
   </div>
 
-  <script src="/h5/assets/js/chai-inquiry-cart.js?v=20260920b"></script>
-  <script src="/h5/assets/js/chai-sale-cart.js?v=20260920b"></script>
+  <div id="quoteCaptureRoot" class="quote-capture-root" aria-hidden="true"></div>
+
+  <div class="capture-loading" id="captureLoading" hidden>
+    <div class="capture-loading-mask"></div>
+    <p class="capture-loading-text">正在生成图片…</p>
+  </div>
+
+  <div class="capture-preview" id="capturePreview" hidden>
+    <div class="capture-preview-mask" data-cap-close="1"></div>
+    <div class="capture-preview-panel" role="dialog" aria-modal="true">
+      <div class="capture-preview-head">
+        <h2 class="capture-preview-title">询价单图片</h2>
+        <button type="button" class="capture-preview-x" data-cap-close="1" aria-label="关闭">×</button>
+      </div>
+      <p class="capture-preview-hint" id="captureHint">长按下方图片可保存到相册</p>
+      <div class="capture-preview-body">
+        <img class="capture-preview-img" id="captureImg" alt="询价单截图"/>
+      </div>
+      <div class="capture-preview-actions">
+        <button type="button" class="capture-preview-close" data-cap-close="1">关闭</button>
+        <button type="button" class="capture-preview-save" id="captureSave" hidden>保存文件</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/h5/assets/vendor/modern-screenshot.js?v=20260921a"></script>
+  <script src="/h5/assets/js/dom-to-image.js?v=20260921a"></script>
+  <script src="/h5/assets/js/chai-inquiry-cart.js?v=20260921a"></script>
+  <script src="/h5/assets/js/chai-sale-cart.js?v=20260921b"></script>
 </body>
 </html>
