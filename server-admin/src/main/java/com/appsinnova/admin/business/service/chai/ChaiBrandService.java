@@ -15,9 +15,12 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -74,14 +77,14 @@ public class ChaiBrandService {
     }
 
     /**
-     * 上架品牌，按排序号大到小
+     * 上架品牌，按名称拼音排序
      */
     public List<ChaiBrand> listOnlineOrdered() {
-        List<Sort.Order> orders = new ArrayList<>();
-        orders.add(new Sort.Order(Sort.Direction.DESC, "orderNum"));
-        orders.add(new Sort.Order(Sort.Direction.DESC, "id"));
-        return chaiBrandRepository.findAll((Root<ChaiBrand> root, CriteriaQuery<?> query, CriteriaBuilder cb) ->
-                cb.equal(root.get("status").as(Integer.class), 1), Sort.by(orders));
+        List<ChaiBrand> list = chaiBrandRepository.findAll((Root<ChaiBrand> root, CriteriaQuery<?> query, CriteriaBuilder cb) ->
+                cb.equal(root.get("status").as(Integer.class), 1));
+        Collator collator = Collator.getInstance(Locale.CHINA);
+        list.sort(Comparator.comparing(ChaiBrand::getName, Comparator.nullsLast(collator)));
+        return list;
     }
 
     /**
