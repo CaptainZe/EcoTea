@@ -274,7 +274,9 @@ public class ChaiSkuRecycleQueryService {
             vo.setWhId(line.whId);
             vo.setShortName(line.shortName);
             vo.setQty(line.qty);
-            vo.setDamageQty(line.damageQty);
+            vo.setQtyNoBag(line.qtyNoBag);
+            vo.setQtyDamaged(line.qtyDamaged);
+            vo.setQtyDamagedNoBag(line.qtyDamagedNoBag);
             map.computeIfAbsent(line.skuId, k -> new ArrayList<>()).add(vo);
         }
         return map;
@@ -324,7 +326,9 @@ public class ChaiSkuRecycleQueryService {
             line.whId = wh.getId();
             line.shortName = wh.getShortName();
             line.qty = row.getQty() == null ? 0 : row.getQty();
-            line.damageQty = row.getDamageQty() == null ? 0 : row.getDamageQty();
+            line.qtyNoBag = row.getQtyNoBag() == null ? 0 : row.getQtyNoBag();
+            line.qtyDamaged = row.getQtyDamaged() == null ? 0 : row.getQtyDamaged();
+            line.qtyDamagedNoBag = row.getQtyDamagedNoBag() == null ? 0 : row.getQtyDamagedNoBag();
             line.orderNum = wh.getOrderNum() == null ? 0 : wh.getOrderNum();
             lines.add(line);
         }
@@ -351,7 +355,9 @@ public class ChaiSkuRecycleQueryService {
 
         ChaiStock stock = stockMap.get(sku.getId());
         int totalQty = stock != null && stock.getTotalQty() != null ? stock.getTotalQty() : 0;
-        int damageQty = stock != null && stock.getDamageQty() != null ? stock.getDamageQty() : 0;
+        int qtyNoBag = stock != null && stock.getQtyNoBag() != null ? stock.getQtyNoBag() : 0;
+        int qtyDamaged = stock != null && stock.getQtyDamaged() != null ? stock.getQtyDamaged() : 0;
+        int qtyDamagedNoBag = stock != null && stock.getQtyDamagedNoBag() != null ? stock.getQtyDamagedNoBag() : 0;
 
         BigDecimal recycleDamagePrice = ChaiPriceUtil.recycleAfterDamage(
                 sku.getRecyclePrice(), sku.getRecyclePriceReducePer());
@@ -387,7 +393,9 @@ public class ChaiSkuRecycleQueryService {
             vo.setRecyclePriceReduceNoBagShow(ChaiPriceUtil.plain(sku.getRecyclePriceReduceNoBag()));
         }
         vo.setTotalQty(totalQty);
-        vo.setDamageQty(damageQty);
+        vo.setQtyNoBag(qtyNoBag);
+        vo.setQtyDamaged(qtyDamaged);
+        vo.setQtyDamagedNoBag(qtyDamagedNoBag);
         if (sku.getSpuId() != null) {
             vo.setSameSpuCount(sameSpuCountMap.getOrDefault(sku.getSpuId(), 1));
         }
@@ -417,7 +425,9 @@ public class ChaiSkuRecycleQueryService {
         private Long whId;
         private String shortName;
         private int qty;
-        private int damageQty;
+        private int qtyNoBag;
+        private int qtyDamaged;
+        private int qtyDamagedNoBag;
         private int orderNum;
     }
 }

@@ -1,6 +1,7 @@
 package com.appsinnova.admin.business.service.chai;
 
 import com.appsinnova.admin.business.common.enums.base.YesOrNo;
+import com.appsinnova.admin.business.common.enums.chai.ChaiStockQuality;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiStock;
@@ -47,29 +48,31 @@ public class ChaiStockService {
     }
 
     /**
-     * 某 SKU 在指定仓的结存：qty / damageQty；无结存行返回 0。
+     * 某 SKU 在指定仓的结存：qty / qtyNoBag / qtyDamaged / qtyDamagedNoBag；无结存行返回 0。
      */
-    public int[] getWhQtyPair(Long skuId, Long whId) {
+    public int[] getWhQtyBuckets(Long skuId, Long whId) {
         if (skuId == null || whId == null || whId <= 0) {
-            return new int[]{0, 0};
+            return new int[]{0, 0, 0, 0};
         }
         ChaiStock stock = getBySkuId(skuId);
         if (stock == null) {
-            return new int[]{0, 0};
+            return new int[]{0, 0, 0, 0};
         }
         return chaiStockWhRepository.findFirstByStockIdAndWhId(stock.getId(), whId)
                 .map(row -> new int[]{
                         row.getQty() == null ? 0 : row.getQty(),
-                        row.getDamageQty() == null ? 0 : row.getDamageQty()
+                        row.getQtyNoBag() == null ? 0 : row.getQtyNoBag(),
+                        row.getQtyDamaged() == null ? 0 : row.getQtyDamaged(),
+                        row.getQtyDamagedNoBag() == null ? 0 : row.getQtyDamagedNoBag()
                 })
-                .orElse(new int[]{0, 0});
+                .orElse(new int[]{0, 0, 0, 0});
     }
 
     /**
      * 某 SKU 在指定仓的结存件数；无结存行返回 0。
      */
     public int getWhQty(Long skuId, Long whId) {
-        return getWhQtyPair(skuId, whId)[0];
+        return getWhQtyBuckets(skuId, whId)[0];
     }
 
     /**
@@ -90,7 +93,7 @@ public class ChaiStockService {
     }
 
     /**
-     * 批量查分仓：总数 + 破损；key=skuId，value={qty, damageQty}。
+     * 批量查分仓：总数 + 三例外；key=skuId。
      */
     public Map<Long, Map<String, Integer>> mapWhStockBySkuIds(List<Long> skuIds, Long whId) {
         Map<Long, Map<String, Integer>> map = new HashMap<>();
@@ -101,10 +104,12 @@ public class ChaiStockService {
             if (skuId == null) {
                 continue;
             }
-            int[] pair = getWhQtyPair(skuId, whId);
+            int[] buckets = getWhQtyBuckets(skuId, whId);
             Map<String, Integer> one = new HashMap<>();
-            one.put("qty", pair[0]);
-            one.put("damageQty", pair[1]);
+            one.put("qty", buckets[0]);
+            one.put("qtyNoBag", buckets[1]);
+            one.put("qtyDamaged", buckets[2]);
+            one.put("qtyDamagedNoBag", buckets[3]);
             map.put(skuId, one);
         }
         return map;
@@ -135,12 +140,15 @@ public class ChaiStockService {
 
     /**
      * 过账加减分仓；delta 可正可负。无行且 delta&gt;0 时建行；不允许结果 &lt; 0。
-     * appearanceDamaged=true 时同步增减 damage_qty（本行件数全部按破损）。
+     * 按品相只动总数，或同步增减对应例外列。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void applyWhDelta(Long skuId, Long whId, int delta, boolean appearanceDamaged, String operator) {
+    public void applyWhDelta(Long skuId, Long whId, int delta, ChaiStockQuality quality, String operator) {
         if (skuId == null || whId == null) {
             throw new IllegalArgumentException("SKU与仓库不能为空");
+        }
+        if (quality == null) {
+            throw new IllegalArgumentException("品相不能为空");
         }
         if (delta == 0) {
             return;
@@ -149,44 +157,41 @@ public class ChaiStockService {
         ChaiStockWh row = chaiStockWhRepository.findFirstByStockIdAndWhId(stock.getId(), whId).orElse(null);
         if (row == null) {
             if (delta < 0) {
-                throw new IllegalArgumentException(appearanceDamaged ? "仓库破损库存不足" : "仓库库存不足");
+                throw new IllegalArgumentException(quality.insufficientMessage());
             }
-            row = new ChaiStockWh();
-            row.setStockId(stock.getId());
-            row.setWhId(whId);
-            row.setQty(0);
-            row.setDamageQty(0);
-            row.setVersion(0);
+            row = newEmptyWh(stock.getId(), whId);
             row = chaiStockWhRepository.save(row);
         }
-        if (row.getDamageQty() == null) {
-            row.setDamageQty(0);
-            row = chaiStockWhRepository.save(row);
-        }
-        int updated = appearanceDamaged
-                ? chaiStockWhRepository.applyDamagedQtyDelta(row.getId(), delta, row.getVersion())
-                : chaiStockWhRepository.applyGoodQtyDelta(row.getId(), delta, row.getVersion());
+        normalizeWhBuckets(row);
+        row = chaiStockWhRepository.save(row);
+        int updated = applyQualityDelta(row.getId(), delta, row.getVersion(), quality);
         if (updated == 0) {
-            throw new IllegalArgumentException(appearanceDamaged
-                    ? "破损库存不足或并发冲突，请重试"
-                    : "完好库存不足或并发冲突，请重试");
+            throw new IllegalArgumentException(quality.conflictMessage());
         }
         recalcTotalQty(stock.getId(), operator);
     }
 
-    /** 兼容旧调用：按完好件数变动 */
-    @Transactional(rollbackFor = Exception.class)
-    public void applyWhDelta(Long skuId, Long whId, int delta, String operator) {
-        applyWhDelta(skuId, whId, delta, false, operator);
+    private int applyQualityDelta(Long rowId, int delta, int version, ChaiStockQuality quality) {
+        switch (quality) {
+            case NO_BAG:
+                return chaiStockWhRepository.applyNoBagQtyDelta(rowId, delta, version);
+            case DAMAGED:
+                return chaiStockWhRepository.applyDamagedQtyDelta(rowId, delta, version);
+            case DAMAGED_NO_BAG:
+                return chaiStockWhRepository.applyDamagedNoBagQtyDelta(rowId, delta, version);
+            case INTACT:
+            default:
+                return chaiStockWhRepository.applyIntactQtyDelta(rowId, delta, version);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
     public ChaiStock ensureStock(Long skuId, String operator) {
         ChaiStock stock = getBySkuId(skuId);
         if (stock != null) {
-            if (stock.getDamageQty() == null) {
-                stock.setDamageQty(0);
-                stock = chaiStockRepository.save(stock);
+            if (stock.getQtyNoBag() == null || stock.getQtyDamaged() == null || stock.getQtyDamagedNoBag() == null) {
+                normalizeStockBuckets(stock);
+                return chaiStockRepository.save(stock);
             }
             return stock;
         }
@@ -194,27 +199,71 @@ public class ChaiStockService {
         stock = new ChaiStock();
         stock.setSkuId(skuId);
         stock.setTotalQty(0);
-        stock.setDamageQty(0);
+        stock.setQtyNoBag(0);
+        stock.setQtyDamaged(0);
+        stock.setQtyDamagedNoBag(0);
         stock.setOperator(operator != null ? operator : "");
         stock.setCreateTime(now);
         stock.setUpdateTime(now);
         return chaiStockRepository.save(stock);
     }
 
+    private ChaiStockWh newEmptyWh(Long stockId, Long whId) {
+        ChaiStockWh row = new ChaiStockWh();
+        row.setStockId(stockId);
+        row.setWhId(whId);
+        row.setQty(0);
+        row.setQtyNoBag(0);
+        row.setQtyDamaged(0);
+        row.setQtyDamagedNoBag(0);
+        row.setVersion(0);
+        return row;
+    }
+
+    private void normalizeWhBuckets(ChaiStockWh row) {
+        if (row.getQtyNoBag() == null) {
+            row.setQtyNoBag(0);
+        }
+        if (row.getQtyDamaged() == null) {
+            row.setQtyDamaged(0);
+        }
+        if (row.getQtyDamagedNoBag() == null) {
+            row.setQtyDamagedNoBag(0);
+        }
+    }
+
+    private void normalizeStockBuckets(ChaiStock stock) {
+        if (stock.getQtyNoBag() == null) {
+            stock.setQtyNoBag(0);
+        }
+        if (stock.getQtyDamaged() == null) {
+            stock.setQtyDamaged(0);
+        }
+        if (stock.getQtyDamagedNoBag() == null) {
+            stock.setQtyDamagedNoBag(0);
+        }
+    }
+
     private void recalcTotalQty(Long stockId, String operator) {
         List<ChaiStockWh> rows = chaiStockWhRepository.findByStockIdOrderByQtyDescIdAsc(stockId);
         int sum = 0;
-        int damageSum = 0;
+        int noBagSum = 0;
+        int damagedSum = 0;
+        int damagedNoBagSum = 0;
         for (ChaiStockWh row : rows) {
             sum += row.getQty() == null ? 0 : row.getQty();
-            damageSum += row.getDamageQty() == null ? 0 : row.getDamageQty();
+            noBagSum += row.getQtyNoBag() == null ? 0 : row.getQtyNoBag();
+            damagedSum += row.getQtyDamaged() == null ? 0 : row.getQtyDamaged();
+            damagedNoBagSum += row.getQtyDamagedNoBag() == null ? 0 : row.getQtyDamagedNoBag();
         }
         ChaiStock stock = getById(stockId);
         if (stock == null) {
             return;
         }
         stock.setTotalQty(sum);
-        stock.setDamageQty(damageSum);
+        stock.setQtyNoBag(noBagSum);
+        stock.setQtyDamaged(damagedSum);
+        stock.setQtyDamagedNoBag(damagedNoBagSum);
         stock.setOperator(operator != null ? operator : "");
         stock.setUpdateTime(System.currentTimeMillis());
         chaiStockRepository.save(stock);
@@ -222,10 +271,6 @@ public class ChaiStockService {
 
     public Page<ChaiStock> getPageList(ChaiStock param) {
         List<Sort.Order> orders = new ArrayList<>();
-        // 选仓时列表展示本仓数量，排序不再按全仓 totalQty
-        if (param == null || param.getQueryWhId() == null || param.getQueryWhId() <= 0) {
-            orders.add(new Sort.Order(Sort.Direction.DESC, "totalQty"));
-        }
         orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
         PageRequest page = PageSort.pageRequest(orders);
         Page<ChaiStock> result = chaiStockRepository.findAll(
@@ -249,7 +294,9 @@ public class ChaiStockService {
         if (whId == null || whId <= 0) {
             for (ChaiStock stock : stocks) {
                 stock.setListQty(stock.getTotalQty() != null ? stock.getTotalQty() : 0);
-                stock.setListDamageQty(stock.getDamageQty() != null ? stock.getDamageQty() : 0);
+                stock.setListQtyNoBag(stock.getQtyNoBag() != null ? stock.getQtyNoBag() : 0);
+                stock.setListQtyDamaged(stock.getQtyDamaged() != null ? stock.getQtyDamaged() : 0);
+                stock.setListQtyDamagedNoBag(stock.getQtyDamagedNoBag() != null ? stock.getQtyDamagedNoBag() : 0);
             }
             return;
         }
@@ -264,10 +311,14 @@ public class ChaiStockService {
             Map<String, Integer> one = whMap.get(stock.getSkuId());
             if (one == null) {
                 stock.setListQty(0);
-                stock.setListDamageQty(0);
+                stock.setListQtyNoBag(0);
+                stock.setListQtyDamaged(0);
+                stock.setListQtyDamagedNoBag(0);
             } else {
                 stock.setListQty(one.get("qty") != null ? one.get("qty") : 0);
-                stock.setListDamageQty(one.get("damageQty") != null ? one.get("damageQty") : 0);
+                stock.setListQtyNoBag(one.get("qtyNoBag") != null ? one.get("qtyNoBag") : 0);
+                stock.setListQtyDamaged(one.get("qtyDamaged") != null ? one.get("qtyDamaged") : 0);
+                stock.setListQtyDamagedNoBag(one.get("qtyDamagedNoBag") != null ? one.get("qtyDamagedNoBag") : 0);
             }
         }
     }

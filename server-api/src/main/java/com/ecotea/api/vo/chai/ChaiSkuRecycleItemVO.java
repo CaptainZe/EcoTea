@@ -49,7 +49,9 @@ public class ChaiSkuRecycleItemVO implements Serializable {
     private String recyclePriceReduceNoBagShow;
 
     private Integer totalQty;
-    private Integer damageQty;
+    private Integer qtyNoBag;
+    private Integer qtyDamaged;
+    private Integer qtyDamagedNoBag;
 
     /**
      * 分仓有货明细（仅 qty>0）。详情填充；列表一般为空。

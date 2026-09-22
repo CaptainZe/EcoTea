@@ -27,13 +27,18 @@
 </div>
 <div class="layui-card" th:unless="${errorMsg != null}">
     <div class="layui-card-header timo-card-header">
-        <span><i class="fa fa-bars"></i> 选择商品</span>
+        <span th:unless="${sameSpuMode}"><i class="fa fa-bars"></i> 选择商品</span>
+        <span th:if="${sameSpuMode}"><i class="fa fa-bars"></i> 选择同款</span>
     </div>
     <div class="layui-card-body">
         <div class="layui-row timo-card-screen">
             <div class="layui-form pull-left layui-form-pane timo-search-box">
                 <input type="hidden" name="billType" th:value="${billType}">
                 <input type="hidden" name="fromWhId" th:value="${fromWhId}">
+                <input type="hidden" th:if="${sameSpuMode}" name="spuId" th:value="${pickSpuId}">
+                <p th:if="${sameSpuMode}" style="color:#6B7280;margin:0 0 10px 0;font-size:13px;">
+                    已限定同一 SPU 下的全部 SKU，可按年份/批次筛选后勾选替换。
+                </p>
                 <div class="layui-inline">
                     <label class="layui-form-label">商品名称</label>
                     <div class="layui-input-block">
@@ -41,7 +46,7 @@
                                autocomplete="off" class="layui-input">
                     </div>
                 </div>
-                <div class="layui-inline">
+                <div class="layui-inline" th:unless="${sameSpuMode}">
                     <label class="layui-form-label">品牌</label>
                     <div class="layui-input-block timo-search-status" style="width: 160px;">
                         <select name="brand" class="layui-input timo-search-select" lay-search>
@@ -93,7 +98,7 @@
                                autocomplete="off" class="layui-input">
                     </div>
                 </div>
-                <div class="layui-inline">
+                <div class="layui-inline" th:unless="${sameSpuMode}">
                     <label class="layui-form-label">SPU编码</label>
                     <div class="layui-input-block">
                         <input type="text" name="querySpuCode" th:value="${param.querySpuCode}" placeholder="精确查询"
@@ -138,7 +143,14 @@
                         <div style="font-weight:600;"
                              th:text="${item.pickWhQty != null ? item.pickWhQty : 0}"></div>
                         <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
-                             th:text="|破损 ${item.pickWhDamageQty != null ? item.pickWhDamageQty : 0}|"></div>
+                             th:if="${item.pickWhQtyNoBag != null and item.pickWhQtyNoBag > 0}"
+                             th:text="|无袋 ${item.pickWhQtyNoBag}|"></div>
+                        <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
+                             th:if="${item.pickWhQtyDamaged != null and item.pickWhQtyDamaged > 0}"
+                             th:text="|破损 ${item.pickWhQtyDamaged}|"></div>
+                        <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
+                             th:if="${item.pickWhQtyDamagedNoBag != null and item.pickWhQtyDamagedNoBag > 0}"
+                             th:text="|破损无袋 ${item.pickWhQtyDamagedNoBag}|"></div>
                     </td>
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
@@ -171,13 +183,17 @@
 </div>
 
 <div class="sku-pick-footer" th:unless="${errorMsg != null}">
-    <button type="button" class="layui-btn js-confirm-pick">
-        <i class="fa fa-check"></i> 添加所选
+    <button type="button" class="layui-btn js-confirm-pick"
+            th:text="${sameSpuMode} ? '替换为所选' : '添加所选'">
+        添加所选
     </button>
 </div>
 
 <script th:replace="/common/template :: script"></script>
-<script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var sameSpuMode = /*[[${sameSpuMode}]]*/ false;
+    /*]]>*/
     layui.use(['layer'], function () {
         var layer = layui.layer;
         var $ = layui.$;
@@ -191,7 +207,7 @@
                 return;
             }
             if (window.parent && typeof window.parent.addStockBillSkus === 'function') {
-                window.parent.addStockBillSkus(idList);
+                window.parent.addStockBillSkus(idList, sameSpuMode ? {replace: true} : null);
                 var frameIndex = window.parent.layer.getFrameIndex(window.name);
                 window.parent.layer.close(frameIndex);
             } else {

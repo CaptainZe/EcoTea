@@ -97,9 +97,15 @@ public class ChaiSku implements Serializable {
     @Transient
     private Integer pickWhQty;
 
-    /** 选品列表展示：本仓破损件数（计入 pickWhQty） */
+    /** 选品列表展示：本仓无提袋（计入 pickWhQty） */
     @Transient
-    private Integer pickWhDamageQty;
+    private Integer pickWhQtyNoBag;
+    /** 选品列表展示：本仓破损有提袋 */
+    @Transient
+    private Integer pickWhQtyDamaged;
+    /** 选品列表展示：本仓破损无提袋 */
+    @Transient
+    private Integer pickWhQtyDamagedNoBag;
 
     /** 价目视图：各仓合计库存（无结存行视为 0） */
     @Transient

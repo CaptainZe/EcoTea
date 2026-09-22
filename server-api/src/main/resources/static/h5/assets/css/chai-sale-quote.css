@@ -18,7 +18,9 @@
 }
 
 body.inner-sale-detail .sale-quote-fab {
-  bottom: calc(5.2rem + env(safe-area-inset-bottom));
+  bottom: auto;
+  top: 52%;
+  right: 0.75rem;
 }
 
 .sale-quote-fab[hidden] {

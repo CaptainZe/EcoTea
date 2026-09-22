@@ -794,7 +794,8 @@ body {
 }
 
 .wh-stock-qty {
-  color: var(--muted);
+  color: var(--ink);
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 

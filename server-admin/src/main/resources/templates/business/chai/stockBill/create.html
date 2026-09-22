@@ -15,8 +15,22 @@
             font-weight: 600;
             margin-bottom: 10px;
         }
-        .bill-item-table input.layui-input {
+        .bill-item-table input.layui-input,
+        .bill-item-table select.js-quality {
             height: 34px;
+        }
+        .bill-item-table select.js-quality {
+            width: 100%;
+            padding: 0 24px 0 8px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239CA3AF' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px 6px;
+            cursor: pointer;
         }
         .bill-sub {
             color: #9CA3AF;
@@ -158,12 +172,12 @@
                             <th width="110">年份/批次</th>
                             <th width="220">展示图</th>
                             <th width="90">件数</th>
-                            <th width="90">外观破损</th>
+                            <th width="150">品相</th>
                             <th width="130" th:if="${billType != 3}">单价</th>
                             <th width="90" th:if="${billType != 3}">金额</th>
                             <th width="110" th:if="${billType == 3}">参考</th>
                             <th width="150">行备注</th>
-                            <th width="100">操作</th>
+                            <th width="180">操作</th>
                         </tr>
                         </thead>
                         <tbody id="itemBody"></tbody>
@@ -192,6 +206,12 @@
     var skuPickUrl = /*[[@{/business/chai/stockBill/skuPick}]]*/ '';
     var skuByIdsUrl = /*[[@{/business/chai/stockBill/skuByIds}]]*/ '';
     var whQtyUrl = /*[[@{/business/chai/stockBill/whQty}]]*/ '';
+    var qualityOptions = [
+        {code: 1, message: '完整'},
+        {code: 2, message: '无提袋'},
+        {code: 3, message: '破损'},
+        {code: 4, message: '破损无袋'}
+    ];
     var saveUrl = /*[[@{/business/chai/stockBill/save}]]*/ '';
     /*]]>*/
 
@@ -219,85 +239,113 @@
                 .replace(/"/g, '&quot;');
         }
 
-        function mapGet(map, skuId) {
-            if (!map) {
-                return 0;
-            }
-            var v = map[skuId];
-            if (v == null) {
-                v = map[String(skuId)];
-            }
-            return v == null ? 0 : parseInt(v, 10) || 0;
+        function emptyStock() {
+            return {qty: 0, qtyNoBag: 0, qtyDamaged: 0, qtyDamagedNoBag: 0};
         }
 
         function mapStockGet(map, skuId) {
             if (!map) {
-                return {qty: 0, damageQty: 0};
+                return emptyStock();
             }
             var v = map[skuId];
             if (v == null) {
                 v = map[String(skuId)];
             }
             if (!v || typeof v !== 'object') {
-                return {qty: 0, damageQty: 0};
+                return emptyStock();
             }
             return {
                 qty: parseInt(v.qty, 10) || 0,
-                damageQty: parseInt(v.damageQty, 10) || 0
+                qtyNoBag: parseInt(v.qtyNoBag, 10) || 0,
+                qtyDamaged: parseInt(v.qtyDamaged, 10) || 0,
+                qtyDamagedNoBag: parseInt(v.qtyDamagedNoBag, 10) || 0
             };
         }
 
-        function isAppearanceDamaged($tr) {
-            return !!$tr.find('.js-appearance-damaged').prop('checked');
+        function rowQuality($tr) {
+            return parseInt($tr.find('.js-quality').val(), 10) || 1;
         }
 
-        function availableForRow(totalQty, damageQty, damaged) {
-            var total = totalQty || 0;
-            var damage = damageQty || 0;
-            if (damage < 0) {
-                damage = 0;
+        function availableForQuality(stock, quality) {
+            var qty = (stock && stock.qty) || 0;
+            var noBag = (stock && stock.qtyNoBag) || 0;
+            var damaged = (stock && stock.qtyDamaged) || 0;
+            var damagedNoBag = (stock && stock.qtyDamagedNoBag) || 0;
+            if (quality === 2) {
+                return noBag;
             }
-            if (damage > total) {
-                damage = total;
+            if (quality === 3) {
+                return damaged;
             }
-            return damaged ? damage : Math.max(0, total - damage);
+            if (quality === 4) {
+                return damagedNoBag;
+            }
+            return Math.max(0, qty - noBag - damaged - damagedNoBag);
         }
 
-        /** 精简文案：共10 / 完好7 */
-        function formatWhSide(prefix, totalQty, damageQty, damaged, ready) {
+        function qualitySideLabel(quality) {
+            if (quality === 2) {
+                return '无提袋';
+            }
+            if (quality === 3) {
+                return '破损';
+            }
+            if (quality === 4) {
+                return '破损无袋';
+            }
+            return '完整';
+        }
+
+        /** 精简文案：共10 / 完整7 */
+        function formatWhSide(prefix, stock, quality, ready) {
             if (!ready) {
                 return (prefix ? prefix + ' ' : '') + '-';
             }
-            var avail = availableForRow(totalQty, damageQty, damaged);
-            var side = damaged ? '破损' : '完好';
-            var body = '共' + totalQty + ' / ' + side + avail;
+            var total = (stock && stock.qty) || 0;
+            var avail = availableForQuality(stock, quality);
+            var body = '共' + total + ' / ' + qualitySideLabel(quality) + avail;
             return prefix ? (prefix + ' ' + body) : body;
         }
 
-        function renderWhHint($tr, fromQty, fromDamage, toQty, toDamage, fromReady, toReady) {
-            $tr.attr('data-from-qty', fromQty);
-            $tr.attr('data-from-damage', fromDamage);
-            $tr.attr('data-to-qty', toQty);
-            $tr.attr('data-to-damage', toDamage);
+        function readStockAttrs($tr, side) {
+            return {
+                qty: parseInt($tr.attr('data-' + side + '-qty'), 10) || 0,
+                qtyNoBag: parseInt($tr.attr('data-' + side + '-no-bag'), 10) || 0,
+                qtyDamaged: parseInt($tr.attr('data-' + side + '-damaged'), 10) || 0,
+                qtyDamagedNoBag: parseInt($tr.attr('data-' + side + '-damaged-no-bag'), 10) || 0
+            };
+        }
+
+        function writeStockAttrs($tr, side, stock) {
+            stock = stock || emptyStock();
+            $tr.attr('data-' + side + '-qty', stock.qty);
+            $tr.attr('data-' + side + '-no-bag', stock.qtyNoBag);
+            $tr.attr('data-' + side + '-damaged', stock.qtyDamaged);
+            $tr.attr('data-' + side + '-damaged-no-bag', stock.qtyDamagedNoBag);
+        }
+
+        function renderWhHint($tr, fromStock, toStock, fromReady, toReady) {
+            writeStockAttrs($tr, 'from', fromStock);
+            writeStockAttrs($tr, 'to', toStock);
             $tr.attr('data-from-ready', fromReady ? '1' : '0');
             $tr.attr('data-to-ready', toReady ? '1' : '0');
             var $hint = $tr.find('.js-wh-hint');
             var qty = parseInt($tr.find('.js-qty').val(), 10) || 0;
-            var damaged = isAppearanceDamaged($tr);
+            var quality = rowQuality($tr);
             var warn = false;
             if (billType === 1) {
-                $hint.text(formatWhSide('', fromQty, fromDamage, damaged, fromReady))
+                $hint.text(formatWhSide('', fromStock, quality, fromReady))
                     .toggleClass('warn', false);
             } else if (billType === 2) {
-                var avail = availableForRow(fromQty, fromDamage, damaged);
+                var avail = availableForQuality(fromStock, quality);
                 warn = fromReady && qty > avail;
-                $hint.text(formatWhSide('', fromQty, fromDamage, damaged, fromReady))
+                $hint.text(formatWhSide('', fromStock, quality, fromReady))
                     .toggleClass('warn', warn);
             } else {
-                var fromAvail = availableForRow(fromQty, fromDamage, damaged);
+                var fromAvail = availableForQuality(fromStock, quality);
                 warn = fromReady && qty > fromAvail;
-                var fromPart = formatWhSide('出', fromQty, fromDamage, damaged, fromReady);
-                var toPart = formatWhSide('入', toQty, toDamage, damaged, toReady);
+                var fromPart = formatWhSide('出', fromStock, quality, fromReady);
+                var toPart = formatWhSide('入', toStock, quality, toReady);
                 $hint.html(fromPart + '<br>' + toPart).toggleClass('warn', warn);
             }
         }
@@ -313,7 +361,7 @@
             var toReady = toWhId > 0;
             if (!fromReady && !(billType === 3 && toReady)) {
                 $rows.each(function () {
-                    renderWhHint($(this), 0, 0, 0, 0, false, false);
+                    renderWhHint($(this), emptyStock(), emptyStock(), false, false);
                 });
                 return;
             }
@@ -343,11 +391,26 @@
                 $rows.each(function () {
                     var $tr = $(this);
                     var skuId = parseInt($tr.attr('data-sku-id'), 10);
-                    var from = mapStockGet(fromStockMap, skuId);
-                    var to = mapStockGet(toStockMap, skuId);
-                    renderWhHint($tr, from.qty, from.damageQty, to.qty, to.damageQty, fromReady, toReady);
+                    renderWhHint(
+                        $tr,
+                        mapStockGet(fromStockMap, skuId),
+                        mapStockGet(toStockMap, skuId),
+                        fromReady,
+                        toReady
+                    );
                 });
             });
+        }
+
+        function qualitySelectHtml(selected) {
+            var sel = selected || 1;
+            var html = '<select class="layui-input js-quality" lay-ignore>';
+            qualityOptions.forEach(function (opt) {
+                html += '<option value="' + opt.code + '"'
+                    + (opt.code === sel ? ' selected' : '') + '>'
+                    + opt.message + '</option>';
+            });
+            return html + '</select>';
         }
 
         function recalc() {
@@ -364,16 +427,10 @@
                     amountSum += amt;
                 }
                 if ($tr.find('.js-wh-hint').length) {
-                    var fromQty = parseInt($tr.attr('data-from-qty'), 10);
-                    var fromDamage = parseInt($tr.attr('data-from-damage'), 10);
-                    var toQty = parseInt($tr.attr('data-to-qty'), 10);
-                    var toDamage = parseInt($tr.attr('data-to-damage'), 10);
                     renderWhHint(
                         $tr,
-                        isNaN(fromQty) ? 0 : fromQty,
-                        isNaN(fromDamage) ? 0 : fromDamage,
-                        isNaN(toQty) ? 0 : toQty,
-                        isNaN(toDamage) ? 0 : toDamage,
+                        readStockAttrs($tr, 'from'),
+                        readStockAttrs($tr, 'to'),
                         $tr.attr('data-from-ready') === '1',
                         $tr.attr('data-to-ready') === '1'
                     );
@@ -451,28 +508,39 @@
             } else {
                 priceCols = '<td><div class="bill-ref-price">' + refLabel + ' ' + esc(refValue) + '</div></td>';
             }
-            var html = '<tr data-sku-id="' + sku.id + '" data-from-qty="0" data-from-damage="0" data-to-qty="0" data-to-damage="0" data-from-ready="0" data-to-ready="0">'
+            var spuId = sku.spuId != null ? sku.spuId : '';
+            var html = '<tr data-sku-id="' + sku.id + '" data-spu-id="' + spuId + '"'
+                + ' data-from-qty="0" data-from-no-bag="0" data-from-damaged="0" data-from-damaged-no-bag="0"'
+                + ' data-to-qty="0" data-to-no-bag="0" data-to-damaged="0" data-to-damaged-no-bag="0"'
+                + ' data-from-ready="0" data-to-ready="0">'
                 + '<td>' + esc(sku.brandName) + '</td>'
                 + '<td>' + nameCell + '</td>'
                 + '<td>' + esc(halfYearText(sku)) + '</td>'
                 + '<td class="bill-show-cell">' + renderShowImages(sku.showImageUrls) + '</td>'
                 + '<td><input type="number" min="1" step="1" class="layui-input js-qty" value="1">'
                 + '<div class="bill-wh-hint js-wh-hint"></div></td>'
-                + '<td><input type="checkbox" class="js-appearance-damaged" lay-skin="switch" lay-text="是|否" lay-filter="appearanceDamaged"></td>'
+                + '<td>' + qualitySelectHtml(1) + '</td>'
                 + priceCols
-                + '<td><input type="text" maxlength="255" class="layui-input js-remark" placeholder="无提袋等"></td>'
+                + '<td><input type="text" maxlength="255" class="layui-input js-remark" placeholder="选填"></td>'
                 + '<td><a href="javascript:;" class="js-copy" style="color:#1D4ED8;margin-right:8px;">复制</a>'
+                + '<a href="javascript:;" class="js-replace-same" style="color:#047857;margin-right:8px;">换同款</a>'
                 + '<a href="javascript:;" class="js-remove" style="color:#DC2626;">删除</a></td>'
                 + '</tr>';
             $('#itemBody').append(html);
-            form.render('checkbox');
-            renderWhHint($('#itemBody tr').last(), 0, 0, 0, 0, false, false);
+            renderWhHint($('#itemBody tr').last(), emptyStock(), emptyStock(), false, false);
             recalc();
         }
 
-        window.addStockBillSkus = function (idList) {
+        var pendingReplaceTr = null;
+
+        window.addStockBillSkus = function (idList, options) {
             if (!idList || !idList.length) {
                 return;
+            }
+            var $replaceTr = null;
+            if (options && options.replace && pendingReplaceTr && pendingReplaceTr.length) {
+                $replaceTr = pendingReplaceTr;
+                pendingReplaceTr = null;
             }
             var loading = layer.load(2);
             $.get(skuByIdsUrl, {ids: idList.join(',')}, function (res) {
@@ -482,12 +550,17 @@
                     return;
                 }
                 var list = res.data || [];
+                var replaced = false;
+                if (list.length && $replaceTr && $replaceTr.length) {
+                    $replaceTr.remove();
+                    replaced = true;
+                }
                 list.forEach(function (sku) {
                     addRow(sku);
                 });
                 refreshWhHints();
                 if (list.length) {
-                    layer.msg('已添加 ' + list.length + ' 行', {time: 800});
+                    layer.msg((replaced ? '已替换为 ' : '已添加 ') + list.length + ' 行', {time: 800});
                 }
             }).fail(function () {
                 layer.close(loading);
@@ -495,19 +568,45 @@
             });
         };
 
-        $('#btnAddSku').on('click', function () {
+        function openSkuPick(spuId) {
             var fromWhId = parseInt($('#fromWhId').val(), 10) || 0;
             if (!fromWhId) {
                 layer.msg(billType === 3 ? '请先选择调出仓' : (billType === 2 ? '请先选择出库仓库' : '请先选择入库仓库'));
-                return;
+                return false;
+            }
+            var url = skuPickUrl + '?billType=' + billType + '&fromWhId=' + fromWhId;
+            var sameSpu = spuId != null && spuId > 0;
+            if (sameSpu) {
+                url += '&spuId=' + spuId;
             }
             layer.open({
                 type: 2,
-                title: '选择商品',
+                title: sameSpu ? '选择同款' : '选择商品',
                 area: ['95%', '92%'],
                 maxmin: true,
-                content: skuPickUrl + '?billType=' + billType + '&fromWhId=' + fromWhId
+                content: url,
+                end: function () {
+                    pendingReplaceTr = null;
+                }
             });
+            return true;
+        }
+
+        $('#btnAddSku').on('click', function () {
+            openSkuPick(0);
+        });
+
+        $(document).on('click', '.js-replace-same', function () {
+            var $tr = $(this).closest('tr');
+            var spuId = parseInt($tr.attr('data-spu-id'), 10) || 0;
+            if (!spuId) {
+                layer.msg('该行缺少 SPU，无法换同款');
+                return;
+            }
+            pendingReplaceTr = $tr;
+            if (!openSkuPick(spuId)) {
+                pendingReplaceTr = null;
+            }
         });
 
         $(document).on('click', '.js-remove', function () {
@@ -520,29 +619,19 @@
             var qty = $tr.find('.js-qty').val();
             var price = $tr.find('.js-price').val();
             var remark = $tr.find('.js-remark').val();
-            var damaged = !!$tr.find('.js-appearance-damaged').prop('checked');
+            var quality = rowQuality($tr);
             var $clone = $tr.clone();
-            $clone.find('.layui-form-switch').remove();
-            var $cb = $clone.find('input.js-appearance-damaged');
-            $cb.prop('checked', damaged).show().css({display: '', visibility: ''});
+            $clone.find('select.js-quality').closest('td').html(qualitySelectHtml(quality));
             $clone.find('.js-qty').val(qty);
             if ($clone.find('.js-price').length) {
                 $clone.find('.js-price').val(price);
             }
             $clone.find('.js-remark').val(remark);
             $tr.after($clone);
-            form.render('checkbox');
             recalc();
         });
 
-        $(document).on('input change', '.js-qty, .js-price', recalc);
-
-        form.on('switch(appearanceDamaged)', function (data) {
-            var $tr = $(data.elem).closest('tr');
-            if ($tr.length) {
-                recalc();
-            }
-        });
+        $(document).on('input change', '.js-qty, .js-price, .js-quality', recalc);
 
         form.on('select(fromWhId)', function () {
             refreshWhHints();
@@ -597,7 +686,7 @@
                 itemList.push({
                     skuId: skuId,
                     qty: qty,
-                    appearanceDamaged: $(this).find('.js-appearance-damaged').prop('checked') ? 1 : 0,
+                    quality: rowQuality($(this)),
                     price: price,
                     remark: remark
                 });

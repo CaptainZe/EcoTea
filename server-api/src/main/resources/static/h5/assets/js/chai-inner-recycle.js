@@ -419,6 +419,21 @@
     );
   }
 
+  function stockExceptionsHtml(item) {
+    item = item || {};
+    var parts = [];
+    function push(label, value) {
+      var n = value != null ? Number(value) : 0;
+      if (!isNaN(n) && n > 0) {
+        parts.push('<span class="dmg">' + escapeHtml(label + " " + n) + "</span>");
+      }
+    }
+    push("无袋", item.qtyNoBag);
+    push("破损", item.qtyDamaged);
+    push("破损无袋", item.qtyDamagedNoBag);
+    return parts.join("");
+  }
+
   /** 不要求有货：统一「库存 n 件」；0 件标稀缺色。 */
   function stockHtml(item) {
     var qty = item.totalQty != null ? Number(item.totalQty) : 0;
@@ -427,17 +442,12 @@
     }
     var scarce = qty <= 3;
     var label = "库存 " + qty + " 件";
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg =
-        '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
-    }
     return (
       '<span class="stock ' +
       (scarce ? "scarce" : "normal") +
       '">' +
       escapeHtml(label) +
-      dmg +
+      stockExceptionsHtml(item) +
       "</span>"
     );
   }

@@ -67,7 +67,14 @@
       coverImage: cover,
       spuId: item.spuId != null ? item.spuId : item.spu_id != null ? item.spu_id : null,
       totalQty: item.totalQty != null ? item.totalQty : item.total_qty != null ? item.total_qty : null,
-      damageQty: item.damageQty != null ? item.damageQty : item.damage_qty != null ? item.damage_qty : null,
+      qtyNoBag: item.qtyNoBag != null ? item.qtyNoBag : item.qty_no_bag != null ? item.qty_no_bag : null,
+      qtyDamaged: item.qtyDamaged != null ? item.qtyDamaged : item.qty_damaged != null ? item.qty_damaged : null,
+      qtyDamagedNoBag:
+        item.qtyDamagedNoBag != null
+          ? item.qtyDamagedNoBag
+          : item.qty_damaged_no_bag != null
+            ? item.qty_damaged_no_bag
+            : null,
     };
   }
 

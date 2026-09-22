@@ -1,6 +1,6 @@
 /**
  * 销售侧库存展示：列表 / 详情共用。
- * ≤3 紧缺「仅剩 n 件」；>3 「现货 n 件」；破损跟在后面。
+ * ≤3 紧缺「仅剩 n 件」；>3 「现货 n 件」；例外品相仅 >0 时追加。
  */
 (function (global) {
   function escapeHtml(s) {
@@ -11,6 +11,22 @@
       .replace(/"/g, "&quot;");
   }
 
+  function appendException(parts, label, value) {
+    var n = value != null ? Number(value) : 0;
+    if (!isNaN(n) && n > 0) {
+      parts.push('<span class="dmg">' + escapeHtml(label + " " + n) + "</span>");
+    }
+  }
+
+  function renderExceptionsHtml(item) {
+    item = item || {};
+    var parts = [];
+    appendException(parts, "无袋", item.qtyNoBag);
+    appendException(parts, "破损", item.qtyDamaged);
+    appendException(parts, "破损无袋", item.qtyDamagedNoBag);
+    return parts.join("");
+  }
+
   function renderHtml(item) {
     item = item || {};
     var qty = item.totalQty != null ? Number(item.totalQty) : 0;
@@ -19,17 +35,12 @@
     }
     var scarce = qty <= 3;
     var label = scarce ? "仅剩 " + qty + " 件" : "现货 " + qty + " 件";
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg =
-        '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
-    }
     return (
       '<span class="stock ' +
       (scarce ? "scarce" : "normal") +
       '">' +
       escapeHtml(label) +
-      dmg +
+      renderExceptionsHtml(item) +
       "</span>"
     );
   }
@@ -37,5 +48,6 @@
   global.ChaiSaleStock = {
     SCARCE_MAX: 3,
     renderHtml: renderHtml,
+    renderExceptionsHtml: renderExceptionsHtml,
   };
-})(window);
+})(typeof window !== "undefined" ? window : this);

@@ -114,7 +114,7 @@
                         <th width="110">年份/批次</th>
                         <th width="220">展示图</th>
                         <th width="80">件数</th>
-                        <th width="90">外观破损</th>
+                        <th width="140">品相</th>
                         <th width="100" th:if="${bill.billType != 3}">单价</th>
                         <th width="100" th:if="${bill.billType != 3}">金额</th>
                         <th width="150">行备注</th>
@@ -136,7 +136,11 @@
                             <span th:if="${it.showImageList == null or it.showImageList.isEmpty()}">-</span>
                         </td>
                         <td th:text="${it.qty}"></td>
-                        <td th:text="${it.appearanceDamaged != null and it.appearanceDamaged == 1} ? '是' : '否'"></td>
+                        <td>
+                            <span th:each="q : ${qualityOptions}"
+                                  th:if="${q.code == it.quality}" th:text="${q.message}"></span>
+                            <span th:if="${it.quality == null}">-</span>
+                        </td>
                         <td th:if="${bill.billType != 3}" th:text="${it.price}"></td>
                         <td th:if="${bill.billType != 3}" th:text="${it.amount}"></td>
                         <td th:text="${it.remark}"></td>

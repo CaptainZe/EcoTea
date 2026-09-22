@@ -15,6 +15,7 @@ public class ChaiSkuSaleWhStockVO implements Serializable {
     private Long whId;
     private String shortName;
     private Integer qty;
-    /** 破损数量；仅 &gt;0 时前端展示 */
-    private Integer damageQty;
+    private Integer qtyNoBag;
+    private Integer qtyDamaged;
+    private Integer qtyDamagedNoBag;
 }

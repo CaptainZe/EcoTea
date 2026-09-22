@@ -155,11 +155,17 @@ public class WxKeywordReplyService {
 
         if (item.getTotalQty() != null) {
             block.append('\n').append("库存数量：").append(item.getTotalQty());
-            if (item.getDamageQty() != null && item.getDamageQty() > 0) {
-                block.append("，破损：").append(item.getDamageQty());
-            }
+            appendStockExtra(block, "无提袋", item.getQtyNoBag());
+            appendStockExtra(block, "破损", item.getQtyDamaged());
+            appendStockExtra(block, "破损无袋", item.getQtyDamagedNoBag());
         }
         return block.toString();
+    }
+
+    private static void appendStockExtra(StringBuilder block, String label, Integer qty) {
+        if (qty != null && qty > 0) {
+            block.append("，").append(label).append("：").append(qty);
+        }
     }
 
     private static void appendLabeledLine(StringBuilder block, String label, String value) {

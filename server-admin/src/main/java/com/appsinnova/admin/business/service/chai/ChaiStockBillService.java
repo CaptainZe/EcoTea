@@ -4,6 +4,7 @@ import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
+import com.appsinnova.admin.business.common.enums.chai.ChaiStockQuality;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockReason;
 import com.appsinnova.admin.business.common.utils.RedisSeqUtils;
 import com.appsinnova.admin.business.common.utils.chai.ChaiStockBillNoUtil;
@@ -114,8 +115,7 @@ public class ChaiStockBillService {
                 throw new IllegalArgumentException("已删除的SKU不能入库，请先恢复：" + sku.getSkuCode());
             }
             int qty = line.getQty();
-            int appearanceDamaged = YesOrNo.isYes(line.getAppearanceDamaged())
-                    ? YesOrNo.YES.getCode() : YesOrNo.NO.getCode();
+            int qualityCode = requireQualityCode(line);
             BigDecimal price = line.getPrice() == null ? BigDecimal.ZERO : line.getPrice();
             if (price.compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("单价不能为负数");
@@ -126,7 +126,7 @@ public class ChaiStockBillService {
             item.setSkuCode(sku.getSkuCode() != null ? sku.getSkuCode() : "");
             item.setName(sku.getName() != null ? sku.getName() : "");
             item.setQty(qty);
-            item.setAppearanceDamaged(appearanceDamaged);
+            item.setQuality(qualityCode);
             item.setPrice(price);
             item.setAmount(amount);
             item.setRemark(StringUtils.hasText(line.getRemark()) ? line.getRemark().trim() : "");
@@ -159,8 +159,12 @@ public class ChaiStockBillService {
         for (ChaiStockBillItem item : preparedItems) {
             item.setBillId(bill.getId());
             chaiStockBillItemRepository.save(item);
-            applyStockChange(billType, saveVo.getFromWhId(), toWhId, item.getSkuId(), item.getQty(),
-                    YesOrNo.isYes(item.getAppearanceDamaged()), operator, false);
+            try {
+                applyStockChange(billType, saveVo.getFromWhId(), toWhId, item.getSkuId(), item.getQty(),
+                        item.getQuality(), operator, false);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException(formatLineStockError(item, ex.getMessage()), ex);
+            }
         }
         return bill;
     }
@@ -174,9 +178,16 @@ public class ChaiStockBillService {
         ChaiStockBillType billType = ChaiStockBillType.fromCode(bill.getBillType());
         List<ChaiStockBillItem> items = listItems(billId);
         for (ChaiStockBillItem item : items) {
-            applyStockChange(billType, bill.getFromWhId(), bill.getToWhId(),
-                    item.getSkuId(), item.getQty(),
-                    YesOrNo.isYes(item.getAppearanceDamaged()), operator, true);
+            if (ChaiStockQuality.fromCode(item.getQuality()) == null) {
+                throw new IllegalArgumentException(formatLineStockError(item, "品相无效，无法作废回滚"));
+            }
+            try {
+                applyStockChange(billType, bill.getFromWhId(), bill.getToWhId(),
+                        item.getSkuId(), item.getQty(),
+                        item.getQuality(), operator, true);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException(formatLineStockError(item, ex.getMessage()), ex);
+            }
         }
         bill.setStatus(ChaiStockBillStatus.VOIDED.getCode());
         bill.setOperator(operator != null ? operator : "");
@@ -212,24 +223,45 @@ public class ChaiStockBillService {
     }
 
     private void applyStockChange(ChaiStockBillType billType, Long fromWhId, Long toWhId,
-                                  Long skuId, int qty, boolean appearanceDamaged,
+                                  Long skuId, int qty, Integer qualityCode,
                                   String operator, boolean reverse) {
+        ChaiStockQuality quality = ChaiStockQuality.fromCode(qualityCode);
+        if (quality == null) {
+            throw new IllegalArgumentException("品相无效");
+        }
         int sign = reverse ? -1 : 1;
         switch (billType) {
             case IN:
-                // 入库：from_wh 为入到哪
-                chaiStockService.applyWhDelta(skuId, fromWhId, sign * qty, appearanceDamaged, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, sign * qty, quality, operator);
                 break;
             case OUT:
-                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, appearanceDamaged, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, quality, operator);
                 break;
             case TRANSFER:
-                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, appearanceDamaged, operator);
-                chaiStockService.applyWhDelta(skuId, toWhId, sign * qty, appearanceDamaged, operator);
+                chaiStockService.applyWhDelta(skuId, fromWhId, -sign * qty, quality, operator);
+                chaiStockService.applyWhDelta(skuId, toWhId, sign * qty, quality, operator);
                 break;
             default:
                 throw new IllegalArgumentException("不支持的单据类型");
         }
+    }
+
+    /**
+     * 校验并解析品相：必须为 1–4。
+     */
+    private int requireQualityCode(ChaiStockBillItem line) {
+        ChaiStockQuality quality = ChaiStockQuality.fromCode(line == null ? null : line.getQuality());
+        if (quality == null) {
+            throw new IllegalArgumentException("请选择品相（完整/无提袋/破损/破损无袋）");
+        }
+        return quality.getCode();
+    }
+
+    private String formatLineStockError(ChaiStockBillItem item, String message) {
+        String code = item != null && StringUtils.hasText(item.getSkuCode()) ? item.getSkuCode() : "SKU";
+        ChaiStockQuality quality = item == null ? null : ChaiStockQuality.fromCode(item.getQuality());
+        String qualityLabel = quality != null ? quality.getMessage() : "未知品相";
+        return code + "（" + qualityLabel + "）：" + message;
     }
 
     private void validateSaveVo(ChaiStockBillSaveVo saveVo) {
@@ -263,6 +295,7 @@ public class ChaiStockBillService {
             if (line.getQty() == null || line.getQty() <= 0) {
                 throw new IllegalArgumentException("明细件数必须大于0");
             }
+            requireQualityCode(line);
         }
     }
 

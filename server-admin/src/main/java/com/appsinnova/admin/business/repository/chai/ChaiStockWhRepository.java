@@ -18,36 +18,63 @@ public interface ChaiStockWhRepository extends JpaRepository<ChaiStockWh, Long> 
     boolean existsByWhId(Long whId);
 
     /**
-     * 完好行：只动总数；要求结果 qty/damage 非负且 damage &lt;= qty。
+     * 完整：只动总数；三例外合计 &lt;= 结果 qty。
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update ChaiStockWh w set w.qty = w.qty + :delta, w.version = w.version + 1 "
             + "where w.id = :id and w.version = :version "
             + "and w.qty + :delta >= 0 "
-            + "and w.damageQty <= w.qty + :delta")
-    int applyGoodQtyDelta(@Param("id") Long id,
-                          @Param("delta") int delta,
-                          @Param("version") int version);
+            + "and coalesce(w.qtyNoBag, 0) + coalesce(w.qtyDamaged, 0) + coalesce(w.qtyDamagedNoBag, 0) "
+            + "<= w.qty + :delta")
+    int applyIntactQtyDelta(@Param("id") Long id,
+                            @Param("delta") int delta,
+                            @Param("version") int version);
 
     /**
-     * 破损行：总数与破损结存同步增减。
+     * 外观完整无提袋：总数与 qtyNoBag 同步增减。
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update ChaiStockWh w set w.qty = w.qty + :delta, w.damageQty = w.damageQty + :delta, "
+    @Query("update ChaiStockWh w set w.qty = w.qty + :delta, "
+            + "w.qtyNoBag = coalesce(w.qtyNoBag, 0) + :delta, "
             + "w.version = w.version + 1 "
             + "where w.id = :id and w.version = :version "
             + "and w.qty + :delta >= 0 "
-            + "and w.damageQty + :delta >= 0 "
-            + "and w.damageQty + :delta <= w.qty + :delta")
+            + "and coalesce(w.qtyNoBag, 0) + :delta >= 0 "
+            + "and coalesce(w.qtyNoBag, 0) + :delta + coalesce(w.qtyDamaged, 0) "
+            + "+ coalesce(w.qtyDamagedNoBag, 0) <= w.qty + :delta")
+    int applyNoBagQtyDelta(@Param("id") Long id,
+                           @Param("delta") int delta,
+                           @Param("version") int version);
+
+    /**
+     * 外观破损有提袋：总数与 qtyDamaged 同步增减。
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update ChaiStockWh w set w.qty = w.qty + :delta, "
+            + "w.qtyDamaged = coalesce(w.qtyDamaged, 0) + :delta, "
+            + "w.version = w.version + 1 "
+            + "where w.id = :id and w.version = :version "
+            + "and w.qty + :delta >= 0 "
+            + "and coalesce(w.qtyDamaged, 0) + :delta >= 0 "
+            + "and coalesce(w.qtyNoBag, 0) + coalesce(w.qtyDamaged, 0) + :delta "
+            + "+ coalesce(w.qtyDamagedNoBag, 0) <= w.qty + :delta")
     int applyDamagedQtyDelta(@Param("id") Long id,
                              @Param("delta") int delta,
                              @Param("version") int version);
 
-    /** @deprecated 请使用 {@link #applyGoodQtyDelta} / {@link #applyDamagedQtyDelta} */
+    /**
+     * 外观破损无提袋：总数与 qtyDamagedNoBag 同步增减。
+     */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update ChaiStockWh w set w.qty = w.qty + :delta, w.version = w.version + 1 "
-            + "where w.id = :id and w.version = :version and w.qty + :delta >= 0")
-    int applyQtyDelta(@Param("id") Long id,
-                      @Param("delta") int delta,
-                      @Param("version") int version);
+    @Query("update ChaiStockWh w set w.qty = w.qty + :delta, "
+            + "w.qtyDamagedNoBag = coalesce(w.qtyDamagedNoBag, 0) + :delta, "
+            + "w.version = w.version + 1 "
+            + "where w.id = :id and w.version = :version "
+            + "and w.qty + :delta >= 0 "
+            + "and coalesce(w.qtyDamagedNoBag, 0) + :delta >= 0 "
+            + "and coalesce(w.qtyNoBag, 0) + coalesce(w.qtyDamaged, 0) "
+            + "+ coalesce(w.qtyDamagedNoBag, 0) + :delta <= w.qty + :delta")
+    int applyDamagedNoBagQtyDelta(@Param("id") Long id,
+                                  @Param("delta") int delta,
+                                  @Param("version") int version);
 }

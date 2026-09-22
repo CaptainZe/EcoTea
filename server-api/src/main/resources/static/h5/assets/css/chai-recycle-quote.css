@@ -18,7 +18,9 @@
 }
 
 body.inner-recycle-detail .recycle-quote-fab {
-  bottom: calc(5.2rem + env(safe-area-inset-bottom));
+  bottom: auto;
+  top: 52%;
+  right: 0.75rem;
 }
 
 .recycle-quote-fab[hidden] {

@@ -125,6 +125,28 @@
     return parts.join(" · ");
   }
 
+  function stockExceptionsHtml(item, cssClass) {
+    item = item || {};
+    var cls = cssClass || "dmg";
+    var parts = [];
+    function push(label, value) {
+      var n = value != null ? Number(value) : 0;
+      if (!isNaN(n) && n > 0) {
+        parts.push(
+          '<span class="' +
+            cls +
+            '">' +
+            escapeHtml(label + " " + n) +
+            "</span>"
+        );
+      }
+    }
+    push("无袋", item.qtyNoBag);
+    push("破损", item.qtyDamaged);
+    push("破损无袋", item.qtyDamagedNoBag);
+    return parts.join("");
+  }
+
   function stockHtml(item) {
     var qty = item.totalQty != null ? Number(item.totalQty) : 0;
     if (isNaN(qty) || qty < 0) {
@@ -132,17 +154,12 @@
     }
     var scarce = qty <= 3;
     var label = "库存 " + qty + " 件";
-    var dmg = "";
-    if (item.damageQty != null && item.damageQty > 0) {
-      dmg =
-        '<span class="dmg">破损 ' + escapeHtml(item.damageQty) + "</span>";
-    }
     return (
       '<span class="stock ' +
       (scarce ? "scarce" : "normal") +
       '">' +
       escapeHtml(label) +
-      dmg +
+      stockExceptionsHtml(item) +
       "</span>"
     );
   }
@@ -345,13 +362,7 @@
         if (!name) {
           return "";
         }
-        var dmg = "";
-        if (row.damageQty != null && Number(row.damageQty) > 0) {
-          dmg =
-            '<span class="wh-stock-dmg">破损 ' +
-            escapeHtml(row.damageQty) +
-            "</span>";
-        }
+        var dmg = stockExceptionsHtml(row, "wh-stock-dmg");
         return (
           '<li class="wh-stock-row">' +
           '<span class="wh-stock-name">' +

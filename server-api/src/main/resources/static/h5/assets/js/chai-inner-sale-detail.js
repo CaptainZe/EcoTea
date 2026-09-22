@@ -149,8 +149,18 @@
     push("售价", formatPriceLineForCopy(item.salePriceShow));
     if (item.totalQty != null) {
       var stock = "库存数量：" + item.totalQty;
-      if (item.damageQty != null && item.damageQty > 0) {
-        stock += "，破损：" + item.damageQty;
+      var extras = [];
+      if (item.qtyNoBag != null && Number(item.qtyNoBag) > 0) {
+        extras.push("无袋：" + item.qtyNoBag);
+      }
+      if (item.qtyDamaged != null && Number(item.qtyDamaged) > 0) {
+        extras.push("破损：" + item.qtyDamaged);
+      }
+      if (item.qtyDamagedNoBag != null && Number(item.qtyDamagedNoBag) > 0) {
+        extras.push("破损无袋：" + item.qtyDamagedNoBag);
+      }
+      if (extras.length) {
+        stock += "，" + extras.join("，");
       }
       lines.push(stock);
     }
@@ -355,12 +365,29 @@
         if (!name) {
           return "";
         }
-        var dmg = "";
-        if (row.damageQty != null && Number(row.damageQty) > 0) {
-          dmg =
-            '<span class="wh-stock-dmg">破损 ' +
-            escapeHtml(row.damageQty) +
-            "</span>";
+        var dmg =
+          window.ChaiSaleStock && window.ChaiSaleStock.renderExceptionsHtml
+            ? window.ChaiSaleStock.renderExceptionsHtml(row).replace(
+                /class="dmg"/g,
+                'class="wh-stock-dmg"'
+              )
+            : "";
+        if (!dmg) {
+          var parts = [];
+          function push(label, value) {
+            var n = value != null ? Number(value) : 0;
+            if (!isNaN(n) && n > 0) {
+              parts.push(
+                '<span class="wh-stock-dmg">' +
+                  escapeHtml(label + " " + n) +
+                  "</span>"
+              );
+            }
+          }
+          push("无袋", row.qtyNoBag);
+          push("破损", row.qtyDamaged);
+          push("破损无袋", row.qtyDamagedNoBag);
+          dmg = parts.join("");
         }
         return (
           '<li class="wh-stock-row">' +
@@ -662,8 +689,18 @@
     }
 
     var qtyText = String(qty);
-    if (item.damageQty != null && Number(item.damageQty) > 0) {
-      qtyText += "（破损 " + Number(item.damageQty) + "）";
+    var qtyExtras = [];
+    if (item.qtyNoBag != null && Number(item.qtyNoBag) > 0) {
+      qtyExtras.push("无袋 " + Number(item.qtyNoBag));
+    }
+    if (item.qtyDamaged != null && Number(item.qtyDamaged) > 0) {
+      qtyExtras.push("破损 " + Number(item.qtyDamaged));
+    }
+    if (item.qtyDamagedNoBag != null && Number(item.qtyDamagedNoBag) > 0) {
+      qtyExtras.push("破损无袋 " + Number(item.qtyDamagedNoBag));
+    }
+    if (qtyExtras.length) {
+      qtyText += "（" + qtyExtras.join(" · ") + "）";
     }
     rows += attrExportRow("数量", escapeHtml(qtyText));
     rows += attrExportRow(

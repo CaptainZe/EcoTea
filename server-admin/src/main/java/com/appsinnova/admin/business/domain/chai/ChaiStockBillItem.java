@@ -27,11 +27,14 @@ public class ChaiStockBillItem implements Serializable {
     private String skuCode;
     private String name;
     private Integer qty;
-    /** 是否外观破损：0否 1是（本行 qty 全部计入破损结存） */
-    private Integer appearanceDamaged;
+    /**
+     * 品相：1完整 2无提袋 3破损 4破损无袋
+     * @see com.appsinnova.admin.business.common.enums.chai.ChaiStockQuality
+     */
+    private Integer quality;
     private BigDecimal price;
     private BigDecimal amount;
-    /** 行备注：破损、无提袋等 */
+    /** 行备注 */
     private String remark;
     @Column(columnDefinition = "text")
     private String skuSnap;

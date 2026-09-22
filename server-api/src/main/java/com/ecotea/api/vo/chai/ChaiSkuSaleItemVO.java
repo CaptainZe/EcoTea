@@ -36,8 +36,12 @@ public class ChaiSkuSaleItemVO implements Serializable {
     private String discountShow;
     /** 全仓库存总数 */
     private Integer totalQty;
-    /** 破损数量；仅 >0 时有意义，前端按需展示 */
-    private Integer damageQty;
+    /** 外观完整无提袋；仅 >0 时前端展示 */
+    private Integer qtyNoBag;
+    /** 外观破损有提袋；仅 >0 时前端展示 */
+    private Integer qtyDamaged;
+    /** 外观破损无提袋；仅 >0 时前端展示 */
+    private Integer qtyDamagedNoBag;
     /**
      * 有货仓简称列表（无数量）。列表在 includeWh=1 时填充；详情一般为空。
      */

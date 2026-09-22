@@ -22,8 +22,12 @@ public class ChaiStock implements Serializable {
 
     private Long skuId;
     private Integer totalQty;
-    /** 外观破损结存（计入 totalQty） */
-    private Integer damageQty;
+    /** 外观完整无提袋（计入 totalQty） */
+    private Integer qtyNoBag;
+    /** 外观破损有提袋（计入 totalQty） */
+    private Integer qtyDamaged;
+    /** 外观破损无提袋（计入 totalQty） */
+    private Integer qtyDamagedNoBag;
     private String operator;
     private Long updateTime;
     private Long createTime;
@@ -77,7 +81,13 @@ public class ChaiStock implements Serializable {
     /** 列表展示件数（未选仓=全仓合计；选仓=本仓 qty） */
     @Transient
     private Integer listQty;
-    /** 列表展示破损（未选仓=全仓破损；选仓=本仓 damageQty） */
+    /** 列表展示：无提袋（未选仓=全仓；选仓=本仓） */
     @Transient
-    private Integer listDamageQty;
+    private Integer listQtyNoBag;
+    /** 列表展示：破损有提袋 */
+    @Transient
+    private Integer listQtyDamaged;
+    /** 列表展示：破损无提袋 */
+    @Transient
+    private Integer listQtyDamagedNoBag;
 }

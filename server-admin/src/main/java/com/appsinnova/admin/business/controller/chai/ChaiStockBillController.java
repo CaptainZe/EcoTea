@@ -3,6 +3,7 @@ package com.appsinnova.admin.business.controller.chai;
 import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillStatus;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockBillType;
+import com.appsinnova.admin.business.common.enums.chai.ChaiStockQuality;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStockReason;
 import com.appsinnova.admin.business.common.utils.TimeUtils;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
@@ -112,6 +113,8 @@ public class ChaiStockBillController {
             model.addAttribute("inbound", inbound);
             model.addAttribute("showWhQty", showWhQty);
             model.addAttribute("fromWhId", fromWhId);
+            model.addAttribute("sameSpuMode", queryParam.getSpuId() != null && queryParam.getSpuId() > 0);
+            model.addAttribute("pickSpuId", queryParam.getSpuId());
             model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
             model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
             return "/business/chai/stockBill/skuPick";
@@ -146,10 +149,14 @@ public class ChaiStockBillController {
                 Map<String, Integer> one = whStockMap.get(item.getId());
                 if (one == null) {
                     item.setPickWhQty(0);
-                    item.setPickWhDamageQty(0);
+                    item.setPickWhQtyNoBag(0);
+                    item.setPickWhQtyDamaged(0);
+                    item.setPickWhQtyDamagedNoBag(0);
                 } else {
                     item.setPickWhQty(one.get("qty") != null ? one.get("qty") : 0);
-                    item.setPickWhDamageQty(one.get("damageQty") != null ? one.get("damageQty") : 0);
+                    item.setPickWhQtyNoBag(one.get("qtyNoBag") != null ? one.get("qtyNoBag") : 0);
+                    item.setPickWhQtyDamaged(one.get("qtyDamaged") != null ? one.get("qtyDamaged") : 0);
+                    item.setPickWhQtyDamagedNoBag(one.get("qtyDamagedNoBag") != null ? one.get("qtyDamagedNoBag") : 0);
                 }
             });
         }
@@ -159,6 +166,8 @@ public class ChaiStockBillController {
         model.addAttribute("inbound", inbound);
         model.addAttribute("showWhQty", showWhQty);
         model.addAttribute("fromWhId", fromWhId);
+        model.addAttribute("sameSpuMode", queryParam.getSpuId() != null && queryParam.getSpuId() > 0);
+        model.addAttribute("pickSpuId", queryParam.getSpuId());
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/stockBill/skuPick";
@@ -216,6 +225,7 @@ public class ChaiStockBillController {
         ChaiStockBill bill = chaiStockBillService.getById(id);
         if (bill == null) {
             model.addAttribute("errorMsg", "单据不存在");
+            model.addAttribute("qualityOptions", ChaiStockQuality.values());
             return "/business/chai/stockBill/detail";
         }
         List<ChaiStockBill> one = new ArrayList<>();
@@ -229,6 +239,7 @@ public class ChaiStockBillController {
         model.addAttribute("billTypeName", messageOfType(bill.getBillType()));
         model.addAttribute("statusName", messageOfStatus(bill.getStatus()));
         model.addAttribute("reasonName", messageOfReason(bill.getReason()));
+        model.addAttribute("qualityOptions", ChaiStockQuality.values());
         model.addAttribute("canOperate", ChaiStockBillStatus.POSTED.getCode().equals(bill.getStatus()));
         return "/business/chai/stockBill/detail";
     }
@@ -287,6 +298,7 @@ public class ChaiStockBillController {
     private Map<String, Object> toPickRow(ChaiSku sku) {
         Map<String, Object> row = new HashMap<>();
         row.put("id", sku.getId());
+        row.put("spuId", sku.getSpuId());
         row.put("skuCode", sku.getSkuCode());
         row.put("name", sku.getName());
         row.put("brandName", sku.getBrandName());
