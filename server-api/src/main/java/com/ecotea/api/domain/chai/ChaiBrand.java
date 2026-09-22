@@ -16,6 +16,10 @@ public class ChaiBrand implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
+    /** 品牌名称首字母（A-Z / #） */
+    private String nameInitial;
+    /** 品牌名称每字首字母拼接 */
+    private String namePinyin;
     private String logo;
     private Integer orderNum;
     private Integer status;

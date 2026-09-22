@@ -1,9 +1,7 @@
 package com.appsinnova.admin.business.common.utils.tea;
 
+import com.appsinnova.admin.business.common.utils.PinyinUtil;
 import com.appsinnova.admin.common.utils.DictUtils;
-import net.sourceforge.pinyin4j.PinyinHelper;
-import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,7 +27,7 @@ public class SkuUtil {
         Map<String, Integer> counter = new HashMap<>();
 
         for (Map.Entry<String, String> entry : input.entrySet()) {
-            String initial = getInitials(entry.getValue());
+            String initial = PinyinUtil.nameInitials(entry.getValue());
 
             // 处理重复
             int count = counter.getOrDefault(initial, 0) + 1;
@@ -43,28 +41,5 @@ public class SkuUtil {
         }
 
         return result;
-    }
-
-    // 获取中文拼音首字母
-    private static String getInitials(String chinese) {
-        StringBuilder sb = new StringBuilder();
-        HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
-        format.setCaseType(HanyuPinyinCaseType.UPPERCASE);
-
-        for (char c : chinese.toCharArray()) {
-            if (Character.toString(c).matches("[\\u4E00-\\u9FA5]")) {
-                try {
-                    String[] pinyin = PinyinHelper.toHanyuPinyinStringArray(c, format);
-                    if (pinyin != null && pinyin.length > 0) {
-                        sb.append(pinyin[0].charAt(0));
-                    }
-                } catch (Exception e) {
-                    // 忽略异常字符
-                }
-            } else if (Character.isLetterOrDigit(c)) {
-                sb.append(Character.toUpperCase(c));
-            }
-        }
-        return sb.toString();
     }
 }

@@ -36,7 +36,7 @@
 
             <div class="pull-right screen-btn-group">
                 <button class="layui-btn open-popup" data-title="添加品牌"
-                        th:attr="data-url=@{/business/chai/brand/edit}" data-size="640,620">
+                        th:attr="data-url=@{/business/chai/brand/edit}" data-size="640,720">
                     <i class="fa fa-plus"></i> 添加
                 </button>
                 <div class="btn-group">
@@ -64,6 +64,8 @@
                     <th width="100">操作</th>
                     <th width="90" class="sortable" data-field="status">状态</th>
                     <th width="200">品牌名称</th>
+                    <th width="80" class="sortable" data-field="nameInitial">首字母</th>
+                    <th width="120">全字母</th>
                     <th width="80">Logo</th>
                     <th width="110" class="sortable" data-field="orderNum">排序号（大到小）</th>
                     <th width="100">操作人</th>
@@ -77,7 +79,7 @@
                         <i class="layui-icon layui-icon-ok"></i></label></td>
                     <td>
                         <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑品牌"
-                           th:attr="data-url=@{'/business/chai/brand/edit/'+${item.id}}" data-size="640,620">编辑</a>
+                           th:attr="data-url=@{'/business/chai/brand/edit/'+${item.id}}" data-size="640,720">编辑</a>
                         <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
                            data-msg="是否确认下架"
                            th:href="@{/business/chai/brand/status/0(ids=${item.id})}">下架</a>
@@ -88,6 +90,8 @@
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td th:text="${item.nameInitial}" th:title="${item.nameInitial}"></td>
+                    <td th:text="${item.namePinyin}" th:title="${item.namePinyin}"></td>
                     <td>
                         <th:block th:replace="/common/fragment :: previewImg(${item.logo})"></th:block>
                     </td>

@@ -64,6 +64,24 @@
         </div>
 
         <div class="layui-form-item">
+            <label class="layui-form-label">首字母</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" th:value="${editItem?.nameInitial}" readonly
+                       placeholder="保存后自动生成">
+                <div class="field-tip">由品牌名称自动生成（A–Z / #），不可编辑</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">全字母</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" th:value="${editItem?.namePinyin}" readonly
+                       placeholder="保存后自动生成">
+                <div class="field-tip">每字首字母拼接，保存时按名称重算</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
             <label class="layui-form-label required">状态</label>
             <div class="layui-input-block">
                 <select class="timo-search-select" name="status" mo:dict="CHAI_STATUS"

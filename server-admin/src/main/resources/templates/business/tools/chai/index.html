@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>茶业数据工具</title>
+    <style>
+        .tool-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            background: #FAFAFA;
+        }
+        .tool-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .tool-card .tool-desc {
+            color: #6B7280;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .tool-card .tool-stat {
+            color: #B45309;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .tool-card .layui-btn + .layui-btn {
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-wrench"></i> 茶业数据工具</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <p style="color:#6B7280;font-size:13px;margin:0 0 16px 0;">
+            用于发版后刷历史数据。操作会直接写库，请确认环境后再执行。
+        </p>
+
+        <div class="tool-card">
+            <h3>品牌拼音字段回填</h3>
+            <div class="tool-desc">
+                根据品牌名称重算 <code>name_initial</code>（首字母）与 <code>name_pinyin</code>（每字首字母）。
+                新建/编辑品牌已自动写入；本工具用于历史数据补齐或规则变更后全量重算。
+            </div>
+            <div class="tool-stat">
+                当前首字母或全字母为空：
+                <strong th:text="${brandMissingLetters}">0</strong> 条
+            </div>
+            <button type="button" class="layui-btn" id="btnFillEmpty">仅回填空值</button>
+            <button type="button" class="layui-btn layui-btn-danger" id="btnFillAll">全量重算</button>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var fillUrl = /*[[@{/business/tools/chai/brand/fillNameLetters}]]*/ '';
+    /*]]>*/
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        function runFill(forceAll, tip) {
+            layer.confirm(tip, {icon: 3, title: '确认执行'}, function (index) {
+                layer.close(index);
+                var loading = layer.load(2);
+                $.post(fillUrl, {forceAll: forceAll}, function (res) {
+                    layer.close(loading);
+                    if (res.code === 200) {
+                        layer.msg(res.msg || '完成', {time: 2500}, function () {
+                            location.reload();
+                        });
+                    } else {
+                        layer.msg(res.msg || '执行失败');
+                    }
+                }).fail(function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                });
+            });
+        }
+
+        $('#btnFillEmpty').on('click', function () {
+            runFill(false, '仅为首字母或全字母为空的品牌回填，是否继续？');
+        });
+        $('#btnFillAll').on('click', function () {
+            runFill(true, '将按当前名称全量重算所有品牌的拼音字段，是否继续？');
+        });
+    });
+</script>
+</body>
+</html>
