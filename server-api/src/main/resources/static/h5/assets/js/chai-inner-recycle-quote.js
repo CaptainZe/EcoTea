@@ -147,9 +147,9 @@
       "</div>" +
       '<div class="qty-row">' +
       '<button type="button" class="qty-btn" data-act="dec" aria-label="减少">−</button>' +
-      '<span class="qty-val">' +
+      '<input type="number" class="qty-input" data-act="qty" min="1" step="1" inputmode="numeric" aria-label="数量" value="' +
       escapeHtml(item.qty || 1) +
-      "</span>" +
+      '"/>' +
       '<button type="button" class="qty-btn" data-act="inc" aria-label="增加">+</button>' +
       '<button type="button" class="qty-remove" data-act="remove">移除</button>' +
       "</div>" +
@@ -231,7 +231,7 @@
   });
 
   els.list.addEventListener("change", function (e) {
-    var input = e.target.closest('input[data-act="price"]');
+    var input = e.target.closest("input[data-act]");
     if (!input || !window.ChaiRecycleQuote) {
       return;
     }
@@ -239,14 +239,40 @@
     if (!card) {
       return;
     }
-    window.ChaiRecycleQuote.setQuotePrice(
-      card.getAttribute("data-id"),
-      input.value
-    );
+    var id = card.getAttribute("data-id");
+    var act = input.getAttribute("data-act");
+    if (act === "price") {
+      window.ChaiRecycleQuote.setQuotePrice(id, input.value);
+      return;
+    }
+    if (act === "qty") {
+      var row = findRow(id);
+      var prev = row && row.qty != null ? Number(row.qty) : 1;
+      if (isNaN(prev) || prev < 1) {
+        prev = 1;
+      }
+      var raw = String(input.value == null ? "" : input.value).trim();
+      if (raw === "") {
+        input.value = String(prev);
+        return;
+      }
+      var n = Number(raw);
+      if (isNaN(n) || n < 0) {
+        input.value = String(prev);
+        return;
+      }
+      if (n < 1) {
+        window.ChaiRecycleQuote.setQty(id, 0);
+        return;
+      }
+      window.ChaiRecycleQuote.setQty(id, Math.floor(n));
+    }
   });
 
   els.list.addEventListener("keydown", function (e) {
-    var input = e.target.closest('input[data-act="price"]');
+    var input = e.target.closest(
+      'input[data-act="price"], input[data-act="qty"]'
+    );
     if (!input || e.key !== "Enter") {
       return;
     }

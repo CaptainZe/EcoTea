@@ -145,9 +145,9 @@
       "</div>" +
       '<div class="qty-row">' +
       '<button type="button" class="qty-btn" data-act="dec" aria-label="减少">−</button>' +
-      '<span class="qty-val">' +
+      '<input type="number" class="qty-input" data-act="qty" min="1" step="1" inputmode="numeric" aria-label="数量" value="' +
       escapeHtml(item.qty || 1) +
-      "</span>" +
+      '"/>' +
       '<button type="button" class="qty-btn" data-act="inc" aria-label="增加">+</button>' +
       '<button type="button" class="qty-remove" data-act="remove">移除</button>' +
       "</div>" +
@@ -201,9 +201,22 @@
     els.list.innerHTML = items.map(renderItem).join("");
   }
 
+  function findRow(id) {
+    var items = window.ChaiInquiryCart.getItems();
+    for (var i = 0; i < items.length; i++) {
+      if (String(items[i].id) === String(id)) {
+        return items[i];
+      }
+    }
+    return null;
+  }
+
   els.list.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-act]");
     if (!btn || !window.ChaiInquiryCart) {
+      return;
+    }
+    if (btn.tagName === "INPUT") {
       return;
     }
     var card = btn.closest(".card");
@@ -212,14 +225,7 @@
     }
     var id = card.getAttribute("data-id");
     var act = btn.getAttribute("data-act");
-    var items = window.ChaiInquiryCart.getItems();
-    var row = null;
-    for (var i = 0; i < items.length; i++) {
-      if (String(items[i].id) === String(id)) {
-        row = items[i];
-        break;
-      }
-    }
+    var row = findRow(id);
     if (!row) {
       return;
     }
@@ -230,6 +236,47 @@
     } else if (act === "remove") {
       window.ChaiInquiryCart.remove(id);
     }
+  });
+
+  els.list.addEventListener("change", function (e) {
+    var input = e.target.closest('input[data-act="qty"]');
+    if (!input || !window.ChaiInquiryCart) {
+      return;
+    }
+    var card = input.closest(".card");
+    if (!card) {
+      return;
+    }
+    var id = card.getAttribute("data-id");
+    var row = findRow(id);
+    var prev = row && row.qty != null ? Number(row.qty) : 1;
+    if (isNaN(prev) || prev < 1) {
+      prev = 1;
+    }
+    var raw = String(input.value == null ? "" : input.value).trim();
+    if (raw === "") {
+      input.value = String(prev);
+      return;
+    }
+    var n = Number(raw);
+    if (isNaN(n) || n < 0) {
+      input.value = String(prev);
+      return;
+    }
+    if (n < 1) {
+      window.ChaiInquiryCart.setQty(id, 0);
+      return;
+    }
+    window.ChaiInquiryCart.setQty(id, Math.floor(n));
+  });
+
+  els.list.addEventListener("keydown", function (e) {
+    var input = e.target.closest('input[data-act="qty"]');
+    if (!input || e.key !== "Enter") {
+      return;
+    }
+    e.preventDefault();
+    input.blur();
   });
 
   if (els.copyBtn) {

@@ -120,11 +120,35 @@ body {
   padding: 0;
 }
 
-.qty-val {
-  min-width: 1.5rem;
+.qty-val,
+.qty-input {
+  min-width: 2.4rem;
+  width: 2.8rem;
+  height: 1.7rem;
   text-align: center;
   font-weight: 650;
   font-size: 0.95rem;
+}
+
+.qty-input {
+  padding: 0 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  color: var(--ink, #1c241c);
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty-input:focus {
+  border-color: var(--accent);
 }
 
 .qty-remove {
