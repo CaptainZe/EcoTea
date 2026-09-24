@@ -19,9 +19,17 @@
     captureHint: document.getElementById("captureHint"),
     captureSave: document.getElementById("captureSave"),
     captureLoading: document.getElementById("captureLoading"),
+    swapSheet: document.getElementById("swapSheet"),
+    swapHint: document.getElementById("swapHint"),
+    swapList: document.getElementById("swapList"),
+    swapEmpty: document.getElementById("swapEmpty"),
   };
 
   var lastCaptureDataUrl = null;
+  var swapFromId = null;
+  var swapItemMap = {};
+  var swapAbort = null;
+  var swapToken = 0;
 
   function escapeHtml(s) {
     return String(s == null ? "" : s)
@@ -204,8 +212,12 @@
       escapeHtml(item.qty || 1) +
       '"/>' +
       '<button type="button" class="qty-btn" data-act="inc" aria-label="增加">+</button>' +
+      '<div class="qty-row-end">' +
+      (item.spuId
+        ? '<button type="button" class="qty-swap" data-act="swap">换同款</button>'
+        : "") +
       '<button type="button" class="qty-remove" data-act="remove">移除</button>' +
-      "</div>" +
+      "</div></div>" +
       "</div></li>"
     );
   }
@@ -280,6 +292,8 @@
       window.ChaiSaleQuote.setQty(id, (row.qty || 1) - 1);
     } else if (act === "remove") {
       window.ChaiSaleQuote.remove(id);
+    } else if (act === "swap") {
+      openSwapSheet(row);
     }
   });
 
@@ -332,6 +346,310 @@
     e.preventDefault();
     input.blur();
   });
+
+  /* —— 换同款 —— */
+  function imageUrlsOf(item) {
+    var urls = item.imageUrls || item.image_urls || [];
+    if ((!urls || !urls.length) && item.coverImage) {
+      return [item.coverImage];
+    }
+    return urls || [];
+  }
+
+  function whChipsHtml(item) {
+    var names = item.whShortNames || item.wh_short_names || [];
+    if (!names.length) {
+      return "";
+    }
+    var chips = names
+      .map(function (name) {
+        if (!name) {
+          return "";
+        }
+        return '<span class="wh-chip">' + escapeHtml(name) + "</span>";
+      })
+      .join("");
+    if (!chips) {
+      return "";
+    }
+    return '<div class="wh-chips">' + chips + "</div>";
+  }
+
+  function stockHtml(item) {
+    if (window.ChaiSaleStock && window.ChaiSaleStock.renderHtml) {
+      return window.ChaiSaleStock.renderHtml(item);
+    }
+    return "";
+  }
+
+  function swapActionBtnHtml(item) {
+    var id = item.id;
+    if (id == null) {
+      return "";
+    }
+    if (String(id) === String(swapFromId)) {
+      return (
+        '<button type="button" class="add-cart-btn is-in-cart" data-swap-act="current" data-id="' +
+        escapeHtml(id) +
+        '">当前</button>'
+      );
+    }
+    if (window.ChaiSaleQuote && window.ChaiSaleQuote.has(id)) {
+      return (
+        '<button type="button" class="add-cart-btn is-in-cart" data-swap-act="joined" data-id="' +
+        escapeHtml(id) +
+        '">已加入</button>'
+      );
+    }
+    return (
+      '<button type="button" class="add-cart-btn" data-swap-act="pick" data-id="' +
+      escapeHtml(id) +
+      '">替换</button>'
+    );
+  }
+
+  function renderSwapItem(item) {
+    var urls = imageUrlsOf(item);
+    var coverHtml = urls.length
+      ? '<div class="cover-wrap"><img class="cover" src="' +
+        escapeHtml(urls[0]) +
+        '" alt="" loading="lazy"/></div>'
+      : '<div class="cover-wrap placeholder">暂无图</div>';
+    var tags =
+      tagHtml(item.gradeName) +
+      tagHtml(item.specShow) +
+      tagHtml(item.prodBatchShow) +
+      tagHtml(item.expirationName);
+    var officialShort = formatOfficialShort(item);
+    var discountHtml = item.discountShow
+      ? '<span class="discount">' + escapeHtml(item.discountShow) + "</span>"
+      : "";
+    var isCurrent = String(item.id) === String(swapFromId);
+    var salePlain =
+      item.salePrice != null && item.salePrice !== ""
+        ? "¥ " + String(item.salePrice)
+        : item.salePriceShow
+          ? String(item.salePriceShow).replace(/\(.*$/, "").trim()
+          : "询价";
+
+    return (
+      '<li class="card swap-card' +
+      (isCurrent ? " is-current" : "") +
+      '" data-id="' +
+      escapeHtml(item.id) +
+      '">' +
+      '<div class="card-media">' +
+      coverHtml +
+      "</div>" +
+      '<div class="card-main">' +
+      '<div class="body">' +
+      '<p class="title">' +
+      escapeHtml(item.title || item.name || "") +
+      "</p>" +
+      '<div class="tags">' +
+      tags +
+      "</div>" +
+      '<div class="row-price">' +
+      '<span class="sale">' +
+      escapeHtml(salePlain) +
+      "</span>" +
+      (officialShort
+        ? '<span class="official">' + escapeHtml(officialShort) + "</span>"
+        : "") +
+      discountHtml +
+      "</div></div>" +
+      '<div class="card-foot">' +
+      stockHtml(item) +
+      whChipsHtml(item) +
+      '<div class="card-actions">' +
+      swapActionBtnHtml(item) +
+      "</div></div></div></li>"
+    );
+  }
+
+  function closeSwapSheet() {
+    if (swapAbort) {
+      try {
+        swapAbort.abort();
+      } catch (e) {
+        /* ignore */
+      }
+      swapAbort = null;
+    }
+    swapFromId = null;
+    swapItemMap = {};
+    if (els.swapSheet) {
+      els.swapSheet.hidden = true;
+    }
+    if (els.swapList) {
+      els.swapList.innerHTML = "";
+    }
+    if (els.swapEmpty) {
+      els.swapEmpty.hidden = true;
+    }
+    if (els.swapHint) {
+      els.swapHint.textContent = "";
+    }
+  }
+
+  function paintSwapList(list) {
+    var rows = (list || []).slice();
+    var current = null;
+    var others = [];
+    rows.forEach(function (it) {
+      if (!it || it.id == null) {
+        return;
+      }
+      if (String(it.id) === String(swapFromId)) {
+        current = it;
+      } else {
+        others.push(it);
+      }
+    });
+    var ordered = current ? [current].concat(others) : others;
+    swapItemMap = {};
+    ordered.forEach(function (it) {
+      swapItemMap[String(it.id)] = it;
+    });
+    if (els.swapList) {
+      els.swapList.innerHTML = ordered.map(renderSwapItem).join("");
+    }
+    if (els.swapEmpty) {
+      els.swapEmpty.hidden = others.length > 0 || ordered.length > 0;
+    }
+    if (els.swapHint) {
+      els.swapHint.textContent = others.length
+        ? "共 " + ordered.length + " 款同款 · 点「替换」换入当前行"
+        : ordered.length
+          ? "仅当前款，暂无其它同款"
+          : "";
+    }
+  }
+
+  function openSwapSheet(row) {
+    var quote = window.ChaiSaleQuote;
+    if (!quote || !row || !row.spuId) {
+      if (quote) {
+        quote.toast("暂无同款可换");
+      }
+      return;
+    }
+    swapFromId = row.id;
+    swapItemMap = {};
+    if (els.swapList) {
+      els.swapList.innerHTML = "";
+    }
+    if (els.swapEmpty) {
+      els.swapEmpty.hidden = true;
+    }
+    if (els.swapHint) {
+      els.swapHint.textContent = "加载中…";
+    }
+    if (els.swapSheet) {
+      els.swapSheet.hidden = false;
+    }
+    if (swapAbort) {
+      try {
+        swapAbort.abort();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    var ctrl =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    swapAbort = ctrl;
+    var token = ++swapToken;
+    var params = new URLSearchParams();
+    params.set("page", "1");
+    params.set("size", "50");
+    params.set("spuId", String(row.spuId));
+    params.set("includeWh", "1");
+    var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
+
+    fetch("/chai/sku/sale/list?" + params.toString(), fetchOpts)
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (body) {
+        if (token !== swapToken) {
+          return;
+        }
+        if (!body || body.code !== 0 || !body.data) {
+          if (els.swapHint) {
+            els.swapHint.textContent = "加载失败";
+          }
+          quote.toast("加载同款失败");
+          return;
+        }
+        var list = body.data.list || [];
+        var others = list.filter(function (it) {
+          return String(it.id) !== String(swapFromId);
+        });
+        paintSwapList(list);
+        if (!others.length) {
+          quote.toast("暂无其它同款");
+        }
+      })
+      .catch(function (err) {
+        if (token !== swapToken) {
+          return;
+        }
+        if (
+          err &&
+          (err.name === "AbortError" ||
+            err.code === 20 ||
+            (typeof DOMException !== "undefined" &&
+              err instanceof DOMException &&
+              err.name === "AbortError"))
+        ) {
+          return;
+        }
+        if (els.swapHint) {
+          els.swapHint.textContent = "网络异常";
+        }
+        quote.toast("网络异常");
+      });
+  }
+
+  if (els.swapSheet) {
+    els.swapSheet.addEventListener("click", function (e) {
+      if (e.target && e.target.getAttribute("data-swap-close") === "1") {
+        closeSwapSheet();
+        return;
+      }
+      var btn = e.target.closest("[data-swap-act]");
+      if (!btn || !window.ChaiSaleQuote) {
+        return;
+      }
+      var act = btn.getAttribute("data-swap-act");
+      var id = btn.getAttribute("data-id");
+      if (act === "current") {
+        window.ChaiSaleQuote.toast("已是当前款");
+        return;
+      }
+      if (act === "joined") {
+        window.ChaiSaleQuote.toast("已在销售报价单中");
+        return;
+      }
+      if (act === "pick") {
+        var item = swapItemMap[String(id)];
+        if (!item) {
+          return;
+        }
+        if (window.ChaiSaleQuote.has(item.id)) {
+          window.ChaiSaleQuote.toast("已在销售报价单中");
+          return;
+        }
+        var ok = window.ChaiSaleQuote.replace(swapFromId, item);
+        if (ok) {
+          window.ChaiSaleQuote.toast("已换同款");
+          closeSwapSheet();
+        } else {
+          window.ChaiSaleQuote.toast("替换失败");
+        }
+      }
+    });
+  }
 
   function openClearModal() {
     if (els.clearModal) {

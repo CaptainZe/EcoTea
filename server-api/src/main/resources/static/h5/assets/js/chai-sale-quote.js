@@ -183,6 +183,37 @@
     write(data);
   }
 
+  /**
+   * 用同款新 SKU 替换 oldId 行：保留数量，报价重置为新参考售价。
+   * 若新 id 已在单中则失败（不合并）。
+   */
+  function replace(oldId, newItem) {
+    if (oldId == null || !newItem || newItem.id == null) {
+      return false;
+    }
+    var data = read();
+    var oldIdx = findIndex(data.items, oldId);
+    if (oldIdx < 0) {
+      return false;
+    }
+    var newId = newItem.id;
+    if (String(newId) === String(oldId)) {
+      return false;
+    }
+    if (findIndex(data.items, newId) >= 0) {
+      return false;
+    }
+    var keepQty = Math.max(1, Math.floor(Number(data.items[oldIdx].qty) || 1));
+    var snap = snapshotOf(newItem);
+    var row = snap;
+    row.qty = keepQty;
+    row.quotePrice = toNum(snap.salePrice);
+    row.updatedAt = Date.now();
+    data.items[oldIdx] = row;
+    write(data);
+    return true;
+  }
+
   function clear() {
     write(emptyState());
   }
@@ -399,6 +430,7 @@
     getItems: getItems,
     has: has,
     add: add,
+    replace: replace,
     setQty: setQty,
     setQuotePrice: setQuotePrice,
     remove: remove,

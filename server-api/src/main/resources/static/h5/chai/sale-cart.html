@@ -4,9 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>询价单</title>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260921a"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=20260921a"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=20260923a"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260924d"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260924d"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inquiry-cart.css?v=20260924d"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-sale-cart.css?v=20260924d"/>
 </head>
 <body>
   <header class="nav">
@@ -51,6 +52,19 @@
     </div>
   </div>
 
+  <div class="swap-sheet" id="swapSheet" hidden>
+    <div class="swap-sheet-mask" data-swap-close="1"></div>
+    <div class="swap-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="swapTitle">
+      <div class="swap-sheet-head">
+        <h2 class="swap-sheet-title" id="swapTitle">换同款</h2>
+        <button type="button" class="swap-sheet-x" data-swap-close="1" aria-label="关闭">×</button>
+      </div>
+      <p class="swap-sheet-hint" id="swapHint"></p>
+      <ul class="list swap-list" id="swapList"></ul>
+      <p class="swap-empty" id="swapEmpty" hidden>暂无其它同款</p>
+    </div>
+  </div>
+
   <div id="quoteCaptureRoot" class="quote-capture-root" aria-hidden="true"></div>
 
   <div class="capture-loading" id="captureLoading" hidden>
@@ -78,7 +92,8 @@
 
   <script src="/h5/assets/vendor/modern-screenshot.js?v=20260921a"></script>
   <script src="/h5/assets/js/dom-to-image.js?v=20260921a"></script>
-  <script src="/h5/assets/js/chai-inquiry-cart.js?v=20260921a"></script>
-  <script src="/h5/assets/js/chai-sale-cart.js?v=20260923a"></script>
+  <script src="/h5/assets/js/chai-sale-stock.js?v=20260924d"></script>
+  <script src="/h5/assets/js/chai-inquiry-cart.js?v=20260924d"></script>
+  <script src="/h5/assets/js/chai-sale-cart.js?v=20260924d"></script>
 </body>
 </html>

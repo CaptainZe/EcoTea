@@ -56,7 +56,7 @@ body.inner-recycle-detail .recycle-quote-fab {
   left: 50%;
   bottom: calc(5.5rem + env(safe-area-inset-bottom));
   transform: translateX(-50%) translateY(0.5rem);
-  z-index: 120;
+  z-index: 1300;
   max-width: 80vw;
   padding: 0.55rem 0.95rem;
   border-radius: 999px;
