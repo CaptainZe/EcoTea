@@ -417,7 +417,8 @@ public class ChaiStockService {
         Class<?> resultType = query.getResultType();
         boolean isCount = (Long.class.equals(resultType) || long.class.equals(resultType));
         if (!isCount) {
-            query.distinct(true);
+            // stock⇄sku 等值联查为 1:1。默认按 SKU 字段排序时不能 DISTINCT：
+            // MySQL（严格 sql_mode）要求 ORDER BY 列在 SELECT 列表中，与 DISTINCT 冲突（SQL 3065）。
             if (applyDefaultSkuSort) {
                 query.orderBy(
                         cb.asc(skuRoot.get("spuId")),
@@ -425,6 +426,8 @@ public class ChaiStockService {
                         cb.desc(skuRoot.get("prodBatch")),
                         cb.asc(root.get("id"))
                 );
+            } else {
+                query.distinct(true);
             }
         }
 
