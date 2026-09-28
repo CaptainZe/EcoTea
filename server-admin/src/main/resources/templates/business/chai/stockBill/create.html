@@ -475,9 +475,9 @@
             return html || '-';
         }
 
-        function addRow(sku) {
+        function buildRowHtml(sku) {
             if (!sku || !sku.id) {
-                return;
+                return '';
             }
             var defaultPrice = 0;
             var refLabel = '';
@@ -509,7 +509,7 @@
                 priceCols = '<td><div class="bill-ref-price">' + refLabel + ' ' + esc(refValue) + '</div></td>';
             }
             var spuId = sku.spuId != null ? sku.spuId : '';
-            var html = '<tr data-sku-id="' + sku.id + '" data-spu-id="' + spuId + '"'
+            return '<tr data-sku-id="' + sku.id + '" data-spu-id="' + spuId + '"'
                 + ' data-from-qty="0" data-from-no-bag="0" data-from-damaged="0" data-from-damaged-no-bag="0"'
                 + ' data-to-qty="0" data-to-no-bag="0" data-to-damaged="0" data-to-damaged-no-bag="0"'
                 + ' data-from-ready="0" data-to-ready="0">'
@@ -526,9 +526,31 @@
                 + '<a href="javascript:;" class="js-replace-same" style="color:#047857;margin-right:8px;">换同款</a>'
                 + '<a href="javascript:;" class="js-remove" style="color:#DC2626;">删除</a></td>'
                 + '</tr>';
-            $('#itemBody').append(html);
-            renderWhHint($('#itemBody tr').last(), emptyStock(), emptyStock(), false, false);
+        }
+
+        /** 按 list 顺序插入表顶（先勾选的在上） */
+        function prependSkuRows(list) {
+            if (!list || !list.length) {
+                return 0;
+            }
+            var html = '';
+            var count = 0;
+            list.forEach(function (sku) {
+                var row = buildRowHtml(sku);
+                if (row) {
+                    html += row;
+                    count++;
+                }
+            });
+            if (!html) {
+                return 0;
+            }
+            $('#itemBody').prepend(html);
+            $('#itemBody tr').slice(0, count).each(function () {
+                renderWhHint($(this), emptyStock(), emptyStock(), false, false);
+            });
             recalc();
+            return count;
         }
 
         var pendingReplaceTr = null;
@@ -555,12 +577,10 @@
                     $replaceTr.remove();
                     replaced = true;
                 }
-                list.forEach(function (sku) {
-                    addRow(sku);
-                });
+                var added = prependSkuRows(list);
                 refreshWhHints();
-                if (list.length) {
-                    layer.msg((replaced ? '已替换为 ' : '已添加 ') + list.length + ' 行', {time: 800});
+                if (added) {
+                    layer.msg((replaced ? '已替换为 ' : '已添加 ') + added + ' 行', {time: 800});
                 }
             }).fail(function () {
                 layer.close(loading);

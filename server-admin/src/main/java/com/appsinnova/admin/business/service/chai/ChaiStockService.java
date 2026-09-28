@@ -11,6 +11,7 @@ import com.appsinnova.admin.business.repository.chai.ChaiSkuRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiStockRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiStockWhRepository;
 import com.appsinnova.admin.common.data.PageSort;
+import com.appsinnova.admin.common.utils.HttpServletUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -270,12 +271,23 @@ public class ChaiStockService {
     }
 
     public Page<ChaiStock> getPageList(ChaiStock param) {
-        List<Sort.Order> orders = new ArrayList<>();
-        orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
-        PageRequest page = PageSort.pageRequest(orders);
+        boolean clientSort = StringUtils.hasText(HttpServletUtil.getParameter("orderByColumn", ""));
+        PageRequest page;
+        if (clientSort) {
+            // 表头点击：按 chai_stock 字段排（如 updateTime / createTime）
+            List<Sort.Order> orders = new ArrayList<>();
+            orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
+            page = PageSort.pageRequest(orders);
+        } else {
+            // 默认：联表按 SPU + 年份 + 批次，Sort 交给 Criteria
+            int pageIndex = HttpServletUtil.getParameterInt("page", 1);
+            int pageSize = HttpServletUtil.getParameterInt("size", 30);
+            page = PageRequest.of(Math.max(pageIndex - 1, 0), pageSize);
+        }
+        boolean applyDefaultSkuSort = !clientSort;
         Page<ChaiStock> result = chaiStockRepository.findAll(
                 (Root<ChaiStock> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
-                    List<Predicate> preList = genCondition(root, query, cb, param);
+                    List<Predicate> preList = genCondition(root, query, cb, param, applyDefaultSkuSort);
                     Predicate[] pres = new Predicate[preList.size()];
                     return query.where(preList.toArray(pres)).getRestriction();
                 }, page);
@@ -396,7 +408,8 @@ public class ChaiStockService {
     }
 
     private List<Predicate> genCondition(Root<ChaiStock> root, CriteriaQuery<?> query,
-                                         CriteriaBuilder cb, ChaiStock param) {
+                                         CriteriaBuilder cb, ChaiStock param,
+                                         boolean applyDefaultSkuSort) {
         List<Predicate> preList = new ArrayList<>();
         // 无 @ManyToOne：用第二 Root 等值连接，避免 sku_id 重复映射
         Root<ChaiSku> skuRoot = query.from(ChaiSku.class);
@@ -405,6 +418,14 @@ public class ChaiStockService {
         boolean isCount = (Long.class.equals(resultType) || long.class.equals(resultType));
         if (!isCount) {
             query.distinct(true);
+            if (applyDefaultSkuSort) {
+                query.orderBy(
+                        cb.asc(skuRoot.get("spuId")),
+                        cb.desc(skuRoot.get("year")),
+                        cb.desc(skuRoot.get("prodBatch")),
+                        cb.asc(root.get("id"))
+                );
+            }
         }
 
         if (param == null) {
