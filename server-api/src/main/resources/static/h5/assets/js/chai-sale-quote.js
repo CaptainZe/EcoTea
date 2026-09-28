@@ -9,7 +9,7 @@
   var listeners = [];
 
   function emptyState() {
-    return { items: [] };
+    return { items: [], orderDiscount: 0 };
   }
 
   function read() {
@@ -22,6 +22,11 @@
       if (!data || !Array.isArray(data.items)) {
         return emptyState();
       }
+      var disc = toNum(data.orderDiscount);
+      if (disc == null || disc < 0) {
+        disc = 0;
+      }
+      data.orderDiscount = Math.round(disc * 100) / 100;
       return data;
     } catch (e) {
       return emptyState();
@@ -230,12 +235,54 @@
     return price * qty;
   }
 
-  function totalAmount() {
+  /** 行合计（未扣整单优惠） */
+  function subtotalAmount() {
     var sum = 0;
     getItems().forEach(function (it) {
       sum += lineAmount(it);
     });
     return Math.round(sum * 100) / 100;
+  }
+
+  function getOrderDiscount() {
+    var data = read();
+    var disc = toNum(data.orderDiscount);
+    if (disc == null || disc < 0) {
+      return 0;
+    }
+    var sub = subtotalAmount();
+    if (disc > sub) {
+      disc = sub;
+    }
+    return Math.round(disc * 100) / 100;
+  }
+
+  /**
+   * 设置整单优惠（扣减金额）。空/非法视为 0；超过小计则压到小计。
+   */
+  function setOrderDiscount(amount) {
+    var data = read();
+    var n = toNum(amount);
+    if (n == null || n < 0) {
+      n = 0;
+    }
+    var sub = 0;
+    data.items.forEach(function (it) {
+      sub += lineAmount(it);
+    });
+    sub = Math.round(sub * 100) / 100;
+    if (n > sub) {
+      n = sub;
+    }
+    data.orderDiscount = Math.round(n * 100) / 100;
+    write(data);
+  }
+
+  /** 应付 = 小计 − 整单优惠（兼容旧调用名 totalAmount） */
+  function totalAmount() {
+    var sub = subtotalAmount();
+    var disc = getOrderDiscount();
+    return Math.round((sub - disc) * 100) / 100;
   }
 
   function plainAmount(n) {
@@ -344,10 +391,22 @@
         items.length +
         " 种，合计 " +
         totalPcs +
-        " 件\n" +
-        "金额合计：¥" +
-        plainAmount(totalAmount())
+        " 件"
     );
+    var disc = getOrderDiscount();
+    var sub = subtotalAmount();
+    var pay = totalAmount();
+    if (disc > 0) {
+      blocks[blocks.length - 1] +=
+        "\n小计：¥" +
+        plainAmount(sub) +
+        "\n优惠：−¥" +
+        plainAmount(disc) +
+        "\n应付合计：¥" +
+        plainAmount(pay);
+    } else {
+      blocks[blocks.length - 1] += "\n金额合计：¥" + plainAmount(pay);
+    }
     return blocks.join("\n\n");
   }
 
@@ -436,6 +495,9 @@
     remove: remove,
     clear: clear,
     lineAmount: lineAmount,
+    subtotalAmount: subtotalAmount,
+    getOrderDiscount: getOrderDiscount,
+    setOrderDiscount: setOrderDiscount,
     totalAmount: totalAmount,
     buildQuoteText: buildQuoteText,
     displayTitle: displayTitle,

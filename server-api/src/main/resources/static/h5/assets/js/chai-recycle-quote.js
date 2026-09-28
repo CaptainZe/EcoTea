@@ -9,7 +9,7 @@
   var listeners = [];
 
   function emptyState() {
-    return { items: [] };
+    return { items: [], orderAdd: 0 };
   }
 
   function read() {
@@ -22,6 +22,11 @@
       if (!data || !Array.isArray(data.items)) {
         return emptyState();
       }
+      var add = toNum(data.orderAdd);
+      if (add == null || add < 0) {
+        add = 0;
+      }
+      data.orderAdd = Math.round(add * 100) / 100;
       return data;
     } catch (e) {
       return emptyState();
@@ -254,12 +259,42 @@
     return price * qty;
   }
 
-  function totalAmount() {
+  /** 行合计（未加整单加价） */
+  function subtotalAmount() {
     var sum = 0;
     getItems().forEach(function (it) {
       sum += lineAmount(it);
     });
     return Math.round(sum * 100) / 100;
+  }
+
+  function getOrderAdd() {
+    var data = read();
+    var add = toNum(data.orderAdd);
+    if (add == null || add < 0) {
+      return 0;
+    }
+    return Math.round(add * 100) / 100;
+  }
+
+  /**
+   * 设置整单加价。空/非法视为 0。
+   */
+  function setOrderAdd(amount) {
+    var data = read();
+    var n = toNum(amount);
+    if (n == null || n < 0) {
+      n = 0;
+    }
+    data.orderAdd = Math.round(n * 100) / 100;
+    write(data);
+  }
+
+  /** 应付 = 小计 + 整单加价（兼容旧调用名 totalAmount） */
+  function totalAmount() {
+    var sub = subtotalAmount();
+    var add = getOrderAdd();
+    return Math.round((sub + add) * 100) / 100;
   }
 
   function plainAmount(n) {
@@ -362,10 +397,22 @@
         items.length +
         " 种，合计 " +
         totalPcs +
-        " 件\n" +
-        "金额合计：¥" +
-        plainAmount(totalAmount())
+        " 件"
     );
+    var add = getOrderAdd();
+    var sub = subtotalAmount();
+    var pay = totalAmount();
+    if (add > 0) {
+      blocks[blocks.length - 1] +=
+        "\n小计：¥" +
+        plainAmount(sub) +
+        "\n加价：+¥" +
+        plainAmount(add) +
+        "\n应付合计：¥" +
+        plainAmount(pay);
+    } else {
+      blocks[blocks.length - 1] += "\n金额合计：¥" + plainAmount(pay);
+    }
     return blocks.join("\n\n");
   }
 
@@ -454,6 +501,9 @@
     remove: remove,
     clear: clear,
     lineAmount: lineAmount,
+    subtotalAmount: subtotalAmount,
+    getOrderAdd: getOrderAdd,
+    setOrderAdd: setOrderAdd,
     totalAmount: totalAmount,
     buildQuoteText: buildQuoteText,
     displayTitle: displayTitle,

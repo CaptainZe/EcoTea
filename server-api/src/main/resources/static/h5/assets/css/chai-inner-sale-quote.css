@@ -1,7 +1,7 @@
 ﻿/* 销售报价单页：改价 / 改数 */
 
 body.inner-sale-quote {
-  padding-bottom: calc(4.8rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6.8rem + env(safe-area-inset-bottom));
 }
 
 .nav {
@@ -415,6 +415,27 @@ body.inner-sale-quote {
 .quote-bar-sum {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+}
+
+.quote-bar-lines {
+  width: 100%;
+  min-width: 0;
+}
+
+.quote-bar-sub,
+.quote-bar-disc {
+  font-size: 0.72rem;
+  font-weight: 550;
+  color: var(--muted, #6b756c);
+  line-height: 1.35;
+}
+
+.quote-bar-disc {
+  color: #9a3412;
 }
 
 .quote-bar-total {
@@ -429,10 +450,79 @@ body.inner-sale-quote {
   margin-left: 0.15rem;
 }
 
+.quote-discount-btn {
+  border: 1px solid var(--line, #e2e7df);
+  background: #fff;
+  color: var(--accent, #2d4532);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quote-discount-btn:active {
+  opacity: 0.85;
+}
+
+.quote-discount-btn.has-discount {
+  border-color: #e8b4a8;
+  color: #9a3412;
+  background: #fff7f5;
+}
+
 .quote-bar-hint {
   font-size: 0.68rem;
   color: var(--muted, #6b756c);
   margin-top: 0.1rem;
+}
+
+.discount-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.discount-modal-hint {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted, #6b756c);
+}
+
+.discount-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line, #e2e7df);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.discount-input-prefix {
+  font-size: 1rem;
+  font-weight: 650;
+  color: #9a3412;
+  flex-shrink: 0;
+}
+
+.discount-input {
+  flex: 1;
+  min-width: 0;
+  height: 2.2rem;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: var(--ink, #1c241c);
+  background: transparent;
+}
+
+.discount-modal-body + .modal-actions .modal-ok {
+  flex: 1;
 }
 
 .quote-bar-actions {
@@ -483,6 +573,7 @@ body.inner-sale-quote {
 }
 
 .modal-cancel,
+.modal-ok,
 .modal-ok-danger {
   flex: 1;
   height: 2.5rem;
@@ -498,12 +589,24 @@ body.inner-sale-quote {
   color: var(--muted, #6b756c);
 }
 
+.modal-ok {
+  border: none;
+  background: var(--accent, #2d4532);
+  color: #fff;
+}
+
 .modal-ok.modal-ok-danger {
   display: block;
   width: auto;
   border: none;
   background: #9a3412;
   color: #fff;
+}
+
+#discountClear.modal-ok {
+  background: #fff;
+  color: #9a3412;
+  border: 1px solid #e8b4a8;
 }
 
 /* 截图预览 */
@@ -895,6 +998,27 @@ body.inner-sale-quote {
   color: rgba(255, 255, 255, 0.78);
   white-space: nowrap;
   writing-mode: horizontal-tb;
+}
+
+.quote-capture-root .qex-break {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0 0 0.45rem;
+}
+
+.quote-capture-root .qex-break-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.quote-capture-root .qex-break-row.disc {
+  color: rgba(253, 230, 138, 0.9);
 }
 
 .quote-capture-root .qex-total {

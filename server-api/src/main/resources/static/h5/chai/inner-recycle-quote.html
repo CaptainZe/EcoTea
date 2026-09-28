@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260924a"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260924c"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=20260924c"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-inner-recycle-quote.css?v=20260924c"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-inner-recycle-quote.css?v=20260928a"/>
 </head>
 <body class="inner-recycle-quote">
   <header class="nav">
@@ -31,14 +31,35 @@
 
   <footer class="quote-bar" id="quoteBar" hidden>
     <div class="quote-bar-sum">
-      <div class="quote-bar-total">合计<strong id="totalAmount">¥0</strong></div>
-      <div class="quote-bar-hint">可改单价与数量 · 仅本机</div>
+      <div class="quote-bar-lines" id="quoteBarLines">
+        <div class="quote-bar-total">应付<strong id="totalAmount">¥0</strong></div>
+      </div>
+      <button type="button" class="quote-add-btn" id="addBtn">整单改价</button>
     </div>
     <div class="quote-bar-actions">
       <button type="button" class="quote-copy" id="copyBtn">生成文字</button>
       <button type="button" class="quote-img" id="imgBtn">生成图片</button>
     </div>
   </footer>
+
+  <div class="modal" id="addModal" hidden>
+    <div class="modal-mask" data-add-close="1"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+      <h2 class="modal-title" id="addTitle">整单改价</h2>
+      <div class="modal-body add-modal-body">
+        <p class="add-modal-hint" id="addHint">小计 ¥0 · 输入加价金额</p>
+        <div class="add-input-row">
+          <span class="add-input-prefix">+¥</span>
+          <input type="number" class="add-input" id="addInput" min="0" step="0.01" inputmode="decimal" placeholder="0"/>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="modal-cancel" data-add-close="1">取消</button>
+        <button type="button" class="modal-ok" id="addClear">清除</button>
+        <button type="button" class="modal-ok" id="addOk">确定</button>
+      </div>
+    </div>
+  </div>
 
   <div class="modal" id="clearModal" hidden>
     <div class="modal-mask" data-clear-close="1"></div>
@@ -93,7 +114,7 @@
   <script src="/h5/assets/vendor/modern-screenshot.js?v=20260920c"></script>
   <script src="/h5/assets/js/dom-to-image.js?v=20260920c"></script>
   <script src="/h5/assets/js/chai-inner-util.js?v=20260920c"></script>
-  <script src="/h5/assets/js/chai-recycle-quote.js?v=20260924a"></script>
-  <script src="/h5/assets/js/chai-inner-recycle-quote.js?v=20260924c"></script>
+  <script src="/h5/assets/js/chai-recycle-quote.js?v=20260928a"></script>
+  <script src="/h5/assets/js/chai-inner-recycle-quote.js?v=20260928a"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 /* 回收报价单页：改价 / 改数 */
 
 body.inner-recycle-quote {
-  padding-bottom: calc(4.8rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6.8rem + env(safe-area-inset-bottom));
 }
 
 .nav {
@@ -388,6 +388,27 @@ body.inner-recycle-quote .recycle-extra {
 .quote-bar-sum {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+}
+
+.quote-bar-lines {
+  width: 100%;
+  min-width: 0;
+}
+
+.quote-bar-sub,
+.quote-bar-add {
+  font-size: 0.72rem;
+  font-weight: 550;
+  color: var(--muted, #6b756c);
+  line-height: 1.35;
+}
+
+.quote-bar-add {
+  color: var(--accent, #2d4532);
 }
 
 .quote-bar-total {
@@ -402,10 +423,79 @@ body.inner-recycle-quote .recycle-extra {
   margin-left: 0.15rem;
 }
 
+.quote-add-btn {
+  border: 1px solid var(--line, #e2e7df);
+  background: #fff;
+  color: var(--accent, #2d4532);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quote-add-btn:active {
+  opacity: 0.85;
+}
+
+.quote-add-btn.has-add {
+  border-color: #a8c4b0;
+  color: var(--accent, #2d4532);
+  background: #f3f8f4;
+}
+
 .quote-bar-hint {
   font-size: 0.68rem;
   color: var(--muted, #6b756c);
   margin-top: 0.1rem;
+}
+
+.add-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.add-modal-hint {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted, #6b756c);
+}
+
+.add-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line, #e2e7df);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.add-input-prefix {
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--accent, #2d4532);
+  flex-shrink: 0;
+}
+
+.add-input {
+  flex: 1;
+  min-width: 0;
+  height: 2.2rem;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: var(--ink, #1c241c);
+  background: transparent;
+}
+
+.add-modal-body + .modal-actions .modal-ok {
+  flex: 1;
 }
 
 .quote-bar-actions {
@@ -456,6 +546,7 @@ body.inner-recycle-quote .recycle-extra {
 }
 
 .modal-cancel,
+.modal-ok,
 .modal-ok-danger {
   flex: 1;
   height: 2.5rem;
@@ -471,12 +562,24 @@ body.inner-recycle-quote .recycle-extra {
   color: var(--muted, #6b756c);
 }
 
+.modal-ok {
+  border: none;
+  background: var(--accent, #2d4532);
+  color: #fff;
+}
+
 .modal-ok.modal-ok-danger {
   display: block;
   width: auto;
   border: none;
   background: #9a3412;
   color: #fff;
+}
+
+#addClear.modal-ok {
+  background: #fff;
+  color: var(--muted, #6b756c);
+  border: 1px solid var(--line, #e2e7df);
 }
 
 /* 截图预览 */
@@ -868,6 +971,27 @@ body.inner-recycle-quote .recycle-extra {
   color: rgba(255, 255, 255, 0.78);
   white-space: nowrap;
   writing-mode: horizontal-tb;
+}
+
+.quote-capture-root .qex-break {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0 0 0.45rem;
+}
+
+.quote-capture-root .qex-break-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.quote-capture-root .qex-break-row.add {
+  color: rgba(190, 227, 200, 0.95);
 }
 
 .quote-capture-root .qex-total {

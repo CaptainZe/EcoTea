@@ -23,6 +23,13 @@
     swapHint: document.getElementById("swapHint"),
     swapList: document.getElementById("swapList"),
     swapEmpty: document.getElementById("swapEmpty"),
+    addBtn: document.getElementById("addBtn"),
+    addModal: document.getElementById("addModal"),
+    addInput: document.getElementById("addInput"),
+    addHint: document.getElementById("addHint"),
+    addOk: document.getElementById("addOk"),
+    addClear: document.getElementById("addClear"),
+    quoteBarLines: document.getElementById("quoteBarLines"),
   };
 
   var lastCaptureDataUrl = null;
@@ -200,8 +207,43 @@
     els.meta.textContent =
       "共 " + kinds + " 种，合计 " + pcs + " 件 · 仅本机保存";
     els.list.innerHTML = items.map(renderItem).join("");
-    if (els.totalAmount) {
-      els.totalAmount.textContent = formatTotal(quote.totalAmount());
+    paintQuoteBarSum(quote);
+  }
+
+  function paintQuoteBarSum(quote) {
+    if (!els.quoteBarLines) {
+      return;
+    }
+    var sub = quote.subtotalAmount ? quote.subtotalAmount() : quote.totalAmount();
+    var add = quote.getOrderAdd ? quote.getOrderAdd() : 0;
+    var pay = quote.totalAmount();
+    var html = "";
+    if (add > 0) {
+      html +=
+        '<div class="quote-bar-sub">小计 ' +
+        escapeHtml(formatTotal(sub)) +
+        "</div>";
+      html +=
+        '<div class="quote-bar-add">加价 +' +
+        escapeHtml(formatTotal(add)) +
+        "</div>";
+    }
+    html +=
+      '<div class="quote-bar-total">' +
+      (add > 0 ? "应付" : "合计") +
+      '<strong id="totalAmount">' +
+      escapeHtml(formatTotal(pay)) +
+      "</strong></div>";
+    els.quoteBarLines.innerHTML = html;
+    els.totalAmount = document.getElementById("totalAmount");
+    if (els.addBtn) {
+      if (add > 0) {
+        els.addBtn.classList.add("has-add");
+        els.addBtn.textContent = "整单改价 +¥" + quote.plainAmount(add);
+      } else {
+        els.addBtn.classList.remove("has-add");
+        els.addBtn.textContent = "整单改价";
+      }
     }
   }
 
@@ -655,6 +697,90 @@
     });
   }
 
+  function openAddModal() {
+    var quote = window.ChaiRecycleQuote;
+    if (!quote || !els.addModal) {
+      return;
+    }
+    var sub = quote.subtotalAmount();
+    var add = quote.getOrderAdd();
+    if (els.addHint) {
+      els.addHint.textContent =
+        "小计 " + formatTotal(sub) + " · 输入加价金额";
+    }
+    if (els.addInput) {
+      els.addInput.value = add > 0 ? String(add) : "";
+    }
+    els.addModal.hidden = false;
+    if (els.addInput) {
+      setTimeout(function () {
+        els.addInput.focus();
+        els.addInput.select();
+      }, 30);
+    }
+  }
+
+  function closeAddModal() {
+    if (els.addModal) {
+      els.addModal.hidden = true;
+    }
+  }
+
+  function applyAddInput(raw) {
+    var quote = window.ChaiRecycleQuote;
+    if (!quote) {
+      return;
+    }
+    quote.setOrderAdd(raw);
+    closeAddModal();
+    var add = quote.getOrderAdd();
+    if (add > 0) {
+      quote.toast("已设置加价 +¥" + quote.plainAmount(add));
+    } else {
+      quote.toast("已清除加价");
+    }
+  }
+
+  if (els.addBtn) {
+    els.addBtn.addEventListener("click", function () {
+      var quote = window.ChaiRecycleQuote;
+      if (!quote || !quote.kindCount()) {
+        return;
+      }
+      openAddModal();
+    });
+  }
+
+  if (els.addModal) {
+    els.addModal.addEventListener("click", function (e) {
+      if (e.target && e.target.getAttribute("data-add-close") === "1") {
+        closeAddModal();
+      }
+    });
+  }
+
+  if (els.addOk) {
+    els.addOk.addEventListener("click", function () {
+      applyAddInput(els.addInput ? els.addInput.value : 0);
+    });
+  }
+
+  if (els.addClear) {
+    els.addClear.addEventListener("click", function () {
+      applyAddInput(0);
+    });
+  }
+
+  if (els.addInput) {
+    els.addInput.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") {
+        return;
+      }
+      e.preventDefault();
+      applyAddInput(els.addInput.value);
+    });
+  }
+
   function openClearModal() {
     if (els.clearModal) {
       els.clearModal.hidden = false;
@@ -816,9 +942,30 @@
       " 种，合计 " +
       escapeHtml(pcs) +
       " 件</p>" +
-      '<div class="qex-total"><span>合计</span><strong>¥' +
-      escapeHtml(quote.plainAmount(total)) +
-      "</strong></div>" +
+      (function () {
+        var add = quote.getOrderAdd ? quote.getOrderAdd() : 0;
+        var sub = quote.subtotalAmount ? quote.subtotalAmount() : total;
+        var pay = total;
+        if (!(add > 0)) {
+          return (
+            '<div class="qex-total"><span>合计</span><strong>¥' +
+            escapeHtml(quote.plainAmount(pay)) +
+            "</strong></div>"
+          );
+        }
+        return (
+          '<div class="qex-break">' +
+          '<div class="qex-break-row"><span>小计</span><span>¥' +
+          escapeHtml(quote.plainAmount(sub)) +
+          "</span></div>" +
+          '<div class="qex-break-row add"><span>加价</span><span>+¥' +
+          escapeHtml(quote.plainAmount(add)) +
+          "</span></div></div>" +
+          '<div class="qex-total"><span>应付</span><strong>¥' +
+          escapeHtml(quote.plainAmount(pay)) +
+          "</strong></div>"
+        );
+      })() +
       '<p class="qex-note">内部回收参考报价 · 以沟通确认为准</p>' +
       "</footer></div></div>"
     );
