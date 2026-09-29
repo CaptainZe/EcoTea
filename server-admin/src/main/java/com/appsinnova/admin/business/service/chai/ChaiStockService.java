@@ -297,6 +297,32 @@ public class ChaiStockService {
     }
 
     /**
+     * 导出：指定品牌 + 指定仓且本仓 qty &gt; 0；默认仅未删除 SKU；按 SPU/年/批次排序。
+     */
+    public List<ChaiStock> listForExport(Long brandId, Long whId) {
+        if (brandId == null || brandId <= 0) {
+            throw new IllegalArgumentException("请选择品牌");
+        }
+        if (whId == null || whId <= 0) {
+            throw new IllegalArgumentException("请选择仓库");
+        }
+        ChaiStock param = new ChaiStock();
+        param.setBrand(brandId);
+        param.setQueryWhId(whId);
+        param.setQueryHasQty(YesOrNo.YES.getCode());
+        param.setDeleted(0);
+        List<ChaiStock> list = chaiStockRepository.findAll(
+                (Root<ChaiStock> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+                    List<Predicate> preList = genCondition(root, query, cb, param, true);
+                    Predicate[] pres = new Predicate[preList.size()];
+                    return query.where(preList.toArray(pres)).getRestriction();
+                });
+        attachSkus(list);
+        fillListQty(list, whId);
+        return list;
+    }
+
+    /**
      * 列表件数：未选仓用全仓合计；选仓用该仓分仓结存。
      */
     private void fillListQty(List<ChaiStock> stocks, Long whId) {

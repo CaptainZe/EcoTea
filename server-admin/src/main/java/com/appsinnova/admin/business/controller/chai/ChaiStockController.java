@@ -3,11 +3,13 @@ package com.appsinnova.admin.business.controller.chai;
 import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.utils.RequestParamUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiStockExcelExporter;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.business.domain.chai.ChaiStock;
 import com.appsinnova.admin.business.domain.chai.ChaiStockWh;
+import com.appsinnova.admin.business.domain.chai.ChaiWarehouse;
 import com.appsinnova.admin.business.service.chai.ChaiBrandService;
 import com.appsinnova.admin.business.service.chai.ChaiSkuService;
 import com.appsinnova.admin.business.service.chai.ChaiSpuService;
@@ -22,10 +24,14 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +80,45 @@ public class ChaiStockController {
         model.addAttribute("warehouseList", chaiWarehouseService.listOnlineOrdered());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/stock/index";
+    }
+
+    /**
+     * 导出 Excel：必选品牌 + 仓库；仅本仓 qty &gt; 0。
+     */
+    @GetMapping("/export")
+    @RequiresPermissions("business:chai:stock:index")
+    public void export(@RequestParam("brand") Long brandId,
+                       @RequestParam("whId") Long whId,
+                       HttpServletResponse response) throws IOException {
+        if (brandId == null || brandId <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "请选择品牌");
+            return;
+        }
+        if (whId == null || whId <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "请选择仓库");
+            return;
+        }
+        ChaiBrand brand = chaiBrandService.getById(brandId);
+        if (brand == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "品牌不存在");
+            return;
+        }
+        ChaiWarehouse warehouse = chaiWarehouseService.getById(whId);
+        if (warehouse == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "仓库不存在");
+            return;
+        }
+        List<ChaiStock> rows;
+        try {
+            rows = chaiStockService.listForExport(brandId, whId);
+        } catch (IllegalArgumentException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            return;
+        }
+        Map<Long, String> brandNameMap = buildBrandNameMap();
+        Map<Long, String> spuCodeMap = buildSpuCodeMap(rows);
+        rows.forEach(item -> chaiStockService.fillSkuShow(item, brandNameMap, spuCodeMap));
+        ChaiStockExcelExporter.export(response, brand.getName(), warehouse.getName(), new Date(), rows);
     }
 
     /**

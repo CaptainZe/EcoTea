@@ -147,6 +147,9 @@
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
                     </button>
+                    <button type="button" class="layui-btn layui-btn-normal" id="btnStockExport">
+                        <i class="fa fa-download"></i> 导出
+                    </button>
                 </div>
             </div>
         </div>
@@ -227,5 +230,102 @@
     </div>
 </div>
 <script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var stockExportUrl = /*[[@{/business/chai/stock/export}]]*/ '';
+    var exportBrandList = /*[[${brandList}]]*/ [];
+    var exportWhList = /*[[${warehouseList}]]*/ [];
+    /*]]>*/
+    layui.use(['layer', 'form'], function () {
+        var layer = layui.layer;
+        var form = layui.form;
+        var $ = layui.$;
+
+        function buildOptions(list) {
+            var html = '';
+            if (!list || !list.length) {
+                return html;
+            }
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                if (!item || item.id == null) {
+                    continue;
+                }
+                var name = item.name != null ? String(item.name) : String(item.id);
+                html += '<option value="' + item.id + '">' + $('<div/>').text(name).html() + '</option>';
+            }
+            return html;
+        }
+
+        function downloadWithLoading(url) {
+            var loading = layer.load(2, {shade: 0.15});
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+            // 浏览器开始下载后无法精确回调，短延迟后关 loading
+            setTimeout(function () {
+                layer.close(loading);
+                layer.msg('已开始下载', {time: 1500});
+            }, 1200);
+            setTimeout(function () {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 60000);
+        }
+
+        $('#btnStockExport').on('click', function () {
+            var html = ''
+                + '<div class="layui-form" style="padding: 24px 28px 12px;" lay-filter="stockExportForm">'
+                + '  <div class="layui-form-item">'
+                + '    <label class="layui-form-label" style="width:80px;">品牌</label>'
+                + '    <div class="layui-input-block" style="margin-left:110px;">'
+                + '      <select id="exportBrand" lay-search>'
+                + '        <option value="">请选择</option>' + buildOptions(exportBrandList)
+                + '      </select>'
+                + '    </div>'
+                + '  </div>'
+                + '  <div class="layui-form-item" style="margin-top: 18px;">'
+                + '    <label class="layui-form-label" style="width:80px;">仓库</label>'
+                + '    <div class="layui-input-block" style="margin-left:110px;">'
+                + '      <select id="exportWhId" lay-search>'
+                + '        <option value="">请选择</option>' + buildOptions(exportWhList)
+                + '      </select>'
+                + '    </div>'
+                + '  </div>'
+                + '  <p style="color:#6B7280;font-size:12px;margin:16px 0 0 110px;line-height:1.6;">仅导出该品牌在所选仓库有库存（件数&gt;0）的行。</p>'
+                + '</div>';
+            layer.open({
+                type: 1,
+                title: '导出存货盘点表',
+                area: ['520px', '420px'],
+                btn: ['导出', '取消'],
+                content: html,
+                success: function (layero) {
+                    // 下拉面板挂到弹层内，避免被裁切
+                    layero.find('.layui-layer-content').css({overflow: 'visible'});
+                    form.render('select');
+                },
+                yes: function (index) {
+                    var brand = $('#exportBrand').val();
+                    var whId = $('#exportWhId').val();
+                    if (!brand) {
+                        layer.msg('请选择品牌');
+                        return;
+                    }
+                    if (!whId) {
+                        layer.msg('请选择仓库');
+                        return;
+                    }
+                    layer.close(index);
+                    downloadWithLoading(stockExportUrl
+                        + '?brand=' + encodeURIComponent(brand)
+                        + '&whId=' + encodeURIComponent(whId));
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>
