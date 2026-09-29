@@ -129,7 +129,7 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="180">操作</th>
+                    <th width="220">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="80">SKU数</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
@@ -154,6 +154,7 @@
                         <th:block th:if="${item.deleted == null or item.deleted != 1}">
                         <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑SPU"
                            th:attr="data-url=@{'/business/chai/spu/edit/'+${item.id}}" data-size="1500,800">编辑</a>
+                        <!-- 搜索关键词录入暂不上线，入口隐藏；路由 /keywords 保留 -->
                         <a class="open-popup" style="color: #047857; font-weight: 600;" data-title="维护SKU"
                            th:attr="data-url=@{'/business/chai/sku/editBySpu/'+${item.id}}" data-size="1500,800">SKU</a>
                         <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="复制SPU"

@@ -35,6 +35,8 @@ public interface ChaiSpuRepository extends JpaRepository<ChaiSpu, Long>, JpaSpec
 
     boolean existsByBrand(Long brand);
 
+    List<ChaiSpu> findByBrand(Long brand);
+
     boolean existsByExpiration(Long expiration);
 
     boolean existsByBrandAndName(Long brand, String name);

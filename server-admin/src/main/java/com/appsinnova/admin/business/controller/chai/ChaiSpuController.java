@@ -6,6 +6,7 @@ import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiSearchTextUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
@@ -93,6 +94,8 @@ public class ChaiSpuController {
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
+        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
         return "/business/chai/spu/edit";
     }
 
@@ -115,7 +118,57 @@ public class ChaiSpuController {
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
+        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
         return "/business/chai/spu/edit";
+    }
+
+    /**
+     * 独立维护搜索关键词（chip）；SKU 继承 SPU。
+     */
+    @GetMapping("/keywords/{id}")
+    @RequiresPermissions("business:chai:spu:index")
+    public String toKeywords(@PathVariable("id") Long id, Model model) {
+        ChaiSpu spu = chaiSpuService.getById(id);
+        if (spu == null) {
+            model.addAttribute("errorMsg", "SPU不存在");
+            return "/business/chai/spu/keywords";
+        }
+        if (YesOrNo.isYes(spu.getDeleted())) {
+            model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再维护关键词");
+            return "/business/chai/spu/keywords";
+        }
+        if (spu.getBrand() != null) {
+            ChaiBrand brand = chaiBrandService.getById(spu.getBrand());
+            spu.setBrandName(brand != null ? brand.getName() : String.valueOf(spu.getBrand()));
+        } else {
+            spu.setBrandName("-");
+        }
+        if (spu.getExpiration() != null) {
+            ChaiExpiration expiration = chaiExpirationService.getById(spu.getExpiration());
+            spu.setExpirationName(expiration != null ? expiration.getName() : String.valueOf(spu.getExpiration()));
+        } else {
+            spu.setExpirationName("-");
+        }
+        spu.setSpecShow(ChaiSpecUtil.toShow(spu.getSpec()));
+        model.addAttribute("editItem", spu);
+        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
+        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
+        return "/business/chai/spu/keywords";
+    }
+
+    @PostMapping("/keywords/save")
+    @RequiresPermissions("business:chai:spu:edit")
+    @ResponseBody
+    public ResultVo<?> saveKeywords(@RequestParam("id") Long id,
+                                    @RequestParam(value = "keywords", required = false) String keywords) {
+        User user = ShiroUtil.getSubject();
+        try {
+            chaiSpuService.saveKeywords(id, keywords, user.getNickname());
+            return ResultVoUtil.SAVE_SUCCESS;
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
     }
 
     @PostMapping("/save")

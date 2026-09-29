@@ -77,6 +77,46 @@
             cursor: pointer;
             font-size: 14px;
         }
+        .kw-chip-box {
+            min-height: 42px;
+            padding: 8px 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 4px;
+            background: #FAFAFA;
+            max-width: 680px;
+        }
+        .kw-chip {
+            display: inline-block;
+            margin: 0 6px 6px 0;
+            padding: 2px 8px 2px 10px;
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid #A7F3D0;
+            border-radius: 3px;
+            font-size: 13px;
+            line-height: 22px;
+        }
+        .kw-chip .kw-x {
+            margin-left: 6px;
+            cursor: pointer;
+            color: #059669;
+            font-weight: 700;
+        }
+        .kw-chip .kw-x:hover { color: #DC2626; }
+        .kw-empty { color: #9CA3AF; font-size: 13px; }
+        .kw-add-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; max-width: 680px; }
+        .kw-add-row .layui-input { flex: 1; max-width: 280px; }
+        .kw-search-text {
+            margin-top: 4px;
+            padding: 8px 10px;
+            background: #F3F4F6;
+            border-radius: 4px;
+            color: #374151;
+            font-size: 13px;
+            word-break: break-all;
+            min-height: 20px;
+            max-width: 680px;
+        }
     </style>
 </head>
 <body>
@@ -95,8 +135,34 @@
         <div class="layui-form-item spu-row-name">
             <label class="layui-form-label required">商品名称</label>
             <div class="layui-input-block">
-                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                <input type="text" name="name" id="spuNameInput" class="layui-input" th:value="${editItem?.name}"
                        required lay-verify="required" maxlength="255" placeholder="如: 斑竹窠肉桂">
+            </div>
+        </div>
+
+        <!-- 搜索关键词录入暂不上线：UI 隐藏，仍回传已有 keywords，避免保存清空 -->
+        <input type="hidden" name="keywords" id="keywordsHidden" th:value="${editItem?.keywords}"/>
+        <div class="layui-form-item spu-row-name" style="display:none;" aria-hidden="true">
+            <label class="layui-form-label">搜索关键词</label>
+            <div class="layui-input-block">
+                <div class="kw-chip-box" id="kwChipBox">
+                    <span class="kw-empty">暂无关键词，在下方输入后添加</span>
+                </div>
+                <div class="kw-add-row">
+                    <input type="text" id="kwInput" class="layui-input"
+                           th:attr="maxlength=${maxKeywordLength}"
+                           placeholder="输入关键词，回车或点添加">
+                    <button type="button" class="layui-btn layui-btn-sm" id="btnAddKw">添加</button>
+                </div>
+                <div class="field-tip">
+                    最多 <span th:text="${maxKeywordCount}">20</span> 个，每个不超过
+                    <span th:text="${maxKeywordLength}">20</span> 字；保存后下属 SKU 自动继承。
+                    也可在列表「关键词」入口单独维护。
+                </div>
+                <div class="kw-search-text" id="searchTextPreview"
+                     th:text="${editItem?.searchText != null and !#strings.isEmpty(editItem.searchText) ? editItem.searchText : '保存后自动生成：品牌名 + 商品名 + 关键词'}">
+                    保存后自动生成
+                </div>
             </div>
         </div>
 
@@ -124,7 +190,7 @@
         <div class="layui-form-item">
             <label class="layui-form-label required">品牌</label>
             <div class="layui-input-inline">
-                <select name="brand" class="layui-input timo-search-select" lay-search lay-verify="required">
+                <select name="brand" class="layui-input timo-search-select" lay-search lay-filter="brand" lay-verify="required">
                     <option value="">请选择品牌</option>
                     <option th:each="b : ${brandList}" th:value="${b.id}"
                             th:selected="${editItem.brand != null and editItem.brand == b.id}"
@@ -249,7 +315,11 @@
 </div>
 <script th:replace="/common/template :: script"></script>
 <script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
-<script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var maxKwCount = /*[[${maxKeywordCount}]]*/ 20;
+    var maxKwLen = /*[[${maxKeywordLength}]]*/ 20;
+    /*]]>*/
     layui.use(['upload', 'form', 'layer'], function () {
         var upload = layui.upload;
         var form = layui.form;
@@ -261,7 +331,123 @@
         var draggingEl = null;
         var imageList = [];
         var realImageList = [];
+        var kwTokens = [];
 
+        function parseKwInitial() {
+            var raw = ($('#keywordsHidden').val() || '').trim();
+            if (!raw) {
+                return [];
+            }
+            raw = raw.replace(/，/g, ' ').replace(/,/g, ' ');
+            var list = [];
+            var seen = {};
+            raw.split(/\s+/).forEach(function (p) {
+                p = (p || '').trim();
+                if (!p) {
+                    return;
+                }
+                if (p.length > maxKwLen) {
+                    p = p.substring(0, maxKwLen);
+                }
+                var key = p.toLowerCase();
+                if (seen[key]) {
+                    return;
+                }
+                seen[key] = true;
+                list.push(p);
+            });
+            return list.slice(0, maxKwCount);
+        }
+
+        function currentBrandName() {
+            var $opt = $('select[name="brand"] option:selected');
+            if (!$opt.length || !$opt.val()) {
+                return '';
+            }
+            return ($opt.text() || '').trim();
+        }
+
+        function syncKwHidden() {
+            $('#keywordsHidden').val(kwTokens.join(' '));
+            var parts = [];
+            var bn = currentBrandName();
+            var pn = ($('#spuNameInput').val() || '').trim();
+            if (bn) {
+                parts.push(bn);
+            }
+            if (pn) {
+                parts.push(pn);
+            }
+            if (kwTokens.length) {
+                parts.push(kwTokens.join(' '));
+            }
+            $('#searchTextPreview').text(parts.length ? parts.join(' ') : '（空）');
+        }
+
+        function renderKwChips() {
+            var $box = $('#kwChipBox');
+            $box.empty();
+            if (!kwTokens.length) {
+                $box.append('<span class="kw-empty">暂无关键词，在下方输入后添加</span>');
+            } else {
+                kwTokens.forEach(function (t, idx) {
+                    var $chip = $('<span class="kw-chip"></span>');
+                    $chip.append(document.createTextNode(t));
+                    $chip.append($('<span class="kw-x" title="删除">×</span>').attr('data-idx', idx));
+                    $box.append($chip);
+                });
+            }
+            syncKwHidden();
+        }
+
+        function addKwToken(raw) {
+            var t = (raw || '').trim();
+            if (!t) {
+                return;
+            }
+            if (t.length > maxKwLen) {
+                t = t.substring(0, maxKwLen);
+            }
+            if (kwTokens.length >= maxKwCount) {
+                layer.msg('最多 ' + maxKwCount + ' 个关键词');
+                return;
+            }
+            var key = t.toLowerCase();
+            for (var i = 0; i < kwTokens.length; i++) {
+                if (kwTokens[i].toLowerCase() === key) {
+                    layer.msg('关键词已存在');
+                    return;
+                }
+            }
+            kwTokens.push(t);
+            renderKwChips();
+        }
+
+        kwTokens = parseKwInitial();
+        renderKwChips();
+        $('#btnAddKw').on('click', function () {
+            addKwToken($('#kwInput').val());
+            $('#kwInput').val('').focus();
+        });
+        $('#kwInput').on('keydown', function (e) {
+            if (e.keyCode === 13) {
+                e.preventDefault();
+                addKwToken($(this).val());
+                $(this).val('');
+            }
+        });
+        $('#kwChipBox').on('click', '.kw-x', function () {
+            var idx = parseInt($(this).attr('data-idx'), 10);
+            if (!isNaN(idx)) {
+                kwTokens.splice(idx, 1);
+                renderKwChips();
+            }
+        });
+        $('#spuNameInput').on('input', syncKwHidden);
+        form.on('select(brand)', function () {
+            syncKwHidden();
+        });
+        $('select[name="brand"]').on('change', syncKwHidden);
         form.render('select');
 
         function applyNonSaleUi(isNonSale) {
@@ -355,6 +541,7 @@
         });
 
         function saveSpu(goNext, confirmDuplicate) {
+            syncKwHidden();
             var data = $('#editform').serialize();
             if (confirmDuplicate) {
                 data += '&confirmDuplicate=true';

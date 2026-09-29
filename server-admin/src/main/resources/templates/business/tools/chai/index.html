@@ -56,25 +56,42 @@
             <button type="button" class="layui-btn" id="btnFillEmpty">仅回填空值</button>
             <button type="button" class="layui-btn layui-btn-danger" id="btnFillAll">全量重算</button>
         </div>
+
+        <div class="tool-card">
+            <h3>商品检索文本回填</h3>
+            <div class="tool-desc">
+                按「品牌名 + 商品名 + 关键词」重算 SPU / SKU 的 <code>search_text</code>。
+                关键词为空时仅写入品牌名与商品名；不修改 <code>keywords</code>。
+                新建/编辑 SPU（及品牌改名级联）已自动写入；本工具用于历史数据补齐或规则变更后全量重算。
+            </div>
+            <div class="tool-stat">
+                当前 search_text 为空：SPU
+                <strong th:text="${spuMissingSearchText}">0</strong> 条，SKU
+                <strong th:text="${skuMissingSearchText}">0</strong> 条
+            </div>
+            <button type="button" class="layui-btn" id="btnFillSearchEmpty">仅回填空值</button>
+            <button type="button" class="layui-btn layui-btn-danger" id="btnFillSearchAll">全量重算</button>
+        </div>
     </div>
 </div>
 <script th:replace="/common/template :: script"></script>
 <script th:inline="javascript">
     /*<![CDATA[*/
     var fillUrl = /*[[@{/business/tools/chai/brand/fillNameLetters}]]*/ '';
+    var fillSearchTextUrl = /*[[@{/business/tools/chai/searchText/fill}]]*/ '';
     /*]]>*/
     layui.use(['layer'], function () {
         var layer = layui.layer;
         var $ = layui.$;
 
-        function runFill(forceAll, tip) {
+        function runFill(url, forceAll, tip) {
             layer.confirm(tip, {icon: 3, title: '确认执行'}, function (index) {
                 layer.close(index);
                 var loading = layer.load(2);
-                $.post(fillUrl, {forceAll: forceAll}, function (res) {
+                $.post(url, {forceAll: forceAll}, function (res) {
                     layer.close(loading);
                     if (res.code === 200) {
-                        layer.msg(res.msg || '完成', {time: 2500}, function () {
+                        layer.msg(res.msg || '完成', {time: 3000}, function () {
                             location.reload();
                         });
                     } else {
@@ -88,10 +105,16 @@
         }
 
         $('#btnFillEmpty').on('click', function () {
-            runFill(false, '仅为首字母或全字母为空的品牌回填，是否继续？');
+            runFill(fillUrl, false, '仅为首字母或全字母为空的品牌回填，是否继续？');
         });
         $('#btnFillAll').on('click', function () {
-            runFill(true, '将按当前名称全量重算所有品牌的拼音字段，是否继续？');
+            runFill(fillUrl, true, '将按当前名称全量重算所有品牌的拼音字段，是否继续？');
+        });
+        $('#btnFillSearchEmpty').on('click', function () {
+            runFill(fillSearchTextUrl, false, '仅为 search_text 为空的 SPU / SKU 回填，是否继续？');
+        });
+        $('#btnFillSearchAll').on('click', function () {
+            runFill(fillSearchTextUrl, true, '将按品牌名+商品名+关键词全量重算所有 SPU / SKU 的 search_text，是否继续？');
         });
     });
 </script>

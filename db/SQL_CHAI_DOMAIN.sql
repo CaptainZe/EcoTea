@@ -62,6 +62,8 @@ CREATE TABLE `chai_sku`  (
   `sku_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SKU唯一编码',
   `star_level` int(11) NOT NULL DEFAULT 5 COMMENT '星级（热门度）',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商品名称',
+  `keywords` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '搜索关键词（空格分隔，运营可编）',
+  `search_text` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '检索文本（品牌名+商品名+关键词，系统生成）',
   `brand` bigint(20) NOT NULL COMMENT '品牌',
   `expiration` bigint(20) NOT NULL COMMENT '保质期',
   `type` int(11) NOT NULL COMMENT '茶类',
@@ -86,7 +88,9 @@ CREATE TABLE `chai_sku`  (
   UNIQUE INDEX `unique_key1`(`sku_code`) USING BTREE,
   UNIQUE INDEX `unique_key2`(`spu_id`, `year`, `prod_batch`) USING BTREE,
   INDEX `idx_spu_id`(`spu_id`) USING BTREE,
-  INDEX `idx_deleted`(`deleted`) USING BTREE
+  INDEX `idx_brand`(`brand`) USING BTREE,
+  INDEX `idx_type`(`type`) USING BTREE,
+  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 224 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SKU表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -98,6 +102,8 @@ CREATE TABLE `chai_spu`  (
   `spu_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SPU唯一编码',
   `star_level` int(11) NOT NULL DEFAULT 5 COMMENT '星级（热门度）',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商品名称',
+  `keywords` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '搜索关键词（空格分隔，运营可编）',
+  `search_text` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '检索文本（品牌名+商品名+关键词，系统生成）',
   `brand` bigint(20) NOT NULL COMMENT '品牌',
   `expiration` bigint(20) NOT NULL COMMENT '保质期',
   `type` int(11) NOT NULL COMMENT '茶类',
@@ -116,7 +122,9 @@ CREATE TABLE `chai_spu`  (
   `create_time` bigint(20) NOT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `unique_key`(`spu_code`) USING BTREE,
-  INDEX `idx_deleted`(`deleted`) USING BTREE
+  INDEX `idx_brand`(`brand`) USING BTREE,
+  INDEX `idx_type`(`type`) USING BTREE,
+  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SPU表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------

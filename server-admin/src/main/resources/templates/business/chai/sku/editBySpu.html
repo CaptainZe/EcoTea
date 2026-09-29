@@ -314,7 +314,7 @@
             <div class="sku-spu-hint">
                 <span th:if="${generated}">已按锚点预填最近 6 个半年。不需要的半年删除卡片后保存。</span>
                 <span th:if="${!generated}">不需要的半年，删除对应卡片即可。可用「从SPU同步」填充本页共享字段，点「保存SKU」后生效（已删除SKU也会在保存时一并对齐）。</span>
-                品牌、保质期、茶类随 SPU 带入。名称、规格、图片需要时再展开调整。
+                品牌、保质期、茶类、搜索关键词随 SPU 带入。名称、规格、图片需要时再展开调整。
             </div>
         </div>
         <div id="dictWarn" class="sku-dict-warn" style="display:none;"></div>
@@ -888,7 +888,7 @@
 
         $('#btnSyncFromSpu').on('click', function () {
             layer.confirm(
-                '将用当前SPU的名称、星级、品牌、保质期、茶类、等级、规格、图片、非卖品、官方价，填充本页全部SKU卡片。<br>'
+                '将用当前SPU的名称、关键词、星级、品牌、保质期、茶类、等级、规格、图片、非卖品、官方价，填充本页全部SKU卡片。<br>'
                 + '不会修改：年份/生产批次、SKU编码、销售价/回收价及相关扣减。<br>'
                 + '仅填充到页面，需再点「保存SKU」才会写入数据库；保存时会一并对齐已删除SKU的共享字段。是否继续？',
                 {icon: 3, title: '从SPU同步共享字段'},
@@ -909,6 +909,7 @@
             spu = spu || {};
             row.starLevel = spu.starLevel != null ? spu.starLevel : row.starLevel;
             row.name = spu.name != null ? spu.name : row.name;
+            row.keywords = spu.keywords != null ? spu.keywords : row.keywords;
             row.brand = spu.brand != null ? spu.brand : row.brand;
             row.expiration = spu.expiration != null ? spu.expiration : row.expiration;
             row.type = spu.type != null ? spu.type : row.type;

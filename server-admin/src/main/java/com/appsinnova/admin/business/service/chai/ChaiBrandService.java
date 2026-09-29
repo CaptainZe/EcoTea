@@ -71,12 +71,24 @@ public class ChaiBrandService {
     }
 
     public ChaiBrand save(ChaiBrand entity) {
+        String oldName = null;
+        if (entity.getId() != null) {
+            ChaiBrand old = getById(entity.getId());
+            if (old != null) {
+                oldName = old.getName();
+            }
+        }
         if (entity.getId() == null) {
             entity.setCreateTime(System.currentTimeMillis());
         }
         fillNameLetters(entity);
         entity.setUpdateTime(System.currentTimeMillis());
-        return chaiBrandRepository.save(entity);
+        entity = chaiBrandRepository.save(entity);
+        if (entity.getId() != null && oldName != null
+                && !Objects.equals(oldName, entity.getName())) {
+            chaiSpuService.rebuildSearchTextForBrand(entity.getId(), entity.getName());
+        }
+        return entity;
     }
 
     /**

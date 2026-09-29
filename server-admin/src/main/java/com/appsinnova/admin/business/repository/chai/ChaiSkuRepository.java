@@ -15,6 +15,8 @@ public interface ChaiSkuRepository extends JpaRepository<ChaiSku, Long>, JpaSpec
 
     List<ChaiSku> findBySpuIdAndDeletedOrderByYearDescProdBatchDesc(Long spuId, Integer deleted);
 
+    List<ChaiSku> findByBrand(Long brand);
+
     java.util.Optional<ChaiSku> findFirstBySpuIdAndYearAndProdBatch(Long spuId, Integer year, Integer prodBatch);
 
     boolean existsBySpuIdAndYearAndProdBatchAndDeleted(Long spuId, Integer year, Integer prodBatch, Integer deleted);

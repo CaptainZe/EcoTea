@@ -25,6 +25,10 @@ public class ChaiSpu implements Serializable {
     private String spuCode;
     private Integer starLevel;
     private String name;
+    /** 搜索关键词（空格分隔，运营可编） */
+    private String keywords;
+    /** 检索文本（品牌名+商品名+关键词，系统生成） */
+    private String searchText;
     private Long brand;
     private Long expiration;
     private Integer type;

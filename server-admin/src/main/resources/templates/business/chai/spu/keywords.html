@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>维护搜索关键词</title>
+    <style>
+        .kw-form .layui-form-label { width: 100px; }
+        .kw-form .layui-input-block { margin-left: 130px; max-width: 520px; }
+        .kw-form .field-tip { color: #6B7280; font-size: 12px; line-height: 1.6; margin-top: 6px; }
+        .kw-spu-card {
+            background: #F8FAFC;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+        }
+        .kw-spu-card-hd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .kw-spu-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.4;
+        }
+        .kw-spu-status {
+            flex-shrink: 0;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .kw-spu-status.is-online {
+            color: #166534;
+            background: #DCFCE7;
+        }
+        .kw-spu-status.is-offline {
+            color: #6B7280;
+            background: #F3F4F6;
+        }
+        .kw-spu-meta {
+            margin-top: 6px;
+            color: #6B7280;
+            font-size: 13px;
+        }
+        .kw-spu-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .kw-spu-tags span {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 12px;
+        }
+        .kw-spu-tags b {
+            margin-left: 4px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .kw-chip-box {
+            min-height: 42px;
+            padding: 8px 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 4px;
+            background: #FAFAFA;
+        }
+        .kw-chip {
+            display: inline-block;
+            margin: 0 6px 6px 0;
+            padding: 2px 8px 2px 10px;
+            background: #ECFDF5;
+            color: #047857;
+            border: 1px solid #A7F3D0;
+            border-radius: 3px;
+            font-size: 13px;
+            line-height: 22px;
+        }
+        .kw-chip .kw-x {
+            margin-left: 6px;
+            cursor: pointer;
+            color: #059669;
+            font-weight: 700;
+        }
+        .kw-chip .kw-x:hover { color: #DC2626; }
+        .kw-empty { color: #9CA3AF; font-size: 13px; }
+        .kw-add-row { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+        .kw-add-row .layui-input { flex: 1; max-width: 280px; }
+        .kw-search-text {
+            margin-top: 4px;
+            padding: 8px 10px;
+            background: #F3F4F6;
+            border-radius: 4px;
+            color: #374151;
+            font-size: 13px;
+            word-break: break-all;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile" th:if="${errorMsg != null}">
+    <div style="color:#DC2626;padding:24px;" th:text="${errorMsg}"></div>
+</div>
+<div class="timo-compile" th:unless="${errorMsg != null}">
+    <form id="kwForm" class="layui-form kw-form" method="POST">
+        <input type="hidden" name="id" th:value="${editItem.id}"/>
+        <input type="hidden" name="keywords" id="keywordsHidden" th:value="${editItem.keywords}"/>
+
+        <div class="kw-spu-card">
+            <div class="kw-spu-card-hd">
+                <div class="kw-spu-name" th:text="${editItem.name}">-</div>
+                <span class="kw-spu-status"
+                      th:classappend="${editItem.status == 1} ? ' is-online' : ' is-offline'"
+                      th:text="${#dicts.keyValue('CHAI_STATUS', editItem.status)}">-</span>
+            </div>
+            <div class="kw-spu-meta">
+                <span th:text="${editItem.spuCode}">-</span>
+                · 锚点
+                <span th:text="${editItem.year}">-</span>
+                <span th:text="${#dicts.keyValue('CHAI_PROD_BATCH', editItem.prodBatch)}">-</span>
+            </div>
+            <div class="kw-spu-tags">
+                <span>品牌 <b th:text="${editItem.brandName != null ? editItem.brandName : '-'}">-</b></span>
+                <span>保质期 <b th:text="${editItem.expirationName != null ? editItem.expirationName : '-'}">-</b></span>
+                <span>茶类 <b th:text="${#dicts.keyValue('CHAI_TYPE', editItem.type)}">-</b></span>
+                <span>规格 <b th:text="${editItem.specShow != null and !#strings.isEmpty(editItem.specShow) ? editItem.specShow : '-'}">-</b></span>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">搜索关键词</label>
+            <div class="layui-input-block">
+                <div class="kw-chip-box" id="kwChipBox">
+                    <span class="kw-empty" id="kwEmpty">暂无关键词，在下方输入后添加</span>
+                </div>
+                <div class="kw-add-row">
+                    <input type="text" id="kwInput" class="layui-input" maxlength="20"
+                           placeholder="输入关键词，回车或点添加">
+                    <button type="button" class="layui-btn layui-btn-sm" id="btnAddKw">添加</button>
+                </div>
+                <div class="field-tip">
+                    最多 <span th:text="${maxKeywordCount}">20</span> 个，每个不超过
+                    <span th:text="${maxKeywordLength}">20</span> 字；保存后下属 SKU 自动继承。
+                    品牌名、商品名会写入检索文本，无需重复添加。
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">检索文本</label>
+            <div class="layui-input-block">
+                <div class="kw-search-text" id="searchTextPreview"
+                     th:text="${editItem.searchText != null and !#strings.isEmpty(editItem.searchText) ? editItem.searchText : '保存后自动生成'}">
+                    保存后自动生成
+                </div>
+                <div class="field-tip">只读预览：品牌名 + 商品名 + 关键词</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="button" class="layui-btn" id="btnSaveKw">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var maxCount = /*[[${maxKeywordCount}]]*/ 20;
+    var maxLen = /*[[${maxKeywordLength}]]*/ 20;
+    var brandName = /*[[${editItem != null ? editItem.brandName : ''}]]*/ '';
+    var productName = /*[[${editItem != null ? editItem.name : ''}]]*/ '';
+    var saveUrl = /*[[@{/business/chai/spu/keywords/save}]]*/ '';
+    /*]]>*/
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+        var tokens = [];
+
+        function parseInitial() {
+            var raw = ($('#keywordsHidden').val() || '').trim();
+            if (!raw) {
+                return [];
+            }
+            raw = raw.replace(/，/g, ' ').replace(/,/g, ' ');
+            var list = [];
+            var seen = {};
+            raw.split(/\s+/).forEach(function (p) {
+                p = (p || '').trim();
+                if (!p) {
+                    return;
+                }
+                if (p.length > maxLen) {
+                    p = p.substring(0, maxLen);
+                }
+                var key = p.toLowerCase();
+                if (seen[key]) {
+                    return;
+                }
+                seen[key] = true;
+                list.push(p);
+            });
+            return list.slice(0, maxCount);
+        }
+
+        function syncHidden() {
+            $('#keywordsHidden').val(tokens.join(' '));
+            var parts = [];
+            if (brandName) {
+                parts.push(brandName);
+            }
+            if (productName) {
+                parts.push(productName);
+            }
+            if (tokens.length) {
+                parts.push(tokens.join(' '));
+            }
+            $('#searchTextPreview').text(parts.length ? parts.join(' ') : '（空）');
+        }
+
+        function render() {
+            var $box = $('#kwChipBox');
+            $box.empty();
+            if (!tokens.length) {
+                $box.append('<span class="kw-empty" id="kwEmpty">暂无关键词，在下方输入后添加</span>');
+            } else {
+                tokens.forEach(function (t, idx) {
+                    var $chip = $('<span class="kw-chip"></span>');
+                    $chip.append(document.createTextNode(t));
+                    $chip.append($('<span class="kw-x" title="删除">×</span>').attr('data-idx', idx));
+                    $box.append($chip);
+                });
+            }
+            syncHidden();
+        }
+
+        function addToken(raw) {
+            var t = (raw || '').trim();
+            if (!t) {
+                return;
+            }
+            if (t.length > maxLen) {
+                t = t.substring(0, maxLen);
+            }
+            if (tokens.length >= maxCount) {
+                layer.msg('最多 ' + maxCount + ' 个关键词');
+                return;
+            }
+            var key = t.toLowerCase();
+            for (var i = 0; i < tokens.length; i++) {
+                if (tokens[i].toLowerCase() === key) {
+                    layer.msg('关键词已存在');
+                    return;
+                }
+            }
+            tokens.push(t);
+            render();
+        }
+
+        tokens = parseInitial();
+        render();
+
+        $('#btnAddKw').on('click', function () {
+            addToken($('#kwInput').val());
+            $('#kwInput').val('').focus();
+        });
+        $('#kwInput').on('keydown', function (e) {
+            if (e.keyCode === 13) {
+                e.preventDefault();
+                addToken($(this).val());
+                $(this).val('');
+            }
+        });
+        $('#kwChipBox').on('click', '.kw-x', function () {
+            var idx = parseInt($(this).attr('data-idx'), 10);
+            if (!isNaN(idx)) {
+                tokens.splice(idx, 1);
+                render();
+            }
+        });
+
+        $('#btnSaveKw').on('click', function () {
+            var loading = layer.load(2);
+            $.ajax({
+                url: saveUrl,
+                type: 'POST',
+                data: {
+                    id: $('input[name="id"]').val(),
+                    keywords: tokens.join(' ')
+                },
+                success: function (res) {
+                    layer.close(loading);
+                    if (res.code == 200) {
+                        layer.msg('保存成功', {time: 800}, function () {
+                            if (window.parent && window.parent.layer) {
+                                var idx = window.parent.layer.getFrameIndex(window.name);
+                                window.parent.layer.close(idx);
+                                window.parent.location.reload();
+                            }
+                        });
+                    } else {
+                        layer.msg(res.msg || '保存失败');
+                    }
+                },
+                error: function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -5,11 +5,14 @@ import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiHalfYearUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiRecycleNoBagUtil;
+import com.appsinnova.admin.business.common.utils.chai.ChaiSearchTextUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
+import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiSku;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
 import com.appsinnova.admin.business.domain.chai.ChaiStock;
 import com.appsinnova.admin.business.domain.chai.ChaiStockWh;
+import com.appsinnova.admin.business.repository.chai.ChaiBrandRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiSkuRepository;
 import com.appsinnova.admin.common.data.PageSort;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class ChaiSkuService {
 
     private final ChaiSkuRepository chaiSkuRepository;
     private final ChaiStockService chaiStockService;
+    private final ChaiBrandRepository chaiBrandRepository;
 
     public ChaiSku getById(Long id) {
         return chaiSkuRepository.findById(id).orElse(null);
@@ -148,6 +152,7 @@ public class ChaiSkuService {
 
     /**
      * 将 SPU 共享字段写入 SKU（不改 year/prodBatch/编码/销回收价/上下架）。
+     * keywords / search_text 与品牌、茶类一样继承自 SPU。
      */
     public void applySharedFromSpu(ChaiSpu spu, ChaiSku sku) {
         if (spu == null || sku == null) {
@@ -169,6 +174,128 @@ public class ChaiSkuService {
         } else {
             sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
         }
+        applyKeywordsFromSpu(spu, sku, resolveBrandName(spu.getBrand()));
+    }
+
+    /**
+     * 仅同步关键词并重算 search_text（SKU 品名保持自身）。
+     */
+    public void applyKeywordsFromSpu(ChaiSpu spu, ChaiSku sku, String brandName) {
+        if (spu == null || sku == null) {
+            return;
+        }
+        String kw = ChaiSearchTextUtil.normalizeKeywords(spu.getKeywords());
+        sku.setKeywords(kw);
+        sku.setSearchText(ChaiSearchTextUtil.buildSearchText(brandName, sku.getName(), kw));
+    }
+
+    /**
+     * 将该 SPU 下全部 SKU（含已删）的 keywords / search_text 与 SPU 对齐。
+     */
+    @Transactional
+    public int syncKeywordsFromSpu(ChaiSpu spu, String brandName, String operator) {
+        if (spu == null || spu.getId() == null) {
+            return 0;
+        }
+        List<ChaiSku> list = listBySpuId(spu.getId(), null);
+        if (list.isEmpty()) {
+            return 0;
+        }
+        String bn = brandName != null ? brandName : resolveBrandName(spu.getBrand());
+        long now = System.currentTimeMillis();
+        for (ChaiSku sku : list) {
+            applyKeywordsFromSpu(spu, sku, bn);
+            if (StringUtils.hasText(operator)) {
+                sku.setOperator(operator);
+            }
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+        }
+        return list.size();
+    }
+
+    /**
+     * 品牌改名后：按品牌重算该品牌下全部 SKU 的 search_text（keywords 不变）。
+     */
+    @Transactional
+    public int rebuildSearchTextByBrand(Long brandId, String brandName) {
+        if (brandId == null) {
+            return 0;
+        }
+        List<ChaiSku> list = chaiSkuRepository.findByBrand(brandId);
+        if (list.isEmpty()) {
+            return 0;
+        }
+        String bn = brandName != null ? brandName : "";
+        long now = System.currentTimeMillis();
+        for (ChaiSku sku : list) {
+            sku.setSearchText(ChaiSearchTextUtil.buildSearchText(bn, sku.getName(), sku.getKeywords()));
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+        }
+        return list.size();
+    }
+
+    public String resolveBrandName(Long brandId) {
+        if (brandId == null) {
+            return "";
+        }
+        return chaiBrandRepository.findById(brandId)
+                .map(ChaiBrand::getName)
+                .orElse("");
+    }
+
+    /**
+     * 批量回填 SKU 的 search_text（keywords 不变）。
+     *
+     * @param forceAll   true=全量重算；false=仅 search_text 为空
+     * @param brandNames 品牌 id → 名称（可空，缺省时再查库）
+     * @return total / updated / skipped
+     */
+    @Transactional
+    public Map<String, Integer> fillSearchTextBatch(boolean forceAll, Map<Long, String> brandNames) {
+        Map<Long, String> names = brandNames != null ? brandNames : new HashMap<>();
+        List<ChaiSku> list = chaiSkuRepository.findAll();
+        int updated = 0;
+        int skipped = 0;
+        long now = System.currentTimeMillis();
+        for (ChaiSku sku : list) {
+            if (!forceAll && StringUtils.hasText(sku.getSearchText())) {
+                skipped++;
+                continue;
+            }
+            String bn = "";
+            if (sku.getBrand() != null) {
+                bn = names.get(sku.getBrand());
+                if (bn == null) {
+                    bn = resolveBrandName(sku.getBrand());
+                    names.put(sku.getBrand(), bn);
+                }
+            }
+            String text = ChaiSearchTextUtil.buildSearchText(bn, sku.getName(), sku.getKeywords());
+            String before = sku.getSearchText() != null ? sku.getSearchText() : "";
+            if (Objects.equals(before, text)) {
+                skipped++;
+                continue;
+            }
+            sku.setSearchText(text);
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+            updated++;
+        }
+        Map<String, Integer> result = new LinkedHashMap<>();
+        result.put("total", list.size());
+        result.put("updated", updated);
+        result.put("skipped", skipped);
+        return result;
+    }
+
+    public long countMissingSearchText() {
+        return chaiSkuRepository.count((Root<ChaiSku> root, CriteriaQuery<?> query, CriteriaBuilder cb) ->
+                cb.or(
+                        cb.isNull(root.get("searchText")),
+                        cb.equal(root.get("searchText").as(String.class), "")
+                ));
     }
 
     /**
@@ -219,7 +346,7 @@ public class ChaiSkuService {
     /**
      * 批量保存某 SPU 下 SKU：提交列表全量覆盖。
      * 未出现的有效 SKU 软删；无 id 但命中已删 (year, prodBatch) 则恢复原 id/编码。
-     * 空列表视为全部有效 SKU 软删。brand / expiration / type 强制继承 SPU。
+     * 空列表视为全部有效 SKU 软删。brand / expiration / type / keywords 强制继承 SPU。
      */
     @Transactional
     public void saveBatchForSpu(ChaiSpu spu, List<ChaiSku> itemList, String operator) {
@@ -309,6 +436,7 @@ public class ChaiSkuService {
                 item.setRealImageUrls("[]");
             }
             item.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
+            applyKeywordsFromSpu(spu, item, resolveBrandName(spu.getBrand()));
             save(item);
         }
         syncStatusFromSpu(spuId, spu.getStatus() != null ? spu.getStatus() : 0, operator);
