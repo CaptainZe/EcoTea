@@ -34,13 +34,13 @@ public final class ChaiStockExcelExporter {
 
     private static final String[] HEADERS = {
             "SKU编码", "品牌", "品名", "规格", "年", "批次",
-            "本仓件数", "无提袋", "破损", "破损无袋"
+            "本仓总库存", "完整", "无提袋", "破损", "破损无袋"
     };
 
     /** 列宽（字符约宽），索引对应 HEADERS */
     private static final int[] COLUMN_WIDTHS = {
             24, 14, 36, 24, 8, 12,
-            12, 10, 10, 12
+            12, 10, 10, 10, 12
     };
 
     private ChaiStockExcelExporter() {
@@ -195,9 +195,10 @@ public final class ChaiStockExcelExporter {
                     writeText(row, 4, year != null ? String.valueOf(year) : "", cellStyle);
                     writeText(row, 5, batch, cellStyle);
                     writeNumber(row, 6, stock.getListQty(), numStyle);
-                    writeNumber(row, 7, stock.getListQtyNoBag(), numStyle);
-                    writeNumber(row, 8, stock.getListQtyDamaged(), numStyle);
-                    writeNumber(row, 9, stock.getListQtyDamagedNoBag(), numStyle);
+                    writeNumber(row, 7, stock.getListQtyIntact(), numStyle);
+                    writeNumber(row, 8, stock.getListQtyNoBag(), numStyle);
+                    writeNumber(row, 9, stock.getListQtyDamaged(), numStyle);
+                    writeNumber(row, 10, stock.getListQtyDamagedNoBag(), numStyle);
                 }
             }
 

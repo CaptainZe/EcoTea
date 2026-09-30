@@ -175,7 +175,8 @@
                     <th width="80">年份</th>
                     <th width="90">生产批次</th>
                     <th width="100" class="col-num"
-                        th:text="${filterWhId != null} ? '本仓库存' : '合计库存'">合计库存</th>
+                        th:text="${filterWhId != null} ? '本仓总库存' : '总库存'">总库存</th>
+                    <th width="80" class="col-num">完整</th>
                     <th width="80" class="col-num">无提袋</th>
                     <th width="80" class="col-num">破损</th>
                     <th width="90" class="col-num">破损无袋</th>
@@ -210,6 +211,11 @@
                     <td class="col-num">
                         <span class="stock-qty" th:classappend="${item.listQty == null or item.listQty == 0} ? ' is-zero' : ''"
                               th:text="${item.listQty != null ? item.listQty : 0}"></span>
+                    </td>
+                    <td class="col-num">
+                        <span class="stock-qty"
+                              th:classappend="${item.listQtyIntact == null or item.listQtyIntact == 0} ? ' is-zero' : ''"
+                              th:text="${item.listQtyIntact != null ? item.listQtyIntact : 0}"></span>
                     </td>
                     <td class="col-num">
                         <span class="stock-qty"

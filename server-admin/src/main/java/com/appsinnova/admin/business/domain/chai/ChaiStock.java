@@ -85,6 +85,9 @@ public class ChaiStock implements Serializable {
     /** 列表展示件数（未选仓=全仓合计；选仓=本仓 qty） */
     @Transient
     private Integer listQty;
+    /** 列表展示：完整 = 总数 − 无提袋 − 破损 − 破损无袋（不落库） */
+    @Transient
+    private Integer listQtyIntact;
     /** 列表展示：无提袋（未选仓=全仓；选仓=本仓） */
     @Transient
     private Integer listQtyNoBag;

@@ -324,6 +324,7 @@ public class ChaiStockService {
 
     /**
      * 列表件数：未选仓用全仓合计；选仓用该仓分仓结存。
+     * 完整 = 总数 − 无提袋 − 破损 − 破损无袋（与 {@link ChaiStockQuality#INTACT} 一致）。
      */
     private void fillListQty(List<ChaiStock> stocks, Long whId) {
         if (stocks == null || stocks.isEmpty()) {
@@ -331,10 +332,15 @@ public class ChaiStockService {
         }
         if (whId == null || whId <= 0) {
             for (ChaiStock stock : stocks) {
-                stock.setListQty(stock.getTotalQty() != null ? stock.getTotalQty() : 0);
-                stock.setListQtyNoBag(stock.getQtyNoBag() != null ? stock.getQtyNoBag() : 0);
-                stock.setListQtyDamaged(stock.getQtyDamaged() != null ? stock.getQtyDamaged() : 0);
-                stock.setListQtyDamagedNoBag(stock.getQtyDamagedNoBag() != null ? stock.getQtyDamagedNoBag() : 0);
+                int qty = stock.getTotalQty() != null ? stock.getTotalQty() : 0;
+                int noBag = stock.getQtyNoBag() != null ? stock.getQtyNoBag() : 0;
+                int damaged = stock.getQtyDamaged() != null ? stock.getQtyDamaged() : 0;
+                int damagedNoBag = stock.getQtyDamagedNoBag() != null ? stock.getQtyDamagedNoBag() : 0;
+                stock.setListQty(qty);
+                stock.setListQtyNoBag(noBag);
+                stock.setListQtyDamaged(damaged);
+                stock.setListQtyDamagedNoBag(damagedNoBag);
+                stock.setListQtyIntact(intactQty(qty, noBag, damaged, damagedNoBag));
             }
             return;
         }
@@ -349,16 +355,26 @@ public class ChaiStockService {
             Map<String, Integer> one = whMap.get(stock.getSkuId());
             if (one == null) {
                 stock.setListQty(0);
+                stock.setListQtyIntact(0);
                 stock.setListQtyNoBag(0);
                 stock.setListQtyDamaged(0);
                 stock.setListQtyDamagedNoBag(0);
             } else {
-                stock.setListQty(one.get("qty") != null ? one.get("qty") : 0);
-                stock.setListQtyNoBag(one.get("qtyNoBag") != null ? one.get("qtyNoBag") : 0);
-                stock.setListQtyDamaged(one.get("qtyDamaged") != null ? one.get("qtyDamaged") : 0);
-                stock.setListQtyDamagedNoBag(one.get("qtyDamagedNoBag") != null ? one.get("qtyDamagedNoBag") : 0);
+                int qty = one.get("qty") != null ? one.get("qty") : 0;
+                int noBag = one.get("qtyNoBag") != null ? one.get("qtyNoBag") : 0;
+                int damaged = one.get("qtyDamaged") != null ? one.get("qtyDamaged") : 0;
+                int damagedNoBag = one.get("qtyDamagedNoBag") != null ? one.get("qtyDamagedNoBag") : 0;
+                stock.setListQty(qty);
+                stock.setListQtyNoBag(noBag);
+                stock.setListQtyDamaged(damaged);
+                stock.setListQtyDamagedNoBag(damagedNoBag);
+                stock.setListQtyIntact(intactQty(qty, noBag, damaged, damagedNoBag));
             }
         }
+    }
+
+    private static int intactQty(int qty, int noBag, int damaged, int damagedNoBag) {
+        return ChaiStockQuality.INTACT.availableOf(new int[]{qty, noBag, damaged, damagedNoBag});
     }
 
     /**
