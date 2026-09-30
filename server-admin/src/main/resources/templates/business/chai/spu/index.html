@@ -94,6 +94,26 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">条形码</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="barcode" th:value="${param.barcode}" placeholder="精确查询"
+                               autocomplete="off" class="layui-input js-barcode-search">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">码类型</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="barcodeKind">
+                            <option th:each="opt : ${barcodeKindOptions}"
+                                    th:value="${opt.code}"
+                                    th:text="${opt.message}"
+                                    th:selected="${(param.barcodeKind == null or #lists.isEmpty(param.barcodeKind))
+                                        ? (opt.code == -1)
+                                        : (param.barcodeKind[0] == (opt.code + ''))}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <button class="layui-btn timo-search-btn">
                         <i class="fa fa-search"></i>
                     </button>
@@ -129,7 +149,7 @@
                         <label class="timo-checkbox"><input type="checkbox">
                             <i class="layui-icon layui-icon-ok"></i></label>
                     </th>
-                    <th width="220">操作</th>
+                    <th width="260">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="80">SKU数</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
@@ -157,6 +177,8 @@
                         <!-- 搜索关键词录入暂不上线，入口隐藏；路由 /keywords 保留 -->
                         <a class="open-popup" style="color: #047857; font-weight: 600;" data-title="维护SKU"
                            th:attr="data-url=@{'/business/chai/sku/editBySpu/'+${item.id}}" data-size="1500,800">SKU</a>
+                        <a class="open-popup" style="color: #0F766E; font-weight: 600;" data-title="条码 / 标签"
+                           th:attr="data-url=@{'/business/chai/spu/barcode/'+${item.id}}" data-size="900,620">条码</a>
                         <a class="open-popup" style="color: #7C3AED; font-weight: 600;" data-title="复制SPU"
                            th:attr="data-url=@{'/business/chai/spu/copy/'+${item.id}}" data-size="1500,800">复制</a>
                         <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"

@@ -1,9 +1,11 @@
 package com.appsinnova.admin.business.controller.chai;
 
 import com.appsinnova.admin.business.common.enums.base.YesOrNo;
+import com.appsinnova.admin.business.common.enums.chai.ChaiBarcodeKind;
 import com.appsinnova.admin.business.common.enums.chai.ChaiDeletedFilter;
 import com.appsinnova.admin.business.common.enums.chai.ChaiProdBatch;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
+import com.appsinnova.admin.business.common.utils.chai.ChaiBarcodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiFormHelper;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSearchTextUtil;
@@ -15,6 +17,7 @@ import com.appsinnova.admin.business.service.chai.ChaiBrandService;
 import com.appsinnova.admin.business.service.chai.ChaiExpirationService;
 import com.appsinnova.admin.business.service.chai.ChaiSkuService;
 import com.appsinnova.admin.business.service.chai.ChaiSpuService;
+import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
 import com.appsinnova.admin.component.shiro.ShiroUtil;
@@ -22,13 +25,19 @@ import com.appsinnova.admin.system.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authz.annotation.Logical;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +73,7 @@ public class ChaiSpuController {
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
+        model.addAttribute("barcodeKindOptions", ChaiBarcodeKind.values());
         return "/business/chai/spu/index";
     }
 
@@ -168,6 +178,99 @@ public class ChaiSpuController {
             return ResultVoUtil.SAVE_SUCCESS;
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    /**
+     * 独立维护条形码 + 标签预览/打印（同一页）。
+     */
+    @GetMapping("/barcode/{id}")
+    @RequiresPermissions("business:chai:spu:index")
+    public String toBarcode(@PathVariable("id") Long id, Model model) {
+        ChaiSpu spu = chaiSpuService.getById(id);
+        if (spu == null) {
+            model.addAttribute("errorMsg", "SPU不存在");
+            return "/business/chai/spu/barcode";
+        }
+        if (YesOrNo.isYes(spu.getDeleted())) {
+            model.addAttribute("errorMsg", "该SPU已删除，请先在列表中恢复后再维护条码");
+            return "/business/chai/spu/barcode";
+        }
+        if (spu.getBrand() != null) {
+            ChaiBrand brand = chaiBrandService.getById(spu.getBrand());
+            spu.setBrandName(brand != null ? brand.getName() : String.valueOf(spu.getBrand()));
+        } else {
+            spu.setBrandName("-");
+        }
+        if (spu.getExpiration() != null) {
+            ChaiExpiration expiration = chaiExpirationService.getById(spu.getExpiration());
+            spu.setExpirationName(expiration != null ? expiration.getName() : String.valueOf(spu.getExpiration()));
+        } else {
+            spu.setExpirationName("-");
+        }
+        spu.setSpecShow(ChaiSpecUtil.toShow(spu.getSpec()));
+        ChaiPriceUtil.fillSpuListShow(spu);
+        model.addAttribute("editItem", spu);
+        model.addAttribute("gradeName", DictUtils.keyValue("CHAI_GRADE",
+                spu.getGrade() != null ? String.valueOf(spu.getGrade()) : null));
+        model.addAttribute("prodBatchName", DictUtils.keyValue("CHAI_PROD_BATCH",
+                spu.getProdBatch() != null ? String.valueOf(spu.getProdBatch()) : null));
+        return "/business/chai/spu/barcode";
+    }
+
+    @PostMapping("/barcode/save")
+    @RequiresPermissions("business:chai:spu:edit")
+    @ResponseBody
+    public ResultVo<?> saveBarcode(@RequestParam("id") Long id,
+                                   @RequestParam(value = "barcode", required = false) String barcode) {
+        User user = ShiroUtil.getSubject();
+        try {
+            chaiSpuService.saveBarcode(id, barcode, user.getNickname());
+            return ResultVoUtil.SAVE_SUCCESS;
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    /** 按 spuId 生成系统码 EAN-13（仅返回，不落库） */
+    @GetMapping("/barcode/generate/{id}")
+    @RequiresPermissions("business:chai:spu:edit")
+    @ResponseBody
+    public ResultVo<?> generateBarcode(@PathVariable("id") Long id) {
+        ChaiSpu spu = chaiSpuService.getById(id);
+        if (spu == null) {
+            return ResultVoUtil.error("SPU不存在");
+        }
+        if (YesOrNo.isYes(spu.getDeleted())) {
+            return ResultVoUtil.error("已删除的SPU不能生成条码");
+        }
+        try {
+            String code = ChaiBarcodeUtil.generateInternal(id);
+            Map<String, Object> data = new HashMap<>();
+            data.put("barcode", code);
+            return ResultVoUtil.success("生成成功", data);
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    /** EAN-13 条码 PNG（预览/打印用；SPU 维护页与运营工具箱共用） */
+    @GetMapping("/barcode/image")
+    @RequiresPermissions(value = {"business:chai:spu:index", "business:chai:toolbox:index"},
+            logical = Logical.OR)
+    public void barcodeImage(@RequestParam("code") String code,
+                             @RequestParam(value = "w", required = false, defaultValue = "280") int width,
+                             @RequestParam(value = "h", required = false, defaultValue = "80") int height,
+                             HttpServletResponse response) throws IOException {
+        response.setContentType(MediaType.IMAGE_PNG_VALUE);
+        response.setHeader("Cache-Control", "no-store");
+        try {
+            int w = Math.min(Math.max(width, 120), 600);
+            int h = Math.min(Math.max(height, 40), 200);
+            BufferedImage image = ChaiBarcodeUtil.toImage(code, w, h);
+            ImageIO.write(image, "png", response.getOutputStream());
+        } catch (IllegalArgumentException ex) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 

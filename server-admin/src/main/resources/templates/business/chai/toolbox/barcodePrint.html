@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>批量打印系统码标签</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 12px;
+            background: #F1F5F9;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        }
+        .bp-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 10px 14px;
+            margin: -12px -12px 16px;
+            background: #fff;
+            border-bottom: 1px solid #E5E7EB;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+        .bp-toolbar .msg { color: #374151; font-size: 14px; }
+        .bp-toolbar .btn {
+            display: inline-block;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 4px;
+            background: #F59E0B;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .bp-toolbar .btn:hover { background: #D97706; }
+        .bp-toolbar .btn-secondary {
+            background: #E5E7EB;
+            color: #374151;
+        }
+        .bp-error {
+            color: #DC2626;
+            padding: 24px;
+            background: #fff;
+            border-radius: 6px;
+        }
+        .bp-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        /* 与单张维护页一致：横版 80mm × 60mm */
+        .bc-label {
+            width: 80mm;
+            height: 60mm;
+            background: #fff;
+            color: #111;
+            padding: 2.5mm 3mm 2mm;
+            box-sizing: border-box;
+            line-height: 1.35;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px #E5E7EB;
+        }
+        .bc-label-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            word-break: break-all;
+            max-height: 2.7em;
+            overflow: hidden;
+        }
+        .bc-label-row {
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bc-label-img {
+            display: block;
+            margin: 3mm auto 1mm;
+            width: 68mm;
+            height: 14mm;
+            object-fit: contain;
+        }
+        .bc-label-code {
+            text-align: center;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            font-family: Consolas, Monaco, monospace;
+            font-weight: 600;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .bp-toolbar { display: none !important; }
+            .bp-preview {
+                display: block;
+                gap: 0;
+            }
+            .bc-label-sheet {
+                page-break-after: always;
+                box-shadow: none;
+            }
+            .bc-label-sheet:last-child {
+                page-break-after: auto;
+            }
+            .bc-label {
+                box-shadow: none;
+                width: 80mm;
+                height: 60mm;
+            }
+            @page {
+                size: 80mm 60mm;
+                margin: 1.5mm;
+            }
+        }
+    </style>
+</head>
+<body>
+<div th:if="${errorMsg != null}" class="bp-error" th:text="${errorMsg}">错误</div>
+
+<th:block th:unless="${errorMsg != null}">
+    <div class="bp-toolbar">
+        <span class="msg">共 <strong th:text="${printCount}">0</strong> 张系统码标签（80×60mm）</span>
+        <button type="button" class="btn" id="btnPrint">打印</button>
+        <button type="button" class="btn btn-secondary" onclick="window.close()">关闭</button>
+    </div>
+    <div class="bp-preview">
+        <div class="bc-label bc-label-sheet" th:each="item : ${list}">
+            <div class="bc-label-title"
+                 th:text="${(item.brandName != null ? item.brandName : '-') + ' · ' + (item.name != null ? item.name : '-')}">-</div>
+            <div class="bc-label-row">等级：<span th:text="${#dicts.keyValue('CHAI_GRADE', item.grade)}">-</span></div>
+            <div class="bc-label-row">规格：<span th:text="${item.specShow != null and !#strings.isEmpty(item.specShow) ? item.specShow : '-'}">-</span></div>
+            <div class="bc-label-row">批次：<span
+                    th:text="${(item.year != null ? item.year + '年' : '') + (#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch) != null ? #dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch) : '')}">-</span></div>
+            <div class="bc-label-row">保质期：<span th:text="${item.expirationName != null ? item.expirationName : '-'}">-</span></div>
+            <div class="bc-label-row">官方价：<span
+                    th:text="${item.officialPriceShow == '非卖品' ? '非卖品' : ((item.officialPriceShow != null and item.officialPriceShow != '-' ? item.officialPriceShow + '元' : '-'))}">-</span></div>
+            <img class="bc-label-img" alt="条码"
+                 th:src="@{/business/chai/spu/barcode/image(code=${item.barcode},w=320,h=70)}"/>
+            <div class="bc-label-code" th:text="${item.barcode}"></div>
+        </div>
+    </div>
+</th:block>
+
+<script>
+    document.getElementById('btnPrint') && document.getElementById('btnPrint').addEventListener('click', function () {
+        window.print();
+    });
+</script>
+</body>
+</html>

@@ -14,9 +14,11 @@ public class ChaiSkuSalePageVO implements Serializable {
     private long total;
     private long page;
     private long size;
-    /** brand_exact / name_like / spu / none */
+    /** brand_exact / name_like / spu / barcode / none */
     private String matchType;
     private String keyword;
+    /** 条码精确查询回显 */
+    private String barcode;
     private Long spuId;
     /** 按仓筛选时回显 */
     private Long whId;

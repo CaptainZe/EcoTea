@@ -4,6 +4,7 @@
     page: 1,
     size: 20,
     keyword: "",
+    barcode: "",
     spuId: null,
     whId: null,
     recycleRecent: false,
@@ -67,6 +68,7 @@
     typeTags: document.getElementById("typeTags"),
     filterResetBtn: document.getElementById("filterResetBtn"),
     filterConfirmBtn: document.getElementById("filterConfirmBtn"),
+    barcodeScanBtn: document.getElementById("barcodeScanBtn"),
   };
 
   function qs(name) {
@@ -77,7 +79,9 @@
 
   function syncUrl() {
     var params = new URLSearchParams();
-    if (state.keyword) {
+    if (state.barcode) {
+      params.set("barcode", state.barcode);
+    } else if (state.keyword) {
       params.set("keyword", state.keyword);
     }
     if (state.spuId) {
@@ -297,9 +301,11 @@
   function applyFilterDraftAndReload() {
     state.brandIds = cloneIdList(filterDraft.brandIds);
     state.types = cloneIdList(filterDraft.types);
+    state.barcode = "";
     state.page = 1;
     updateFilterEntryIcon();
     closeFilterDrawer();
+    updateFilterBar();
     syncUrl();
     load();
   }
@@ -349,9 +355,16 @@
 
   function updateFilterBar() {
     var inSameSpu = !!state.spuId;
-    els.filterBar.hidden = !inSameSpu;
-    els.clearFilterBtn.hidden = !inSameSpu;
-    els.filterText.textContent = inSameSpu ? "正在查看同款现货" : "";
+    var inBarcode = !!state.barcode;
+    els.filterBar.hidden = !inSameSpu && !inBarcode;
+    els.clearFilterBtn.hidden = !inSameSpu && !inBarcode;
+    if (inBarcode) {
+      els.filterText.textContent = "条码：" + state.barcode;
+    } else if (inSameSpu) {
+      els.filterText.textContent = "正在查看同款现货";
+    } else {
+      els.filterText.textContent = "";
+    }
   }
 
   function readWhIdFromSelect() {
@@ -377,11 +390,36 @@
     state.keyword = (els.keyword.value || "").trim();
   }
 
+  function clearBarcodeAndOthersForScan(code) {
+    state.barcode = String(code || "").replace(/\D/g, "").trim();
+    state.keyword = "";
+    els.keyword.value = "";
+    state.spuId = null;
+    state.whId = null;
+    state.recycleRecent = false;
+    state.brandIds = [];
+    state.types = [];
+    if (els.whSelect) {
+      els.whSelect.value = "";
+    }
+    if (els.recycleSelect) {
+      els.recycleSelect.value = "";
+    }
+    updateFilterEntryIcon();
+    state.page = 1;
+    updateFilterBar();
+    syncUrl();
+    load();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function applyFiltersAndReload() {
     syncKeywordFromInput();
+    state.barcode = "";
     state.whId = readWhIdFromSelect();
     state.recycleRecent = readRecycleRecentFromSelect();
     state.page = 1;
+    updateFilterBar();
     syncUrl();
     load();
   }
@@ -651,8 +689,15 @@
       matchHint = "（品名模糊）";
     } else if (data.matchType === "spu") {
       matchHint = "（同款）";
+    } else if (data.matchType === "barcode") {
+      matchHint = "（条码精确）";
     }
-    var kwHint = state.keyword ? " · " + escapeHtml(state.keyword) : "";
+    var kwHint = "";
+    if (state.barcode) {
+      kwHint = " · " + escapeHtml(state.barcode);
+    } else if (state.keyword) {
+      kwHint = " · " + escapeHtml(state.keyword);
+    }
     var whHint = "";
     if (state.whId) {
       var label = whShortLabel(state.whId);
@@ -720,23 +765,27 @@
     params.set("page", String(state.page));
     params.set("size", String(state.size));
     params.set("includeWh", "1");
-    if (state.keyword) {
-      params.set("keyword", state.keyword);
-    }
-    if (state.spuId) {
-      params.set("spuId", String(state.spuId));
-    }
-    if (state.whId) {
-      params.set("whId", String(state.whId));
-    }
-    if (state.recycleRecent) {
-      params.set("recycleRecent", "1");
-    }
-    if (state.brandIds && state.brandIds.length) {
-      params.set("brandIds", state.brandIds.join(","));
-    }
-    if (state.types && state.types.length) {
-      params.set("types", state.types.join(","));
+    if (state.barcode) {
+      params.set("barcode", state.barcode);
+    } else {
+      if (state.keyword) {
+        params.set("keyword", state.keyword);
+      }
+      if (state.spuId) {
+        params.set("spuId", String(state.spuId));
+      }
+      if (state.whId) {
+        params.set("whId", String(state.whId));
+      }
+      if (state.recycleRecent) {
+        params.set("recycleRecent", "1");
+      }
+      if (state.brandIds && state.brandIds.length) {
+        params.set("brandIds", state.brandIds.join(","));
+      }
+      if (state.types && state.types.length) {
+        params.set("types", state.types.join(","));
+      }
     }
 
     els.meta.textContent = "加载中…";
@@ -812,6 +861,7 @@
   els.form.addEventListener("submit", function (e) {
     e.preventDefault();
     state.keyword = (els.keyword.value || "").trim();
+    state.barcode = "";
     state.whId = readWhIdFromSelect();
     state.recycleRecent = readRecycleRecentFromSelect();
     state.spuId = null;
@@ -902,6 +952,7 @@
 
   els.clearFilterBtn.addEventListener("click", function () {
     state.spuId = null;
+    state.barcode = "";
     state.page = 1;
     updateFilterBar();
     syncUrl();
@@ -969,6 +1020,7 @@
       state.spuId = Number(spu);
       state.keyword = "";
       els.keyword.value = "";
+      state.barcode = "";
       state.page = 1;
       updateFilterBar();
       syncUrl();
@@ -1011,6 +1063,7 @@
 
   state.keyword = qs("keyword");
   els.keyword.value = state.keyword;
+  state.barcode = qs("barcode");
   var spuRaw = qs("spuId");
   state.spuId = spuRaw ? Number(spuRaw) : null;
   if (state.spuId && isNaN(state.spuId)) {
@@ -1027,12 +1080,39 @@
   }
   state.brandIds = parseIdList(qs("brandIds"), false);
   state.types = parseIdList(qs("types"), true);
+  if (state.barcode) {
+    state.keyword = "";
+    els.keyword.value = "";
+    state.spuId = null;
+    state.whId = null;
+    state.recycleRecent = false;
+    state.brandIds = [];
+    state.types = [];
+    if (els.whSelect) {
+      els.whSelect.value = "";
+    }
+    if (els.recycleSelect) {
+      els.recycleSelect.value = "";
+    }
+  }
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
   updateFilterBar();
   updateFilterEntryIcon();
   rememberListUrl();
   ensureFilterMeta();
+
+  if (els.barcodeScanBtn && window.ChaiBarcodeScan) {
+    els.barcodeScanBtn.innerHTML = window.ChaiBarcodeScan.iconSvg();
+    els.barcodeScanBtn.addEventListener("click", function () {
+      window.ChaiBarcodeScan.open({
+        onResult: function (code) {
+          clearBarcodeAndOthersForScan(code);
+        },
+      });
+    });
+  }
+
   loadWarehouses().then(function () {
     load();
   });

@@ -466,6 +466,9 @@ public class ChaiStockService {
         if (StringUtils.hasText(param.getSkuCode())) {
             preList.add(cb.equal(skuRoot.get("skuCode").as(String.class), param.getSkuCode().trim()));
         }
+        if (StringUtils.hasText(param.getBarcode())) {
+            preList.add(cb.equal(skuRoot.get("barcode").as(String.class), param.getBarcode().trim()));
+        }
         if (param.getBrand() != null) {
             preList.add(cb.equal(skuRoot.get("brand").as(Long.class), param.getBrand()));
         }

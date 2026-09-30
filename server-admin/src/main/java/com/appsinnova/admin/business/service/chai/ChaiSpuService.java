@@ -1,6 +1,8 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.chai.ChaiBarcodeKind;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
+import com.appsinnova.admin.business.common.utils.chai.ChaiBarcodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiCodeUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSearchTextUtil;
@@ -23,6 +25,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +35,9 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class ChaiSpuService {
+
+    /** 运营工具箱批量打标签单次上限 */
+    public static final int MAX_LABEL_PRINT = 300;
 
     private final ChaiSpuRepository chaiSpuRepository;
     private final ChaiSkuService chaiSkuService;
@@ -92,6 +98,86 @@ public class ChaiSpuService {
         return chaiSpuRepository.findByIdIn(idList);
     }
 
+    /**
+     * 未删 SPU 条码分类计数：internal=29…（系统码），national=69…，empty=空串。
+     */
+    public Map<String, Long> countBarcodeKinds() {
+        Map<String, Long> map = new LinkedHashMap<>();
+        map.put("internal", chaiSpuRepository.countByDeletedAndBarcodeStartingWith(
+                0, ChaiBarcodeUtil.INTERNAL_PREFIX));
+        map.put("national", chaiSpuRepository.countByDeletedAndBarcodeStartingWith(0, "69"));
+        map.put("empty", chaiSpuRepository.countByDeletedAndBarcode(0, ""));
+        return map;
+    }
+
+    /**
+     * 系统码按品牌统计（仅有系统码的品牌）。每项：brandId / brandName / count。
+     */
+    public List<Map<String, Object>> countInternalBarcodeByBrand() {
+        List<Object[]> rows = chaiSpuRepository.countGroupByBrandAndBarcodeLike(
+                0, ChaiBarcodeUtil.INTERNAL_PREFIX + "%");
+        Map<Long, String> brandNames = loadBrandNameMap();
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Object[] row : rows) {
+            if (row == null || row[0] == null) {
+                continue;
+            }
+            Long brandId = ((Number) row[0]).longValue();
+            long count = ((Number) row[1]).longValue();
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("brandId", brandId);
+            item.put("brandName", brandNames.getOrDefault(brandId, String.valueOf(brandId)));
+            item.put("count", count);
+            list.add(item);
+        }
+        list.sort(Comparator
+                .comparing((Map<String, Object> m) -> String.valueOf(m.get("brandName")),
+                        String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(m -> (Long) m.get("brandId")));
+        return list;
+    }
+
+    /**
+     * 批量打印用：未删且 barcode 以 29 开头；可选品牌过滤；按品牌名→品名→id 排序。
+     * 超过 {@link #MAX_LABEL_PRINT} 抛错。
+     */
+    public List<ChaiSpu> listInternalBarcodeForPrint(List<Long> brandIds) {
+        String like = ChaiBarcodeUtil.INTERNAL_PREFIX + "%";
+        final List<Long> filterBrands = brandIds == null ? null : brandIds;
+        List<ChaiSpu> list = chaiSpuRepository.findAll((Root<ChaiSpu> root, CriteriaQuery<?> query,
+                                                        CriteriaBuilder cb) -> {
+            List<Predicate> preList = new ArrayList<>();
+            preList.add(cb.equal(root.get("deleted").as(Integer.class), 0));
+            preList.add(cb.like(root.get("barcode").as(String.class), like));
+            if (filterBrands != null && !filterBrands.isEmpty()) {
+                preList.add(root.get("brand").in(filterBrands));
+            }
+            return cb.and(preList.toArray(new Predicate[0]));
+        });
+        Map<Long, String> brandNames = loadBrandNameMap();
+        list.sort(Comparator
+                .comparing((ChaiSpu s) -> brandNames.getOrDefault(s.getBrand(), ""),
+                        String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(s -> s.getName() == null ? "" : s.getName(), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(s -> s.getId() == null ? 0L : s.getId()));
+        if (list.size() > MAX_LABEL_PRINT) {
+            throw new IllegalArgumentException(
+                    "一次最多打印 " + MAX_LABEL_PRINT + " 张，当前 " + list.size()
+                            + " 张，请缩小品牌范围");
+        }
+        return list;
+    }
+
+    private Map<Long, String> loadBrandNameMap() {
+        Map<Long, String> map = new HashMap<>();
+        for (ChaiBrand brand : chaiBrandRepository.findAll()) {
+            if (brand.getId() != null) {
+                map.put(brand.getId(), brand.getName() != null ? brand.getName() : "");
+            }
+        }
+        return map;
+    }
+
     /** 任意 SPU（含已软删）是否引用该品牌 */
     public boolean isBrandInUse(Long brand) {
         return brand != null && chaiSpuRepository.existsByBrand(brand);
@@ -131,6 +217,7 @@ public class ChaiSpuService {
         boolean isCreate = false;
         String oldKeywords = null;
         Long oldBrand = null;
+        String oldBarcode = null;
         if (entity.getId() == null) {
             entity.setSpuCode("");
             entity.setCreateTime(System.currentTimeMillis());
@@ -140,12 +227,19 @@ public class ChaiSpuService {
             if (entity.getNonSale() == null) {
                 entity.setNonSale(0);
             }
+            // 新建无条码；由独立维护页生成/录入
+            if (entity.getBarcode() == null) {
+                entity.setBarcode("");
+            }
             isCreate = true;
         } else {
             ChaiSpu old = getById(entity.getId());
             if (old != null) {
                 oldKeywords = old.getKeywords();
                 oldBrand = old.getBrand();
+                oldBarcode = old.getBarcode();
+                // 主表单不维护条码：始终保留库中已有值
+                entity.setBarcode(oldBarcode != null ? oldBarcode : "");
             }
         }
         if (ChaiPriceUtil.isNonSale(entity.getNonSale())) {
@@ -175,6 +269,32 @@ public class ChaiSpuService {
             }
         }
         return entity;
+    }
+
+    /**
+     * 独立维护条形码：更新 barcode，并同步全部 SKU。
+     */
+    @Transactional
+    public ChaiSpu saveBarcode(Long id, String barcode, String operator) {
+        if (id == null) {
+            throw new IllegalArgumentException("SPU不能为空");
+        }
+        ChaiSpu spu = getById(id);
+        if (spu == null) {
+            throw new IllegalArgumentException("SPU不存在");
+        }
+        if (spu.getDeleted() != null && spu.getDeleted() == 1) {
+            throw new IllegalArgumentException("已删除的SPU不能维护条码，请先恢复");
+        }
+        String code = ChaiBarcodeUtil.normalizeForSave(barcode);
+        spu.setBarcode(code);
+        if (StringUtils.hasText(operator)) {
+            spu.setOperator(operator);
+        }
+        spu.setUpdateTime(System.currentTimeMillis());
+        spu = chaiSpuRepository.save(spu);
+        chaiSkuService.syncBarcodeFromSpu(spu, operator);
+        return spu;
     }
 
     /**
@@ -343,6 +463,21 @@ public class ChaiSpuService {
         }
         if (StringUtils.hasText(param.getSpuCode())) {
             preList.add(cb.equal(root.get("spuCode").as(String.class), param.getSpuCode().trim()));
+        }
+        if (StringUtils.hasText(param.getBarcode())) {
+            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
+        } else {
+            ChaiBarcodeKind kind = ChaiBarcodeKind.fromCode(param.getBarcodeKind());
+            if (kind == ChaiBarcodeKind.EMPTY) {
+                preList.add(cb.or(
+                        cb.isNull(root.get("barcode")),
+                        cb.equal(root.get("barcode").as(String.class), "")));
+            } else if (kind == ChaiBarcodeKind.NATIONAL) {
+                preList.add(cb.like(root.get("barcode").as(String.class), "69%"));
+            } else if (kind == ChaiBarcodeKind.SYSTEM) {
+                preList.add(cb.like(root.get("barcode").as(String.class),
+                        ChaiBarcodeUtil.INTERNAL_PREFIX + "%"));
+            }
         }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));

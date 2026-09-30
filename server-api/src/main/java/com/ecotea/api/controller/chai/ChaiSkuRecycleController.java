@@ -26,20 +26,21 @@ public class ChaiSkuRecycleController {
     private final ChaiSkuRecycleQueryService chaiSkuRecycleQueryService;
 
     /**
-     * 上架未删 SKU 分页。keyword：品牌精确优先，否则名称模糊；spuId：同款。
+     * 上架未删 SKU 分页。keyword：品牌精确优先，否则名称模糊；barcode：条码精确；spuId：同款。
      * brandIds / types：逗号分隔多选。
      * 返回回收价/破损价/无袋扣减与库存数量；列表不含分仓明细。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuRecyclePageVO> list(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String barcode,
             @RequestParam(required = false) Long spuId,
             @RequestParam(required = false) String brandIds,
             @RequestParam(required = false) String types,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         return ApiResult.ok(chaiSkuRecycleQueryService.pageRecycleList(
-                keyword, spuId, parseLongIds(brandIds), parseIntIds(types), page, size));
+                keyword, barcode, spuId, parseLongIds(brandIds), parseIntIds(types), page, size));
     }
 
     /**

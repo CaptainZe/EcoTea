@@ -130,7 +130,7 @@ body {
   border-color: var(--accent);
 }
 
-.sale-search button {
+.sale-search-field > button[type="submit"] {
   position: absolute;
   right: 0.3rem;
   top: 50%;

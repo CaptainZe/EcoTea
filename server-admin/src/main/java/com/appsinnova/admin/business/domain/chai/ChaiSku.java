@@ -29,6 +29,8 @@ public class ChaiSku implements Serializable {
     private String keywords;
     /** 检索文本（品牌名+商品名+关键词，系统生成） */
     private String searchText;
+    /** 条形码（继承自 SPU） */
+    private String barcode;
     private Long brand;
     private Long expiration;
     private Integer type;

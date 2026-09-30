@@ -67,7 +67,7 @@ public class ChaiSkuSaleQueryService {
      * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
-        return pageSaleList(keyword, spuId, null, false, false,
+        return pageSaleList(keyword, null, spuId, null, false, false,
                 Collections.emptyList(), Collections.emptyList(), null, null, page, size);
     }
 
@@ -77,18 +77,19 @@ public class ChaiSkuSaleQueryService {
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
                                           long page, long size) {
-        return pageSaleList(keyword, spuId, whId, includeWh, recycleRecent,
+        return pageSaleList(keyword, null, spuId, whId, includeWh, recycleRecent,
                 Collections.emptyList(), Collections.emptyList(), null, null, page, size);
     }
 
     /**
      * 上架、未删除、有货 SKU 分页。
+     * barcode：条码精确匹配（有值时优先，不再走 keyword 品牌/品名逻辑）；
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；whId：该仓 qty&gt;0；
      * includeWh：列表填充有货仓简称（无数量）；
      * recycleRecent：近 {@link ChaiConstant#RECYCLE_RECENT_DAYS} 日回收入库，并按最近回收时间倒序；
      * brandIds / types：多选；priceMin / priceMax：售价区间。
      */
-    public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
+    public ChaiSkuSalePageVO pageSaleList(String keyword, String barcode, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
                                           List<Long> brandIds, List<Integer> types,
                                           BigDecimal priceMin, BigDecimal priceMax,
@@ -104,6 +105,7 @@ public class ChaiSkuSaleQueryService {
         }
 
         String kw = keyword == null ? null : keyword.trim();
+        String code = barcode == null ? null : barcode.trim();
         List<Long> brandIdList = brandIds == null ? Collections.emptyList() : brandIds;
         List<Integer> typeList = types == null ? Collections.emptyList() : types;
         BigDecimal min = priceMin;
@@ -114,7 +116,8 @@ public class ChaiSkuSaleQueryService {
             max = tmp;
         }
 
-        Long brandIdFromKw = brandIdList.isEmpty() ? resolveBrandIdExact(kw) : null;
+        Long brandIdFromKw = (!StringUtils.hasText(code) && brandIdList.isEmpty())
+                ? resolveBrandIdExact(kw) : null;
         String stockInSql = stockInSql(whId);
         long recycleCutoffMs = recycleRecent ? recycleRecentCutoffMs() : 0L;
 
@@ -133,7 +136,10 @@ public class ChaiSkuSaleQueryService {
             matchType = "spu";
         }
 
-        if (!brandIdList.isEmpty()) {
+        if (StringUtils.hasText(code)) {
+            wrapper.eq(ChaiSku::getBarcode, code);
+            matchType = "barcode";
+        } else if (!brandIdList.isEmpty()) {
             wrapper.in(ChaiSku::getBrand, brandIdList);
             if (!"spu".equals(matchType)) {
                 matchType = "brand_filter";
@@ -202,13 +208,14 @@ public class ChaiSkuSaleQueryService {
         result.setSize(mpPage.getSize());
         result.setMatchType(matchType);
         result.setKeyword(kw);
+        result.setBarcode(code);
         result.setSpuId(spuId);
         result.setWhId(whId);
         result.setRecycleRecent(recycleRecent);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, whId, includeWh, recycleRecent, brandIdList, typeList, min, max,
+        log.info("chai sku sale list, keyword={}, barcode={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, matchType={}, page={}, size={}, total={}",
+                kw, code, spuId, whId, includeWh, recycleRecent, brandIdList, typeList, min, max,
                 matchType, page, size, mpPage.getTotal());
         return result;
     }

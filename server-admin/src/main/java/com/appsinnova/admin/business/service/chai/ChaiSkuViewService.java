@@ -118,6 +118,9 @@ public class ChaiSkuViewService {
         if (StringUtils.hasText(param.getSkuCode())) {
             preList.add(cb.equal(root.get("skuCode").as(String.class), param.getSkuCode().trim()));
         }
+        if (StringUtils.hasText(param.getBarcode())) {
+            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
+        }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));
         }

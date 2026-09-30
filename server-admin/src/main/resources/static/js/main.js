@@ -394,6 +394,18 @@ layui.use(['element', 'form', 'layer', 'upload'], function () {
     $(document).on("click", ".timo-search-btn", function () {
         paramSkip();
     });
+    /* 搜索框回车直查（扫码枪楔入后带 Enter） */
+    $(document).on("keydown", ".timo-search-box input", function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            paramSkip();
+        }
+    });
+    /* 条形码框：打开页 focus，便于连续扫 */
+    var $barcodeSearch = $(".timo-search-box .js-barcode-search");
+    if ($barcodeSearch.length) {
+        $barcodeSearch.focus().select();
+    }
     /* 改变显示页数 */
     $(document).on("change", ".page-number", function () {
         paramSkip();

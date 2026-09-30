@@ -53,4 +53,15 @@ public interface ChaiSpuRepository extends JpaRepository<ChaiSpu, Long>, JpaSpec
     @Query("select s.brand, count(s) from ChaiSpu s where s.deleted = :deleted "
             + "group by s.brand order by count(s) desc")
     List<Object[]> countGroupByBrand(@Param("deleted") Integer deleted);
+
+    long countByDeletedAndBarcodeStartingWith(Integer deleted, String barcodePrefix);
+
+    long countByDeletedAndBarcode(Integer deleted, String barcode);
+
+    /** 系统码按品牌统计：Object[]{ brandId, count } */
+    @Query("select s.brand, count(s) from ChaiSpu s "
+            + "where s.deleted = :deleted and s.barcode like :prefix "
+            + "group by s.brand order by count(s) desc")
+    List<Object[]> countGroupByBrandAndBarcodeLike(@Param("deleted") Integer deleted,
+                                                   @Param("prefix") String prefix);
 }

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>茶业运营工具箱</title>
+    <style>
+        .tb-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            background: #FAFAFA;
+        }
+        .tb-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .tb-desc {
+            color: #6B7280;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .tb-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .tb-stat {
+            min-width: 120px;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+        }
+        .tb-stat .n {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0F766E;
+            line-height: 1.2;
+        }
+        .tb-stat .l {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+        .tb-stat.is-muted .n { color: #9CA3AF; }
+        .tb-brand-table {
+            width: 100%;
+            max-width: 640px;
+            background: #fff;
+            margin-bottom: 14px;
+        }
+        .tb-brand-table th, .tb-brand-table td {
+            padding: 8px 10px;
+            border: 1px solid #E5E7EB;
+            font-size: 13px;
+        }
+        .tb-brand-table th {
+            background: #F3F4F6;
+            font-weight: 600;
+            text-align: left;
+        }
+        .tb-brand-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .tb-brand-table tr.is-zero { color: #9CA3AF; }
+        .tb-actions { margin-top: 4px; }
+        .tb-actions .layui-btn + .layui-btn { margin-left: 8px; }
+        .tb-tip { color: #B45309; font-size: 12px; margin-top: 10px; }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-briefcase"></i> 茶业运营工具箱</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <p style="color:#6B7280;font-size:13px;margin:0 0 16px 0;">
+            内部运营使用。系统码（29 开头）需打印粘贴；国标 69 码一般不贴标。
+        </p>
+
+        <div class="tb-card">
+            <h3>系统码标签 · 批量打印</h3>
+            <div class="tb-desc">
+                可按品牌勾选；不选则全部。
+                输出顺序按品牌名 → 品名。标签纸横版 80mm × 60mm。
+            </div>
+
+            <div class="tb-stats">
+                <div class="tb-stat">
+                    <div class="n" th:text="${internalCount}">0</div>
+                    <div class="l">系统码（29…）</div>
+                </div>
+                <div class="tb-stat is-muted">
+                    <div class="n" th:text="${nationalCount}">0</div>
+                    <div class="l">国标码（69…）</div>
+                </div>
+                <div class="tb-stat is-muted">
+                    <div class="n" th:text="${emptyCount}">0</div>
+                    <div class="l">无码</div>
+                </div>
+            </div>
+
+            <table class="tb-brand-table" th:if="${brandStats != null and !#lists.isEmpty(brandStats)}">
+                <thead>
+                <tr>
+                    <th width="48">
+                        <label class="timo-checkbox" title="全选/取消">
+                            <input type="checkbox" id="chkAllBrands">
+                            <i class="layui-icon layui-icon-ok"></i>
+                        </label>
+                    </th>
+                    <th>品牌</th>
+                    <th width="100">系统码数</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${brandStats}">
+                    <td>
+                        <label class="timo-checkbox">
+                            <input type="checkbox" class="js-brand-chk" th:value="${row.brandId}">
+                            <i class="layui-icon layui-icon-ok"></i>
+                        </label>
+                    </td>
+                    <td th:text="${row.brandName}">-</td>
+                    <td class="num" th:text="${row.count}">0</td>
+                </tr>
+                </tbody>
+            </table>
+            <div th:if="${brandStats == null or #lists.isEmpty(brandStats)}"
+                 style="color:#9CA3AF;font-size:13px;margin-bottom:12px;">
+                暂无系统码，请先在 SPU 列表「条码」中生成。
+            </div>
+
+            <div class="tb-actions">
+                <button type="button" class="layui-btn layui-btn-warm" id="btnPrintSelected"
+                        th:disabled="${internalCount == null or internalCount == 0}">
+                    <i class="fa fa-print"></i> 打印所选品牌
+                </button>
+                <button type="button" class="layui-btn" id="btnPrintAll"
+                        th:disabled="${internalCount == null or internalCount == 0}">
+                    <i class="fa fa-print"></i> 打印全部系统码
+                </button>
+            </div>
+            <div class="tb-tip">
+                单次最多 <span th:text="${maxLabelPrint}">300</span> 张；超出请分品牌打印。
+                将在新窗口打开预览，确认后浏览器打印。
+            </div>
+        </div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var printUrl = /*[[@{/business/chai/toolbox/barcode/print}]]*/ '';
+    var maxPrint = /*[[${maxLabelPrint}]]*/ 300;
+    /*]]>*/
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        $('#chkAllBrands').on('change', function () {
+            $('.js-brand-chk').prop('checked', this.checked);
+        });
+
+        function selectedBrandIds() {
+            var ids = [];
+            $('.js-brand-chk:checked').each(function () {
+                ids.push($(this).val());
+            });
+            return ids;
+        }
+
+        function openPrint(brandIds) {
+            var url = printUrl;
+            if (brandIds && brandIds.length) {
+                url += '?' + brandIds.map(function (id) {
+                    return 'brandIds=' + encodeURIComponent(id);
+                }).join('&');
+            }
+            window.open(url, '_blank');
+        }
+
+        $('#btnPrintSelected').on('click', function () {
+            var ids = selectedBrandIds();
+            if (!ids.length) {
+                layer.msg('请先勾选品牌，或使用「打印全部系统码」');
+                return;
+            }
+            var sum = 0;
+            $('.js-brand-chk:checked').each(function () {
+                var n = parseInt($(this).closest('tr').find('td.num').text(), 10) || 0;
+                sum += n;
+            });
+            if (sum > maxPrint) {
+                layer.msg('所选合计 ' + sum + ' 张，超过上限 ' + maxPrint + '，请减少品牌');
+                return;
+            }
+            openPrint(ids);
+        });
+
+        $('#btnPrintAll').on('click', function () {
+            var total = parseInt(/*[[${internalCount}]]*/ 0, 10) || 0;
+            if (total > maxPrint) {
+                layer.msg('全部共 ' + total + ' 张，超过上限 ' + maxPrint + '，请按品牌分批打印');
+                return;
+            }
+            layer.confirm('将打印全部系统码（' + total + ' 张），是否继续？', function (idx) {
+                layer.close(idx);
+                openPrint([]);
+            });
+        });
+    });
+</script>
+</body>
+</html>

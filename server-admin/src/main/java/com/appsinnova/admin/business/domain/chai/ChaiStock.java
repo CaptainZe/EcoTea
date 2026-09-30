@@ -36,6 +36,10 @@ public class ChaiStock implements Serializable {
     @Transient
     private ChaiSku sku;
 
+    /** 列表展示 / 查询：条形码精确匹配（映射 SKU.barcode） */
+    @Transient
+    private String barcode;
+
     /** 列表展示 */
     @Transient
     private String skuCode;

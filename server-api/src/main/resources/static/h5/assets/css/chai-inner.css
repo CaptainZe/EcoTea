@@ -84,8 +84,8 @@ body.inner-recycle .inner-search input:focus {
   border-color: var(--accent);
 }
 
-body.inner-sale .inner-search button,
-body.inner-recycle .inner-search button {
+body.inner-sale .inner-search-field > button[type="submit"],
+body.inner-recycle .inner-search-field > button[type="submit"] {
   position: absolute;
   right: 0.3rem;
   top: 50%;

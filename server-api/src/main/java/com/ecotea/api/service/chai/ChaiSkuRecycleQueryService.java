@@ -62,15 +62,15 @@ public class ChaiSkuRecycleQueryService {
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款。
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId, long page, long size) {
-        return pageRecycleList(keyword, spuId, Collections.emptyList(), Collections.emptyList(), page, size);
+        return pageRecycleList(keyword, null, spuId, Collections.emptyList(), Collections.emptyList(), page, size);
     }
 
     /**
      * 上架、未删除 SKU 分页（不按库存过滤）。
-     * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；
+     * barcode：条码精确（有值时优先）；keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；
      * brandIds / types：多选筛选。
      */
-    public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId,
+    public ChaiSkuRecyclePageVO pageRecycleList(String keyword, String barcode, Long spuId,
                                                 List<Long> brandIds, List<Integer> types,
                                                 long page, long size) {
         if (page < 1) {
@@ -84,9 +84,11 @@ public class ChaiSkuRecycleQueryService {
         }
 
         String kw = keyword == null ? null : keyword.trim();
+        String code = barcode == null ? null : barcode.trim();
         List<Long> brandIdList = brandIds == null ? Collections.emptyList() : brandIds;
         List<Integer> typeList = types == null ? Collections.emptyList() : types;
-        Long brandIdFromKw = brandIdList.isEmpty() ? resolveBrandIdExact(kw) : null;
+        Long brandIdFromKw = (!StringUtils.hasText(code) && brandIdList.isEmpty())
+                ? resolveBrandIdExact(kw) : null;
 
         LambdaQueryWrapper<ChaiSku> wrapper = new LambdaQueryWrapper<ChaiSku>()
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
@@ -98,7 +100,10 @@ public class ChaiSkuRecycleQueryService {
             matchType = "spu";
         }
 
-        if (!brandIdList.isEmpty()) {
+        if (StringUtils.hasText(code)) {
+            wrapper.eq(ChaiSku::getBarcode, code);
+            matchType = "barcode";
+        } else if (!brandIdList.isEmpty()) {
             wrapper.in(ChaiSku::getBrand, brandIdList);
             if (!"spu".equals(matchType)) {
                 matchType = "brand_filter";
@@ -147,11 +152,12 @@ public class ChaiSkuRecycleQueryService {
         result.setSize(mpPage.getSize());
         result.setMatchType(matchType);
         result.setKeyword(kw);
+        result.setBarcode(code);
         result.setSpuId(spuId);
         result.setList(list);
 
-        log.info("chai sku recycle list, keyword={}, spuId={}, brandIds={}, types={}, matchType={}, page={}, size={}, total={}",
-                kw, spuId, brandIdList, typeList, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku recycle list, keyword={}, barcode={}, spuId={}, brandIds={}, types={}, matchType={}, page={}, size={}, total={}",
+                kw, code, spuId, brandIdList, typeList, matchType, page, size, mpPage.getTotal());
         return result;
     }
 

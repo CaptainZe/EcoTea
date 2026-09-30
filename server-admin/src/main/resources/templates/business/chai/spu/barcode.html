@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>维护条形码</title>
+    <style>
+        .bc-form .layui-form-label { width: 100px; }
+        .bc-form .layui-input-block { margin-left: 130px; max-width: 520px; }
+        .bc-form .field-tip { color: #6B7280; font-size: 12px; line-height: 1.6; margin-top: 6px; }
+        .bc-spu-card {
+            background: #F8FAFC;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+        }
+        .bc-spu-card-hd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .bc-spu-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            line-height: 1.4;
+        }
+        .bc-spu-status {
+            flex-shrink: 0;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .bc-spu-status.is-online { color: #166534; background: #DCFCE7; }
+        .bc-spu-status.is-offline { color: #6B7280; background: #F3F4F6; }
+        .bc-spu-meta { margin-top: 6px; color: #6B7280; font-size: 13px; }
+        .bc-spu-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .bc-spu-tags span {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            color: #6B7280;
+            font-size: 12px;
+        }
+        .bc-spu-tags b {
+            margin-left: 4px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .bc-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .bc-input-row .layui-input { flex: 1; min-width: 200px; max-width: 320px; letter-spacing: 1px; font-family: Consolas, Monaco, monospace; }
+        .bc-panel {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            margin-top: 8px;
+        }
+        .bc-panel-left { flex: 1; min-width: 280px; }
+        .bc-panel-right { flex: 0 0 auto; }
+
+        /* 标签预览 / 打印区：横版 80mm × 60mm（与批量打印一致） */
+        .bc-label-wrap {
+            border: 1px dashed #CBD5E1;
+            border-radius: 6px;
+            padding: 10px;
+            background: #F1F5F9;
+        }
+        .bc-label {
+            width: 80mm;
+            height: 60mm;
+            background: #fff;
+            color: #111;
+            padding: 2.5mm 3mm 2mm;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            line-height: 1.35;
+            overflow: hidden;
+        }
+        .bc-label-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            word-break: break-all;
+            max-height: 2.7em;
+            overflow: hidden;
+        }
+        .bc-label-row {
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bc-label-img {
+            display: block;
+            margin: 3mm auto 1mm;
+            width: 68mm;
+            height: 14mm;
+            object-fit: contain;
+        }
+        .bc-label-img.is-empty { display: none; }
+        .bc-label-code {
+            text-align: center;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            font-family: Consolas, Monaco, monospace;
+            font-weight: 600;
+            min-height: 16px;
+        }
+        .bc-label-empty {
+            color: #9CA3AF;
+            font-size: 12px;
+            text-align: center;
+            padding: 16px 8px;
+        }
+
+        @media print {
+            body * { visibility: hidden !important; }
+            .bc-print-only, .bc-print-only * { visibility: visible !important; }
+            .bc-print-only {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin: 0;
+                padding: 0;
+                border: none;
+                background: #fff;
+            }
+            .bc-label {
+                width: 80mm;
+                height: 60mm;
+                padding: 2.5mm 3mm 2mm;
+            }
+            @page {
+                size: 80mm 60mm;
+                margin: 1.5mm;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile" th:if="${errorMsg != null}">
+    <div style="color:#DC2626;padding:24px;" th:text="${errorMsg}"></div>
+</div>
+<div class="timo-compile" th:unless="${errorMsg != null}">
+    <form id="bcForm" class="layui-form bc-form" method="POST">
+        <input type="hidden" name="id" th:value="${editItem.id}"/>
+
+        <div class="bc-spu-card">
+            <div class="bc-spu-card-hd">
+                <div class="bc-spu-name" th:text="${editItem.name}">-</div>
+                <span class="bc-spu-status"
+                      th:classappend="${editItem.status == 1} ? ' is-online' : ' is-offline'"
+                      th:text="${#dicts.keyValue('CHAI_STATUS', editItem.status)}">-</span>
+            </div>
+            <div class="bc-spu-meta">
+                <span th:text="${editItem.spuCode}">-</span>
+                · 锚点
+                <span th:text="${editItem.year}">-</span>
+                <span th:text="${#dicts.keyValue('CHAI_PROD_BATCH', editItem.prodBatch)}">-</span>
+            </div>
+            <div class="bc-spu-tags">
+                <span>品牌 <b th:text="${editItem.brandName != null ? editItem.brandName : '-'}">-</b></span>
+                <span>等级 <b th:text="${gradeName != null and !#strings.isEmpty(gradeName) ? gradeName : '-'}">-</b></span>
+                <span>规格 <b th:text="${editItem.specShow != null and !#strings.isEmpty(editItem.specShow) ? editItem.specShow : '-'}">-</b></span>
+                <span>保质期 <b th:text="${editItem.expirationName != null ? editItem.expirationName : '-'}">-</b></span>
+            </div>
+        </div>
+
+        <div class="bc-panel">
+            <div class="bc-panel-left">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">条形码</label>
+                    <div class="layui-input-block">
+                        <div class="bc-input-row">
+                            <input type="text" name="barcode" id="barcodeInput" class="layui-input"
+                                   maxlength="13" autocomplete="off"
+                                   th:value="${editItem.barcode}"
+                                   placeholder="扫枪填入或手填 13 位">
+                            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnGenerate">生成</button>
+                        </div>
+                        <div class="field-tip">
+                            国标 69 码可手填/扫入；无国标时点「生成」出 29 开头系统码 EAN-13。
+                            保存后下属 SKU 自动继承。清空保存可去掉条码。
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item timo-finally">
+                    <button type="button" class="layui-btn" id="btnSaveBc">
+                        <i class="fa fa-check-circle"></i> 保存
+                    </button>
+                    <button type="button" class="layui-btn layui-btn-warm" id="btnPrint">
+                        <i class="fa fa-print"></i> 打印标签
+                    </button>
+                    <button type="button" class="layui-btn btn-secondary close-popup">
+                        <i class="fa fa-times-circle"></i> 关闭
+                    </button>
+                </div>
+            </div>
+
+            <div class="bc-panel-right">
+                <div class="bc-label-wrap bc-print-only">
+                    <div class="bc-label" id="bcLabel">
+                        <div class="bc-label-title" id="lblTitle"
+                             th:text="${(editItem.brandName != null ? editItem.brandName : '-') + ' · ' + (editItem.name != null ? editItem.name : '-')}">-</div>
+                        <div class="bc-label-row">等级：<span th:text="${gradeName != null and !#strings.isEmpty(gradeName) ? gradeName : '-'}">-</span></div>
+                        <div class="bc-label-row">规格：<span th:text="${editItem.specShow != null and !#strings.isEmpty(editItem.specShow) ? editItem.specShow : '-'}">-</span></div>
+                        <div class="bc-label-row">批次：<span
+                                th:text="${(editItem.year != null ? editItem.year + '年' : '') + (prodBatchName != null ? prodBatchName : '')}">-</span></div>
+                        <div class="bc-label-row">保质期：<span th:text="${editItem.expirationName != null ? editItem.expirationName : '-'}">-</span></div>
+                        <div class="bc-label-row">官方价：<span id="lblPrice"
+                                th:text="${editItem.officialPriceShow == '非卖品' ? '非卖品' : ((editItem.officialPriceShow != null and editItem.officialPriceShow != '-' ? editItem.officialPriceShow + '元' : '-'))}">-</span></div>
+                        <img class="bc-label-img is-empty" id="lblBarcodeImg" alt="条码" src=""/>
+                        <div class="bc-label-code" id="lblBarcodeText"></div>
+                        <div class="bc-label-empty" id="lblEmpty">请先录入或生成条码</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var saveUrl = /*[[@{/business/chai/spu/barcode/save}]]*/ '';
+    var generateUrl = /*[[@{/business/chai/spu/barcode/generate/{id}(id=${editItem.id})}]]*/ '';
+    var imageUrlBase = /*[[@{/business/chai/spu/barcode/image}]]*/ '';
+    /*]]>*/
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+        var previewTimer = null;
+
+        function digitsOnly(v) {
+            return (v || '').replace(/\D/g, '').substring(0, 13);
+        }
+
+        function refreshPreview() {
+            var code = digitsOnly($('#barcodeInput').val());
+            var $img = $('#lblBarcodeImg');
+            var $text = $('#lblBarcodeText');
+            var $empty = $('#lblEmpty');
+            if (code.length === 13) {
+                $img.attr('src', imageUrlBase + '?code=' + encodeURIComponent(code) + '&w=320&h=70&_=' + Date.now())
+                    .removeClass('is-empty');
+                $text.text(code);
+                $empty.hide();
+            } else {
+                $img.addClass('is-empty').attr('src', '');
+                $text.text('');
+                $empty.show();
+            }
+        }
+
+        function schedulePreview() {
+            if (previewTimer) {
+                clearTimeout(previewTimer);
+            }
+            previewTimer = setTimeout(refreshPreview, 200);
+        }
+
+        $('#barcodeInput').on('input', function () {
+            var cleaned = digitsOnly($(this).val());
+            if ($(this).val() !== cleaned) {
+                $(this).val(cleaned);
+            }
+            schedulePreview();
+        });
+
+        $('#btnGenerate').on('click', function () {
+            var loading = layer.load(2);
+            $.ajax({
+                url: generateUrl,
+                type: 'GET',
+                success: function (res) {
+                    layer.close(loading);
+                    if (res.code == 200 && res.data && res.data.barcode) {
+                        $('#barcodeInput').val(res.data.barcode);
+                        refreshPreview();
+                        layer.msg('已生成，请保存');
+                    } else {
+                        layer.msg(res.msg || '生成失败');
+                    }
+                },
+                error: function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                }
+            });
+        });
+
+        $('#btnSaveBc').on('click', function () {
+            var loading = layer.load(2);
+            $.ajax({
+                url: saveUrl,
+                type: 'POST',
+                data: {
+                    id: $('input[name="id"]').val(),
+                    barcode: digitsOnly($('#barcodeInput').val())
+                },
+                success: function (res) {
+                    layer.close(loading);
+                    if (res.code == 200) {
+                        layer.msg('保存成功', {time: 800}, function () {
+                            if (window.parent && window.parent.layer) {
+                                var idx = window.parent.layer.getFrameIndex(window.name);
+                                window.parent.layer.close(idx);
+                                window.parent.location.reload();
+                            }
+                        });
+                    } else {
+                        layer.msg(res.msg || '保存失败');
+                    }
+                },
+                error: function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                }
+            });
+        });
+
+        $('#btnPrint').on('click', function () {
+            var code = digitsOnly($('#barcodeInput').val());
+            if (code.length !== 13) {
+                layer.msg('请先录入或生成有效条码再打印');
+                return;
+            }
+            refreshPreview();
+            setTimeout(function () {
+                window.print();
+            }, 120);
+        });
+
+        // 打开即 focus，方便扫枪
+        setTimeout(function () {
+            var $input = $('#barcodeInput');
+            $input.focus();
+            var v = $input.val();
+            if (v) {
+                $input[0].setSelectionRange(v.length, v.length);
+            }
+            refreshPreview();
+        }, 100);
+    });
+</script>
+</body>
+</html>

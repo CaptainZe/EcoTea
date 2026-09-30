@@ -152,7 +152,7 @@ public class ChaiSkuService {
 
     /**
      * 将 SPU 共享字段写入 SKU（不改 year/prodBatch/编码/销回收价/上下架）。
-     * keywords / search_text 与品牌、茶类一样继承自 SPU。
+     * keywords / search_text / barcode 与品牌、茶类一样继承自 SPU。
      */
     public void applySharedFromSpu(ChaiSpu spu, ChaiSku sku) {
         if (spu == null || sku == null) {
@@ -167,6 +167,7 @@ public class ChaiSkuService {
         sku.setSpec(spu.getSpec());
         sku.setShowImageUrls(spu.getShowImageUrls());
         sku.setRealImageUrls(spu.getRealImageUrls());
+        sku.setBarcode(spu.getBarcode() != null ? spu.getBarcode() : "");
         int nonSale = spu.getNonSale() != null ? spu.getNonSale() : 0;
         sku.setNonSale(nonSale);
         if (ChaiPriceUtil.isNonSale(nonSale)) {
@@ -205,6 +206,31 @@ public class ChaiSkuService {
         long now = System.currentTimeMillis();
         for (ChaiSku sku : list) {
             applyKeywordsFromSpu(spu, sku, bn);
+            if (StringUtils.hasText(operator)) {
+                sku.setOperator(operator);
+            }
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+        }
+        return list.size();
+    }
+
+    /**
+     * 将该 SPU 下全部 SKU（含已删）的 barcode 与 SPU 对齐。
+     */
+    @Transactional
+    public int syncBarcodeFromSpu(ChaiSpu spu, String operator) {
+        if (spu == null || spu.getId() == null) {
+            return 0;
+        }
+        List<ChaiSku> list = listBySpuId(spu.getId(), null);
+        if (list.isEmpty()) {
+            return 0;
+        }
+        String barcode = spu.getBarcode() != null ? spu.getBarcode() : "";
+        long now = System.currentTimeMillis();
+        for (ChaiSku sku : list) {
+            sku.setBarcode(barcode);
             if (StringUtils.hasText(operator)) {
                 sku.setOperator(operator);
             }
@@ -535,6 +561,9 @@ public class ChaiSkuService {
         }
         if (StringUtils.hasText(param.getSkuCode())) {
             preList.add(cb.equal(root.get("skuCode").as(String.class), param.getSkuCode().trim()));
+        }
+        if (StringUtils.hasText(param.getBarcode())) {
+            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
         }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));

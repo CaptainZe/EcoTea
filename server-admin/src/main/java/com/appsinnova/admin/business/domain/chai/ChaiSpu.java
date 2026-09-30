@@ -29,6 +29,8 @@ public class ChaiSpu implements Serializable {
     private String keywords;
     /** 检索文本（品牌名+商品名+关键词，系统生成） */
     private String searchText;
+    /** 条形码（EAN-13；一 SPU 一码） */
+    private String barcode;
     private Long brand;
     private Long expiration;
     private Integer type;
@@ -75,4 +77,9 @@ public class ChaiSpu implements Serializable {
     /** 列表：下属 SKU 数量 */
     @Transient
     private Long skuCount;
+    /**
+     * 列表筛选：码类型（{@link com.appsinnova.admin.business.common.enums.chai.ChaiBarcodeKind}），不入库。
+     */
+    @Transient
+    private Integer barcodeKind;
 }
