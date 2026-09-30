@@ -162,6 +162,9 @@
                     <button type="button" class="layui-btn layui-btn-sm" id="btnAddSku" style="margin-left:12px;">
                         <i class="fa fa-plus"></i> 添加商品
                     </button>
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnScanAddSku" style="margin-left:8px;">
+                        <i class="fa fa-barcode"></i> 扫码添加
+                    </button>
                 </div>
                 <div class="timo-table-wrap">
                     <table class="layui-table bill-item-table" id="itemTable">
@@ -204,6 +207,7 @@
     /*<![CDATA[*/
     var billType = /*[[${billType}]]*/ 1;
     var skuPickUrl = /*[[@{/business/chai/stockBill/skuPick}]]*/ '';
+    var skuScanPickUrl = /*[[@{/business/chai/stockBill/skuScanPick}]]*/ '';
     var skuByIdsUrl = /*[[@{/business/chai/stockBill/skuByIds}]]*/ '';
     var whQtyUrl = /*[[@{/business/chai/stockBill/whQty}]]*/ '';
     var qualityOptions = [
@@ -612,8 +616,28 @@
             return true;
         }
 
+        function openSkuScanPick() {
+            var fromWhId = parseInt($('#fromWhId').val(), 10) || 0;
+            if (!fromWhId) {
+                layer.msg(billType === 3 ? '请先选择调出仓' : (billType === 2 ? '请先选择出库仓库' : '请先选择入库仓库'));
+                return;
+            }
+            var url = skuScanPickUrl + '?billType=' + billType + '&fromWhId=' + fromWhId;
+            layer.open({
+                type: 2,
+                title: '扫码添加商品',
+                area: ['92%', '88%'],
+                maxmin: true,
+                content: url
+            });
+        }
+
         $('#btnAddSku').on('click', function () {
             openSkuPick(0);
+        });
+
+        $('#btnScanAddSku').on('click', function () {
+            openSkuScanPick();
         });
 
         $(document).on('click', '.js-replace-same', function () {

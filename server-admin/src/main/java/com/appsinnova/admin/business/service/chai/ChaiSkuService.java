@@ -88,7 +88,14 @@ public class ChaiSkuService {
     public Page<ChaiSku> getPageList(ChaiSku param) {
         List<Sort.Order> orders = new ArrayList<>();
         orders.add(new Sort.Order(Sort.Direction.DESC, "updateTime"));
-        PageRequest page = PageSort.pageRequest(orders);
+        return getPageList(param, PageSort.pageRequest(orders));
+    }
+
+    /**
+     * 分页查询；{@code pageRequest} 由调用方指定（如扫码选品一次拉满同码 SKU）。
+     */
+    public Page<ChaiSku> getPageList(ChaiSku param, PageRequest pageRequest) {
+        PageRequest page = pageRequest != null ? pageRequest : PageSort.pageRequest();
         return chaiSkuRepository.findAll((Root<ChaiSku> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             List<Predicate> preList = genCondition(root, cb, param);
             if (param != null && Boolean.TRUE.equals(param.getRequireWhQtyPositive())

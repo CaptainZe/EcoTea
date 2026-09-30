@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:mo="https://gitee.com/aun/Timo">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>扫码添加商品</title>
+    <style>
+        body.timo-layout-page {
+            padding-bottom: 72px;
+        }
+        .scan-box {
+            max-width: 560px;
+            margin: 0 auto 16px;
+            padding: 16px 18px 14px;
+            background: #F8FAFC;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+        }
+        .scan-box label {
+            display: block;
+            font-size: 13px;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+        .scan-box .scan-input {
+            width: 100%;
+            height: 48px;
+            font-size: 22px;
+            letter-spacing: 2px;
+            font-family: Consolas, Monaco, monospace;
+            text-align: center;
+            border: 2px solid #0D9488;
+            border-radius: 8px;
+            padding: 0 12px;
+            box-sizing: border-box;
+        }
+        .scan-box .scan-tip {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #9CA3AF;
+            text-align: center;
+        }
+        .scan-empty {
+            text-align: center;
+            color: #9CA3AF;
+            padding: 28px 12px;
+            font-size: 14px;
+        }
+        .sku-scan-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            padding: 10px 16px;
+            background: #fff;
+            border-top: 1px solid #e6e6e6;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+        .sku-scan-footer .layui-btn {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card" th:if="${errorMsg != null}">
+    <div class="layui-card-body" style="color:#DC2626;padding:24px;" th:text="${errorMsg}"></div>
+</div>
+<div class="layui-card" th:unless="${errorMsg != null}">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-barcode"></i> 扫码添加商品</span>
+    </div>
+    <div class="layui-card-body">
+        <form id="scanForm" class="scan-box" method="get" th:action="@{/business/chai/stockBill/skuScanPick}">
+            <input type="hidden" name="billType" th:value="${billType}">
+            <input type="hidden" name="fromWhId" th:value="${fromWhId}">
+            <label for="barcodeInput">扫入或输入条形码后回车</label>
+            <input type="text" name="barcode" id="barcodeInput" class="scan-input"
+                   maxlength="13" autocomplete="off" inputmode="numeric"
+                   th:value="${barcode}" placeholder="13 位条码">
+            <div class="scan-tip">扫枪尾部 Enter 即查询；仅条码精确匹配</div>
+        </form>
+
+        <div th:if="${!searched}" class="scan-empty">请先扫码查询商品</div>
+        <div th:if="${searched and (list == null or #lists.isEmpty(list))}" class="scan-empty">
+            未找到条码 <b th:text="${barcode}">-</b> 对应的商品
+            <span th:if="${showWhQty}">（出库/调拨仅显示本仓有货）</span>
+        </div>
+
+        <div class="timo-table-wrap" th:if="${searched and list != null and !#lists.isEmpty(list)}">
+            <p style="color:#6B7280;font-size:13px;margin:0 0 10px 0;">
+                条码 <b th:text="${barcode}">-</b> · 共 <b th:text="${#lists.size(list)}">0</b> 款，请勾选后添加
+            </p>
+            <table class="layui-table timo-table" id="scanResultTable">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th th:if="${showWhQty}" width="120" class="col-num">本仓库存</th>
+                    <th width="80">状态</th>
+                    <th width="100">品牌</th>
+                    <th width="220">商品名称</th>
+                    <th width="120">规格</th>
+                    <th width="80">年份</th>
+                    <th width="90">生产批次</th>
+                    <th width="100">官方价 / 元</th>
+                    <th width="110">销售价 / 元</th>
+                    <th width="110">回收价 / 元</th>
+                    <th width="120">展示图</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td th:if="${showWhQty}" class="col-num" style="color:#374151;">
+                        <div style="font-weight:600;"
+                             th:text="${item.pickWhQty != null ? item.pickWhQty : 0}"></div>
+                        <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
+                             th:if="${item.pickWhQtyNoBag != null and item.pickWhQtyNoBag > 0}"
+                             th:text="|无袋 ${item.pickWhQtyNoBag}|"></div>
+                        <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
+                             th:if="${item.pickWhQtyDamaged != null and item.pickWhQtyDamaged > 0}"
+                             th:text="|破损 ${item.pickWhQtyDamaged}|"></div>
+                        <div style="font-size:12px;line-height:1.4;margin-top:2px;color:#B45309;"
+                             th:if="${item.pickWhQtyDamagedNoBag != null and item.pickWhQtyDamagedNoBag > 0}"
+                             th:text="|破损无袋 ${item.pickWhQtyDamagedNoBag}|"></div>
+                    </td>
+                    <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${item.brandName}"></td>
+                    <td>
+                        <div th:title="${item.name}">
+                            <span th:text="${item.name}"></span>
+                        </div>
+                        <div th:if="${item.skuCode != null and !#strings.isEmpty(item.skuCode)}"
+                             th:text="${item.skuCode}" th:title="${item.skuCode}"
+                             style="color: #9CA3AF; font-size: 12px; line-height: 1.4; margin-top: 2px;"></div>
+                    </td>
+                    <td th:text="${item.specShow}" th:title="${item.specShow}"></td>
+                    <td th:text="${item.year}"></td>
+                    <td th:text="${#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch)}"></td>
+                    <td style="background-color: #EFF6FF; color: #1E40AF;" th:text="${item.officialPriceShow}"></td>
+                    <td style="background-color: #ECFDF5; color: #047857;" th:text="${item.salePriceShow}"></td>
+                    <td style="background-color: #FFFBEB; color: #B45309;" th:text="${item.recyclePriceShow}"></td>
+                    <td>
+                        <th:block th:replace="/common/fragment :: previewImgList(${item.showImageList}, ${'scan-show-' + item.id})"></th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="sku-scan-footer" th:if="${errorMsg == null and searched}">
+    <button type="button" class="layui-btn layui-btn-primary" id="btnRescan">重新扫码</button>
+    <button type="button" class="layui-btn layui-btn-normal" id="btnContinue"
+            th:if="${list != null and !#lists.isEmpty(list)}">继续添加</button>
+    <button type="button" class="layui-btn" id="btnDone">添加完毕</button>
+</div>
+
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var scanBaseUrl = /*[[@{/business/chai/stockBill/skuScanPick}]]*/ '';
+    var billType = /*[[${billType}]]*/ 1;
+    var fromWhId = /*[[${fromWhId}]]*/ 0;
+    /*]]>*/
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+        var $ = layui.$;
+
+        function digitsOnly(v) {
+            return (v || '').replace(/\D/g, '').substring(0, 13);
+        }
+
+        function collectIds() {
+            var idList = [];
+            $('#scanResultTable tbody .timo-checkbox :checkbox:checked').each(function () {
+                idList.push($(this).val());
+            });
+            return idList;
+        }
+
+        function addToParent(idList) {
+            if (!window.parent || typeof window.parent.addStockBillSkus !== 'function') {
+                layer.msg('无法回传父页面');
+                return false;
+            }
+            window.parent.addStockBillSkus(idList, null);
+            return true;
+        }
+
+        function closeSelf() {
+            if (window.parent && window.parent.layer) {
+                var idx = window.parent.layer.getFrameIndex(window.name);
+                window.parent.layer.close(idx);
+            }
+        }
+
+        function backToScan() {
+            var url = scanBaseUrl + '?billType=' + encodeURIComponent(billType)
+                + '&fromWhId=' + encodeURIComponent(fromWhId || '');
+            window.location.href = url;
+        }
+
+        $('#barcodeInput').on('input', function () {
+            var cleaned = digitsOnly($(this).val());
+            if ($(this).val() !== cleaned) {
+                $(this).val(cleaned);
+            }
+        });
+
+        $('#scanForm').on('submit', function () {
+            var $input = $('#barcodeInput');
+            var code = digitsOnly($input.val());
+            $input.val(code);
+            if (!code) {
+                layer.msg('请先扫码或输入条码');
+                $input.focus();
+                return false;
+            }
+            return true;
+        });
+
+        $('#btnRescan').on('click', function () {
+            backToScan();
+        });
+
+        $('#btnContinue').on('click', function () {
+            var idList = collectIds();
+            if (!idList.length) {
+                layer.msg('请至少勾选一条商品');
+                return;
+            }
+            if (addToParent(idList)) {
+                backToScan();
+            }
+        });
+
+        $('#btnDone').on('click', function () {
+            var idList = collectIds();
+            if (idList.length) {
+                if (!addToParent(idList)) {
+                    return;
+                }
+            }
+            closeSelf();
+        });
+
+        setTimeout(function () {
+            var $input = $('#barcodeInput');
+            $input.focus();
+            var v = $input.val() || '';
+            if (v && $input[0].setSelectionRange) {
+                $input[0].setSelectionRange(v.length, v.length);
+            }
+        }, 120);
+    });
+</script>
+</body>
+</html>

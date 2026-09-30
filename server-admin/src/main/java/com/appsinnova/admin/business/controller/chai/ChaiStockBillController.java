@@ -22,6 +22,8 @@ import com.appsinnova.admin.system.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -171,6 +173,91 @@ public class ChaiStockBillController {
         model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
         model.addAttribute("deletedFilterOptions", ChaiDeletedFilter.values());
         return "/business/chai/stockBill/skuPick";
+    }
+
+    /**
+     * 扫码选品（方案 A）：单层内扫码 → 勾选 → 继续添加 / 添加完毕。
+     * 仅按 barcode 精确查；同码多 SKU 一次拉齐（最多 100）。
+     */
+    @GetMapping("/skuScanPick")
+    @RequiresPermissions("business:chai:stockBill:edit")
+    public String skuScanPick(Model model,
+                              @RequestParam(value = "billType", defaultValue = "1") Integer billType,
+                              @RequestParam(value = "fromWhId", required = false) Long fromWhId,
+                              @RequestParam(value = "barcode", required = false) String barcode) {
+        ChaiStockBillType type = ChaiStockBillType.fromCode(billType);
+        if (type == null) {
+            type = ChaiStockBillType.IN;
+            billType = type.getCode();
+        }
+        boolean inbound = type == ChaiStockBillType.IN;
+        boolean showWhQty = !inbound;
+        model.addAttribute("billType", billType);
+        model.addAttribute("inbound", inbound);
+        model.addAttribute("showWhQty", showWhQty);
+        model.addAttribute("fromWhId", fromWhId);
+
+        if (fromWhId == null || fromWhId <= 0) {
+            model.addAttribute("errorMsg", inbound ? "请先选择入库仓库" : (type == ChaiStockBillType.TRANSFER
+                    ? "请先选择调出仓" : "请先选择出库仓库"));
+            model.addAttribute("list", new ArrayList<>());
+            model.addAttribute("searched", false);
+            model.addAttribute("barcode", "");
+            return "/business/chai/stockBill/skuScanPick";
+        }
+
+        String code = barcode == null ? "" : barcode.trim().replaceAll("\\D", "");
+        if (code.length() > 13) {
+            code = code.substring(0, 13);
+        }
+        model.addAttribute("barcode", code);
+        boolean searched = StringUtils.hasText(code);
+        model.addAttribute("searched", searched);
+        if (!searched) {
+            model.addAttribute("list", new ArrayList<>());
+            return "/business/chai/stockBill/skuScanPick";
+        }
+
+        ChaiSku queryParam = new ChaiSku();
+        queryParam.setBarcode(code);
+        if (inbound) {
+            queryParam.setDeleted(0);
+        } else {
+            queryParam.setDeleted(0);
+            queryParam.setRequireWhQtyPositive(true);
+        }
+        queryParam.setQueryWhId(fromWhId);
+
+        PageRequest pageRequest = PageRequest.of(0, 100,
+                Sort.by(Sort.Order.desc("year"), Sort.Order.desc("prodBatch"), Sort.Order.desc("id")));
+        Page<ChaiSku> page = chaiSkuService.getPageList(queryParam, pageRequest);
+        Map<Long, String> brandNameMap = buildBrandNameMap();
+        page.forEach(item -> fillSkuShowFields(item, brandNameMap));
+        if (showWhQty) {
+            List<Long> skuIds = new ArrayList<>();
+            page.forEach(item -> {
+                if (item.getId() != null) {
+                    skuIds.add(item.getId());
+                }
+            });
+            Map<Long, Map<String, Integer>> whStockMap = chaiStockService.mapWhStockBySkuIds(skuIds, fromWhId);
+            page.forEach(item -> {
+                Map<String, Integer> one = whStockMap.get(item.getId());
+                if (one == null) {
+                    item.setPickWhQty(0);
+                    item.setPickWhQtyNoBag(0);
+                    item.setPickWhQtyDamaged(0);
+                    item.setPickWhQtyDamagedNoBag(0);
+                } else {
+                    item.setPickWhQty(one.get("qty") != null ? one.get("qty") : 0);
+                    item.setPickWhQtyNoBag(one.get("qtyNoBag") != null ? one.get("qtyNoBag") : 0);
+                    item.setPickWhQtyDamaged(one.get("qtyDamaged") != null ? one.get("qtyDamaged") : 0);
+                    item.setPickWhQtyDamagedNoBag(one.get("qtyDamagedNoBag") != null ? one.get("qtyDamagedNoBag") : 0);
+                }
+            });
+        }
+        model.addAttribute("list", page.getContent());
+        return "/business/chai/stockBill/skuScanPick";
     }
 
     /**

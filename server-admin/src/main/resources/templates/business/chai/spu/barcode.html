@@ -155,7 +155,7 @@
     <div style="color:#DC2626;padding:24px;" th:text="${errorMsg}"></div>
 </div>
 <div class="timo-compile" th:unless="${errorMsg != null}">
-    <form id="bcForm" class="layui-form bc-form" method="POST">
+    <form id="bcForm" class="layui-form bc-form" onsubmit="return false;">
         <input type="hidden" name="id" th:value="${editItem.id}"/>
 
         <div class="bc-spu-card">
@@ -272,12 +272,25 @@
             previewTimer = setTimeout(refreshPreview, 200);
         }
 
+        $('#bcForm').on('submit', function (e) {
+            e.preventDefault();
+            return false;
+        });
+
         $('#barcodeInput').on('input', function () {
             var cleaned = digitsOnly($(this).val());
             if ($(this).val() !== cleaned) {
                 $(this).val(cleaned);
             }
             schedulePreview();
+        });
+
+        // 扫枪尾部 Enter 勿触发表单提交（会 POST 到仅支持 GET 的 barcode/{id} → 405）
+        $('#barcodeInput').on('keydown', function (e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                refreshPreview();
+            }
         });
 
         $('#btnGenerate').on('click', function () {
