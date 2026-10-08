@@ -12,6 +12,7 @@ import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.*;
 import com.appsinnova.admin.business.service.chai.*;
 import com.appsinnova.admin.business.vo.chai.ChaiStockBillSaveVo;
+import com.appsinnova.admin.common.data.PageSort;
 import com.appsinnova.admin.common.data.URL;
 import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.business.common.utils.JsonUtils;
@@ -30,6 +31,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,7 +138,12 @@ public class ChaiStockBillController {
                 queryParam.setSpuId(parent.getId());
             }
         }
-        Page<ChaiSku> page = chaiSkuService.getPageList(queryParam);
+        PageRequest pageRequest = PageSort.pageRequest(Arrays.asList(
+                Sort.Order.asc("spuId"),
+                Sort.Order.desc("year"),
+                Sort.Order.desc("prodBatch"),
+                Sort.Order.desc("id")));
+        Page<ChaiSku> page = chaiSkuService.getPageList(queryParam, pageRequest);
         Map<Long, String> brandNameMap = buildBrandNameMap();
         page.forEach(item -> fillSkuShowFields(item, brandNameMap));
         if (showWhQty) {

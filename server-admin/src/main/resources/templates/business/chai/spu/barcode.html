@@ -127,25 +127,62 @@
         }
 
         @media print {
+            @page {
+                /* 宽×高 = 横版标签；方向由纸型决定，勿依赖浏览器「横向」选项 */
+                size: 80mm 60mm;
+                margin: 0;
+            }
+            html, body {
+                width: 80mm !important;
+                height: 60mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* 只输出标签，避免整页占位撑出第 2 页 */
             body * { visibility: hidden !important; }
             .bc-print-only, .bc-print-only * { visibility: visible !important; }
             .bc-print-only {
-                position: absolute;
-                left: 0;
-                top: 0;
-                margin: 0;
-                padding: 0;
-                border: none;
-                background: #fff;
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 80mm !important;
+                height: 60mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                background: #fff !important;
+                overflow: hidden !important;
+                box-shadow: none !important;
+                transform: none !important;
+                zoom: 1 !important;
             }
             .bc-label {
-                width: 80mm;
-                height: 60mm;
-                padding: 2.5mm 3mm 2mm;
+                width: 80mm !important;
+                height: 60mm !important;
+                /* 去掉批次后略增内边距，字号固定 mm，减少「适合页面」缩放感 */
+                padding: 2.5mm 3mm 2mm !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                transform: none !important;
             }
-            @page {
-                size: 80mm 60mm;
-                margin: 1.5mm;
+            .bc-label-title {
+                font-size: 13px !important;
+            }
+            .bc-label-row {
+                font-size: 11px !important;
+            }
+            .bc-label-code {
+                font-size: 12px !important;
+            }
+            .bc-label-img {
+                margin: 2.5mm auto 1mm !important;
+                width: 68mm !important;
+                height: 13mm !important;
             }
         }
     </style>
@@ -217,8 +254,6 @@
                              th:text="${(editItem.brandName != null ? editItem.brandName : '-') + ' · ' + (editItem.name != null ? editItem.name : '-')}">-</div>
                         <div class="bc-label-row">等级：<span th:text="${gradeName != null and !#strings.isEmpty(gradeName) ? gradeName : '-'}">-</span></div>
                         <div class="bc-label-row">规格：<span th:text="${editItem.specShow != null and !#strings.isEmpty(editItem.specShow) ? editItem.specShow : '-'}">-</span></div>
-                        <div class="bc-label-row">批次：<span
-                                th:text="${(editItem.year != null ? editItem.year + '年' : '') + (prodBatchName != null ? prodBatchName : '')}">-</span></div>
                         <div class="bc-label-row">保质期：<span th:text="${editItem.expirationName != null ? editItem.expirationName : '-'}">-</span></div>
                         <div class="bc-label-row">官方价：<span id="lblPrice"
                                 th:text="${editItem.officialPriceShow == '非卖品' ? '非卖品' : ((editItem.officialPriceShow != null and editItem.officialPriceShow != '-' ? editItem.officialPriceShow + '元' : '-'))}">-</span></div>

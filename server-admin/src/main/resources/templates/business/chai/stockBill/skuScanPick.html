@@ -155,8 +155,9 @@
     </div>
 </div>
 
-<div class="sku-scan-footer" th:if="${errorMsg == null and searched}">
-    <button type="button" class="layui-btn layui-btn-primary" id="btnRescan">重新扫码</button>
+<div class="sku-scan-footer" th:if="${errorMsg == null}">
+    <button type="button" class="layui-btn layui-btn-primary" id="btnRescan"
+            th:if="${searched}">重新扫码</button>
     <button type="button" class="layui-btn layui-btn-normal" id="btnContinue"
             th:if="${list != null and !#lists.isEmpty(list)}">继续添加</button>
     <button type="button" class="layui-btn" id="btnDone">添加完毕</button>

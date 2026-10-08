@@ -95,30 +95,64 @@
         }
 
         @media print {
-            body {
-                background: #fff;
-                padding: 0;
+            @page {
+                size: 80mm 60mm;
+                margin: 0;
             }
-            .bp-toolbar { display: none !important; }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            body {
+                padding: 0 !important;
+            }
+            .bp-toolbar,
+            .bp-error { display: none !important; }
             .bp-preview {
                 display: block;
                 gap: 0;
+                margin: 0;
+                padding: 0;
             }
             .bc-label-sheet {
                 page-break-after: always;
-                box-shadow: none;
+                page-break-inside: avoid;
+                box-shadow: none !important;
+                width: 80mm !important;
+                height: 60mm !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+                transform: none !important;
+                zoom: 1 !important;
             }
             .bc-label-sheet:last-child {
                 page-break-after: auto;
             }
             .bc-label {
-                box-shadow: none;
-                width: 80mm;
-                height: 60mm;
+                box-shadow: none !important;
+                width: 80mm !important;
+                height: 60mm !important;
+                padding: 2.5mm 3mm 2mm !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                transform: none !important;
             }
-            @page {
-                size: 80mm 60mm;
-                margin: 1.5mm;
+            .bc-label-title {
+                font-size: 13px !important;
+            }
+            .bc-label-row {
+                font-size: 11px !important;
+            }
+            .bc-label-code {
+                font-size: 12px !important;
+            }
+            .bc-label-img {
+                margin: 2.5mm auto 1mm !important;
+                width: 68mm !important;
+                height: 13mm !important;
             }
         }
     </style>
@@ -138,8 +172,6 @@
                  th:text="${(item.brandName != null ? item.brandName : '-') + ' · ' + (item.name != null ? item.name : '-')}">-</div>
             <div class="bc-label-row">等级：<span th:text="${#dicts.keyValue('CHAI_GRADE', item.grade)}">-</span></div>
             <div class="bc-label-row">规格：<span th:text="${item.specShow != null and !#strings.isEmpty(item.specShow) ? item.specShow : '-'}">-</span></div>
-            <div class="bc-label-row">批次：<span
-                    th:text="${(item.year != null ? item.year + '年' : '') + (#dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch) != null ? #dicts.keyValue('CHAI_PROD_BATCH', item.prodBatch) : '')}">-</span></div>
             <div class="bc-label-row">保质期：<span th:text="${item.expirationName != null ? item.expirationName : '-'}">-</span></div>
             <div class="bc-label-row">官方价：<span
                     th:text="${item.officialPriceShow == '非卖品' ? '非卖品' : ((item.officialPriceShow != null and item.officialPriceShow != '-' ? item.officialPriceShow + '元' : '-'))}">-</span></div>
