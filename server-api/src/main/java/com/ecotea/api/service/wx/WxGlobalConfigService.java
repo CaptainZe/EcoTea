@@ -1,8 +1,10 @@
 package com.ecotea.api.service.wx;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.ecotea.api.common.constant.RedisConstant;
 import com.ecotea.api.common.enums.wx.WxGlobalConfigType;
 import com.ecotea.api.common.utils.JsonUtils;
+import com.ecotea.api.common.utils.RedisUtils;
 import com.ecotea.api.domain.wx.WxGlobalConfig;
 import com.ecotea.api.mapper.wx.WxGlobalConfigMapper;
 import com.ecotea.api.vo.wx.WxCustomerServiceConfig;
@@ -24,13 +26,31 @@ public class WxGlobalConfigService {
 
     private final WxGlobalConfigMapper wxGlobalConfigMapper;
 
+    /**
+     * 按 type 取配置：Redis → miss → MySQL → SET（DAY_EXPIRE；库无则 {@code "null"} + 5 分钟）。
+     */
     public WxGlobalConfig getByType(Integer type) {
         if (type == null) {
             return null;
         }
-        return wxGlobalConfigMapper.selectOne(new LambdaQueryWrapper<WxGlobalConfig>()
+        String key = String.format(RedisConstant.WX_GLOBAL_CONFIG_KEY, type);
+        String cached = RedisUtils.get(RedisUtils.defaultRedis(), key);
+        if (cached != null) {
+            return JsonUtils.readValueForCache(cached, WxGlobalConfig.class);
+        }
+
+        WxGlobalConfig row = wxGlobalConfigMapper.selectOne(new LambdaQueryWrapper<WxGlobalConfig>()
                 .eq(WxGlobalConfig::getType, type)
                 .last("LIMIT 1"));
+        if (row != null) {
+            String json = JsonUtils.writeValueAsString(row);
+            if (json != null) {
+                RedisUtils.set(RedisUtils.defaultRedis(), key, json, RedisConstant.DAY_EXPIRE);
+            }
+        } else {
+            RedisUtils.set(RedisUtils.defaultRedis(), key, "null", RedisConstant.FIVE_MINUTE_EXPIRE);
+        }
+        return row;
     }
 
     /**

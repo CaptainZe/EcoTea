@@ -99,7 +99,7 @@ public class DictController {
     @RequiresPermissions({"system:dict:add", "system:dict:edit"})
     @ResponseBody
     @ActionLog(name = "字典管理", message = "字典：${title}", action = SaveAction.class)
-    public ResultVo save(@Validated DictValid valid, @EntityParam Dict dict) {
+    public ResultVo<?> save(@Validated DictValid valid, @EntityParam Dict dict) {
         // 清除字典值两边空格
         dict.setValue(dict.getValue().trim());
 
@@ -108,16 +108,21 @@ public class DictController {
             throw new ResultException(ResultEnum.DICT_EXIST);
         }
 
-        // 复制保留无需修改的数据
+        // 复制保留无需修改的数据；改 name 时旧 key 也要失效
+        String oldName = null;
         if (dict.getId() != null) {
             Dict beDict = dictService.getById(dict.getId());
+            if (beDict != null) {
+                oldName = beDict.getName();
+            }
             EntityBeanUtil.copyProperties(beDict, dict);
         }
 
         // 保存数据
         dictService.save(dict);
-        if (dict.getId() != null) {
-            DictUtil.clearCache(dict.getName());
+        DictUtil.clearCache(dict.getName());
+        if (oldName != null && !oldName.equals(dict.getName())) {
+            DictUtil.clearCache(oldName);
         }
         return ResultVoUtil.SAVE_SUCCESS;
     }
@@ -139,11 +144,22 @@ public class DictController {
     @RequiresPermissions("system:dict:status")
     @ResponseBody
     @ActionLog(name = "字典状态", action = StatusAction.class)
-    public ResultVo status(
+    public ResultVo<?> status(
             @PathVariable("param") String param,
             @RequestParam(value = "ids", required = false) List<Long> ids) {
         // 更新状态
         StatusEnum statusEnum = StatusUtil.getStatusEnum(param);
+        if (ids != null) {
+            for (Long id : ids) {
+                if (id == null) {
+                    continue;
+                }
+                Dict one = dictService.getById(id);
+                if (one != null && one.getName() != null) {
+                    DictUtil.clearCache(one.getName());
+                }
+            }
+        }
         if (dictService.updateStatus(statusEnum, ids)) {
             return ResultVoUtil.success(statusEnum.getMessage() + "成功");
         } else {

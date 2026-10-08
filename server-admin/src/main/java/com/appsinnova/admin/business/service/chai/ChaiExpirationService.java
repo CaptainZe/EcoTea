@@ -1,5 +1,7 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.constant.RedisConstant;
+import com.appsinnova.admin.business.common.utils.RedisUtils;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
 import com.appsinnova.admin.business.repository.chai.ChaiExpirationRepository;
 import com.appsinnova.admin.common.data.PageSort;
@@ -69,7 +71,9 @@ public class ChaiExpirationService {
             entity.setCreateTime(System.currentTimeMillis());
         }
         entity.setUpdateTime(System.currentTimeMillis());
-        return chaiExpirationRepository.save(entity);
+        entity = chaiExpirationRepository.save(entity);
+        evictOnlineCache();
+        return entity;
     }
 
     /**
@@ -116,8 +120,14 @@ public class ChaiExpirationService {
         }
         if (!toDelete.isEmpty()) {
             chaiExpirationRepository.deleteByIdIn(toDelete);
+            evictOnlineCache();
         }
         return blockedNames;
+    }
+
+    /** 失效 api 共用上架保质期列表缓存 */
+    private void evictOnlineCache() {
+        RedisUtils.delete(RedisUtils.defaultRedis(), RedisConstant.CHAI_EXPIRATION_ONLINE_KEY);
     }
 
     private static String formatAllBlocked(List<String> names) {

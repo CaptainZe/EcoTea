@@ -12,18 +12,13 @@ import com.ecotea.api.common.utils.DictUtils;
 import com.ecotea.api.common.utils.chai.ChaiPriceUtil;
 import com.ecotea.api.common.utils.chai.ChaiSpecUtil;
 import com.ecotea.api.common.utils.chai.ChaiUrlListUtil;
-import com.ecotea.api.domain.chai.ChaiBrand;
-import com.ecotea.api.domain.chai.ChaiExpiration;
 import com.ecotea.api.domain.chai.ChaiSku;
 import com.ecotea.api.domain.chai.ChaiStock;
 import com.ecotea.api.domain.chai.ChaiStockWh;
 import com.ecotea.api.domain.chai.ChaiWarehouse;
-import com.ecotea.api.mapper.chai.ChaiBrandMapper;
-import com.ecotea.api.mapper.chai.ChaiExpirationMapper;
 import com.ecotea.api.mapper.chai.ChaiSkuMapper;
 import com.ecotea.api.mapper.chai.ChaiStockMapper;
 import com.ecotea.api.mapper.chai.ChaiStockWhMapper;
-import com.ecotea.api.mapper.chai.ChaiWarehouseMapper;
 import com.ecotea.api.vo.chai.ChaiSkuSaleItemVO;
 import com.ecotea.api.vo.chai.ChaiSkuSalePageVO;
 import com.ecotea.api.vo.chai.ChaiSkuSaleWhStockVO;
@@ -57,11 +52,11 @@ public class ChaiSkuSaleQueryService {
             "SELECT sku_id FROM chai_stock WHERE total_qty > 0";
 
     private final ChaiSkuMapper chaiSkuMapper;
-    private final ChaiBrandMapper chaiBrandMapper;
-    private final ChaiExpirationMapper chaiExpirationMapper;
+    private final ChaiBrandService chaiBrandService;
+    private final ChaiExpirationService chaiExpirationService;
     private final ChaiStockMapper chaiStockMapper;
     private final ChaiStockWhMapper chaiStockWhMapper;
-    private final ChaiWarehouseMapper chaiWarehouseMapper;
+    private final ChaiWarehouseQueryService chaiWarehouseQueryService;
 
     /**
      * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收。
@@ -291,13 +286,7 @@ public class ChaiSkuSaleQueryService {
     }
 
     private Long resolveBrandIdExact(String keyword) {
-        if (!StringUtils.hasText(keyword)) {
-            return null;
-        }
-        ChaiBrand brand = chaiBrandMapper.selectOne(new LambdaQueryWrapper<ChaiBrand>()
-                .eq(ChaiBrand::getName, keyword)
-                .last("LIMIT 1"));
-        return brand == null ? null : brand.getId();
+        return chaiBrandService.resolveOnlineIdByNameExact(keyword);
     }
 
     private Map<Long, String> loadBrandNameMap(List<ChaiSku> records) {
@@ -306,14 +295,7 @@ public class ChaiSkuSaleQueryService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-        if (ids.isEmpty()) {
-            return new HashMap<>();
-        }
-        Map<Long, String> map = new HashMap<>();
-        for (ChaiBrand brand : chaiBrandMapper.selectBatchIds(ids)) {
-            map.put(brand.getId(), brand.getName());
-        }
-        return map;
+        return chaiBrandService.mapNamesByIds(ids);
     }
 
     private Map<Long, String> loadExpirationNameMap(List<ChaiSku> records) {
@@ -322,14 +304,7 @@ public class ChaiSkuSaleQueryService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-        if (ids.isEmpty()) {
-            return new HashMap<>();
-        }
-        Map<Long, String> map = new HashMap<>();
-        for (ChaiExpiration item : chaiExpirationMapper.selectBatchIds(ids)) {
-            map.put(item.getId(), item.getName());
-        }
-        return map;
+        return chaiExpirationService.mapNamesByIds(ids);
     }
 
     private Map<Long, ChaiStock> loadStockMap(List<ChaiSku> records) {
@@ -442,10 +417,7 @@ public class ChaiSkuSaleQueryService {
         if (whIds.isEmpty()) {
             return Collections.emptyList();
         }
-        Map<Long, ChaiWarehouse> whMap = new HashMap<>();
-        for (ChaiWarehouse wh : chaiWarehouseMapper.selectBatchIds(whIds)) {
-            whMap.put(wh.getId(), wh);
-        }
+        Map<Long, ChaiWarehouse> whMap = chaiWarehouseQueryService.mapByIds(whIds);
 
         List<WhLine> lines = new ArrayList<>();
         for (ChaiStockWh row : whRows) {

@@ -25,4 +25,16 @@ public interface RedisConstant {
     int SEQ_TTL_SEC = DAY_EXPIRE * 3;
     /** key：{@code ecotea_seq_{biz}_{yyyyMMdd}}，biz 见 {@link SeqBizConstant} */
     String SEQ_KEY_INFIX = "seq_";
+
+    /* ***** 业务主数据 key（与 api 必须一致） ***** */
+    /** key 模板：{@code ecotea_dict_{name}}，用法 {@code String.format(DICT_KEY, name)} */
+    String DICT_KEY = KEY_PRE + "dict_%s";
+    /** 上架品牌有序列表 */
+    String CHAI_BRAND_ONLINE_KEY = KEY_PRE + "chai_brand_online";
+    /** 上架保质期有序列表 */
+    String CHAI_EXPIRATION_ONLINE_KEY = KEY_PRE + "chai_expiration_online";
+    /** 上架仓库有序列表 */
+    String CHAI_WAREHOUSE_ONLINE_KEY = KEY_PRE + "chai_warehouse_online";
+    /** key 模板：{@code ecotea_wx_global_config_{type}}，用法 {@code String.format(WX_GLOBAL_CONFIG_KEY, type)} */
+    String WX_GLOBAL_CONFIG_KEY = KEY_PRE + "wx_global_config_%s";
 }

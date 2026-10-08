@@ -1,5 +1,7 @@
 package com.appsinnova.admin.component.thymeleaf.utility;
 
+import com.appsinnova.admin.business.common.constant.RedisConstant;
+import com.appsinnova.admin.business.common.utils.RedisUtils;
 import com.appsinnova.admin.common.utils.EhCacheUtil;
 import com.appsinnova.admin.common.utils.SpringContextUtil;
 import com.appsinnova.admin.system.domain.Dict;
@@ -106,13 +108,18 @@ public class DictUtil {
     }
 
     /**
-     * 清除缓存中指定的数据
+     * 清除缓存中指定的数据：admin EhCache + 共用 Redis {@code ecotea_dict_{name}}（api 热读）。
      * @param label 字典标识
      */
     public static void clearCache(String label){
+        if (StringUtils.isBlank(label)) {
+            return;
+        }
         Element dictEle = dictCache.get(label);
         if (dictEle != null){
             dictCache.remove(label);
         }
+        String key = String.format(RedisConstant.DICT_KEY, label.trim());
+        RedisUtils.delete(RedisUtils.defaultRedis(), key);
     }
 }

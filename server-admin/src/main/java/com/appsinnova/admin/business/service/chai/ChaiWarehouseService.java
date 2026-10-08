@@ -1,6 +1,8 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.constant.RedisConstant;
 import com.appsinnova.admin.business.common.pca.PcaCodeService;
+import com.appsinnova.admin.business.common.utils.RedisUtils;
 import com.appsinnova.admin.business.domain.chai.ChaiWarehouse;
 import com.appsinnova.admin.business.repository.chai.ChaiWarehouseRepository;
 import com.appsinnova.admin.common.data.PageSort;
@@ -95,7 +97,9 @@ public class ChaiWarehouseService {
             entity.setCreateTime(System.currentTimeMillis());
         }
         entity.setUpdateTime(System.currentTimeMillis());
-        return chaiWarehouseRepository.save(entity);
+        entity = chaiWarehouseRepository.save(entity);
+        evictOnlineCache();
+        return entity;
     }
 
     /**
@@ -128,8 +132,14 @@ public class ChaiWarehouseService {
         }
         if (!toDelete.isEmpty()) {
             chaiWarehouseRepository.deleteByIdIn(toDelete);
+            evictOnlineCache();
         }
         return blockedNames;
+    }
+
+    /** 失效 api 共用上架仓库列表缓存 */
+    private void evictOnlineCache() {
+        RedisUtils.delete(RedisUtils.defaultRedis(), RedisConstant.CHAI_WAREHOUSE_ONLINE_KEY);
     }
 
     public void fillRegionNames(ChaiWarehouse warehouse) {

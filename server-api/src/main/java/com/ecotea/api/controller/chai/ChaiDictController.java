@@ -40,7 +40,7 @@ public class ChaiDictController {
             return ApiResult.fail("不支持的字典");
         }
         Map<String, String> map = DictUtils.value(key);
-        if (map == null || map.isEmpty()) {
+        if (map.isEmpty()) {
             return ApiResult.ok(Collections.emptyList());
         }
         List<ChaiDictOptionVO> list = new ArrayList<>(map.size());

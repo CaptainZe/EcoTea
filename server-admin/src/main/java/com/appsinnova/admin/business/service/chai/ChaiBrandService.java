@@ -1,6 +1,8 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.constant.RedisConstant;
 import com.appsinnova.admin.business.common.utils.PinyinUtil;
+import com.appsinnova.admin.business.common.utils.RedisUtils;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.repository.chai.ChaiBrandRepository;
 import com.appsinnova.admin.common.data.PageSort;
@@ -88,6 +90,7 @@ public class ChaiBrandService {
                 && !Objects.equals(oldName, entity.getName())) {
             chaiSpuService.rebuildSearchTextForBrand(entity.getId(), entity.getName());
         }
+        evictOnlineCache();
         return entity;
     }
 
@@ -130,6 +133,9 @@ public class ChaiBrandService {
             }
             chaiBrandRepository.save(brand);
             updated++;
+        }
+        if (updated > 0) {
+            evictOnlineCache();
         }
         Map<String, Integer> result = new LinkedHashMap<>();
         result.put("total", list.size());
@@ -207,8 +213,14 @@ public class ChaiBrandService {
         }
         if (!toDelete.isEmpty()) {
             chaiBrandRepository.deleteByIdIn(toDelete);
+            evictOnlineCache();
         }
         return blockedNames;
+    }
+
+    /** 失效 api 共用上架品牌列表缓存 */
+    private void evictOnlineCache() {
+        RedisUtils.delete(RedisUtils.defaultRedis(), RedisConstant.CHAI_BRAND_ONLINE_KEY);
     }
 
     private static String formatAllBlocked(List<String> names) {
