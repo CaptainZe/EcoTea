@@ -57,16 +57,23 @@ public class ChaiSkuRecycleQueryService {
      * keyword：先品牌名完全匹配，否则名称模糊；spuId：同款。
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId, long page, long size) {
-        return pageRecycleList(keyword, null, spuId, Collections.emptyList(), Collections.emptyList(), page, size);
+        return pageRecycleList(keyword, null, spuId, Collections.emptyList(), Collections.emptyList(),
+                null, null, null, null, null, page, size);
     }
 
     /**
      * 上架、未删除 SKU 分页（不按库存过滤）。
      * barcode：条码精确（有值时优先）；keyword：先品牌名完全匹配，否则名称模糊；spuId：同款；
-     * brandIds / types：多选筛选。
+     * brandIds / types：多选筛选；
+     * recyclePriceMin / recyclePriceMax：回收价区间；
+     * officialPriceMin / officialPriceMax：官方价区间；
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）。
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, String barcode, Long spuId,
                                                 List<Long> brandIds, List<Integer> types,
+                                                BigDecimal recyclePriceMin, BigDecimal recyclePriceMax,
+                                                BigDecimal officialPriceMin, BigDecimal officialPriceMax,
+                                                Integer nonSale,
                                                 long page, long size) {
         if (page < 1) {
             page = 1;
@@ -82,6 +89,16 @@ public class ChaiSkuRecycleQueryService {
         String code = barcode == null ? null : barcode.trim();
         List<Long> brandIdList = brandIds == null ? Collections.emptyList() : brandIds;
         List<Integer> typeList = types == null ? Collections.emptyList() : types;
+        BigDecimal[] recycleRange = normalizePriceRange(recyclePriceMin, recyclePriceMax);
+        BigDecimal recycleMin = recycleRange[0];
+        BigDecimal recycleMax = recycleRange[1];
+        boolean onlyNonSale = YesOrNo.YES.getCode().equals(nonSale);
+        boolean excludeNonSale = YesOrNo.NO.getCode().equals(nonSale);
+        BigDecimal[] officialRange = onlyNonSale
+                ? new BigDecimal[]{null, null}
+                : normalizePriceRange(officialPriceMin, officialPriceMax);
+        BigDecimal officialMin = officialRange[0];
+        BigDecimal officialMax = officialRange[1];
         Long brandIdFromKw = (!StringUtils.hasText(code) && brandIdList.isEmpty())
                 ? resolveBrandIdExact(kw) : null;
 
@@ -124,6 +141,25 @@ public class ChaiSkuRecycleQueryService {
         if (!typeList.isEmpty()) {
             wrapper.in(ChaiSku::getType, typeList);
         }
+        if (recycleMin != null) {
+            wrapper.ge(ChaiSku::getRecyclePrice, recycleMin);
+        }
+        if (recycleMax != null) {
+            wrapper.le(ChaiSku::getRecyclePrice, recycleMax);
+        }
+        if (onlyNonSale) {
+            wrapper.eq(ChaiSku::getNonSale, YesOrNo.YES.getCode());
+        } else if (excludeNonSale) {
+            wrapper.and(w -> w.eq(ChaiSku::getNonSale, YesOrNo.NO.getCode())
+                    .or()
+                    .isNull(ChaiSku::getNonSale));
+        }
+        if (officialMin != null) {
+            wrapper.ge(ChaiSku::getOfficialPrice, officialMin);
+        }
+        if (officialMax != null) {
+            wrapper.le(ChaiSku::getOfficialPrice, officialMax);
+        }
 
         wrapper.orderByDesc(ChaiSku::getYear)
                 .orderByDesc(ChaiSku::getProdBatch)
@@ -151,9 +187,20 @@ public class ChaiSkuRecycleQueryService {
         result.setSpuId(spuId);
         result.setList(list);
 
-        log.info("chai sku recycle list, keyword={}, barcode={}, spuId={}, brandIds={}, types={}, matchType={}, page={}, size={}, total={}",
-                kw, code, spuId, brandIdList, typeList, matchType, page, size, mpPage.getTotal());
+        log.info("chai sku recycle list, keyword={}, barcode={}, spuId={}, brandIds={}, types={}, recyclePriceMin={}, recyclePriceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, matchType={}, page={}, size={}, total={}",
+                kw, code, spuId, brandIdList, typeList, recycleMin, recycleMax, officialMin, officialMax, nonSale,
+                matchType, page, size, mpPage.getTotal());
         return result;
+    }
+
+    /** min/max 互换校正；返回 [min, max]。 */
+    private static BigDecimal[] normalizePriceRange(BigDecimal priceMin, BigDecimal priceMax) {
+        BigDecimal min = priceMin;
+        BigDecimal max = priceMax;
+        if (min != null && max != null && min.compareTo(max) > 0) {
+            return new BigDecimal[]{max, min};
+        }
+        return new BigDecimal[]{min, max};
     }
 
     /**

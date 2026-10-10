@@ -30,7 +30,9 @@ public class ChaiSkuSaleController {
      * 有货上架 SKU 分页。keyword：品牌精确优先，否则名称模糊；barcode：条码精确；spuId：同款。
      * whId：按仓有货筛选；includeWh=1：列表带回有货仓简称（无数量）；
      * recycleRecent=1：近 N 日回收入库（N 见 ChaiConstant.RECYCLE_RECENT_DAYS），按最近回收倒序。
-     * brandIds / types：逗号分隔多选；priceMin / priceMax：售价区间。
+     * brandIds / types：逗号分隔多选；
+     * priceMin / priceMax：售价区间；officialPriceMin / officialPriceMax：官方价区间；
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuSalePageVO> list(
@@ -44,13 +46,17 @@ public class ChaiSkuSaleController {
             @RequestParam(required = false) String types,
             @RequestParam(required = false) BigDecimal priceMin,
             @RequestParam(required = false) BigDecimal priceMax,
+            @RequestParam(required = false) BigDecimal officialPriceMin,
+            @RequestParam(required = false) BigDecimal officialPriceMax,
+            @RequestParam(required = false) Integer nonSale,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         boolean withWhNames = includeWh != null && includeWh != 0;
         boolean recycleRecentFlag = recycleRecent != null && recycleRecent != 0;
         return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(
                 keyword, barcode, spuId, whId, withWhNames, recycleRecentFlag,
-                parseLongIds(brandIds), parseIntIds(types), priceMin, priceMax,
+                parseLongIds(brandIds), parseIntIds(types),
+                priceMin, priceMax, officialPriceMin, officialPriceMax, nonSale,
                 page, size));
     }
 

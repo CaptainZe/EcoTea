@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>在售价目（内部）</title>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920d"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20260920d"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20261010b"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260920d"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260930b"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-quote.css?v=20260920d"/>
@@ -83,6 +83,31 @@
           <h3 class="filter-section-title">茶类</h3>
           <div class="filter-tags" id="typeTags"></div>
         </section>
+        <section class="filter-section">
+          <h3 class="filter-section-title">售价区间</h3>
+          <div class="filter-price-row">
+            <input type="number" id="priceMinInput" placeholder="最低价" min="0" step="0.01" inputmode="decimal"/>
+            <span class="filter-price-sep">—</span>
+            <input type="number" id="priceMaxInput" placeholder="最高价" min="0" step="0.01" inputmode="decimal"/>
+          </div>
+        </section>
+        <section class="filter-section">
+          <h3 class="filter-section-title">官方价</h3>
+          <div class="filter-tags" id="nonSaleTags">
+            <button type="button" class="filter-tag is-on" data-non-sale="">不限</button>
+            <button type="button" class="filter-tag" data-non-sale="1">只看非卖品</button>
+            <button type="button" class="filter-tag" data-non-sale="0">不看非卖品</button>
+          </div>
+        </section>
+        <section class="filter-section">
+          <h3 class="filter-section-title">官方价区间</h3>
+          <div class="filter-price-row">
+            <input type="number" id="officialPriceMinInput" placeholder="最低价" min="0" step="0.01" inputmode="decimal"/>
+            <span class="filter-price-sep">—</span>
+            <input type="number" id="officialPriceMaxInput" placeholder="最高价" min="0" step="0.01" inputmode="decimal"/>
+          </div>
+          <p class="filter-price-hint" id="officialPriceHint" hidden>非卖品无官方价，区间已禁用</p>
+        </section>
       </div>
       <div class="filter-drawer-ft">
         <button type="button" class="filter-btn-reset" id="filterResetBtn">重置</button>
@@ -105,6 +130,6 @@
   <script src="/h5/assets/js/chai-inner-util.js?v=20260920d"></script>
   <script src="/h5/assets/js/chai-sale-quote.js?v=20260920d"></script>
   <script src="/h5/assets/js/chai-barcode-scan.js?v=20260930c"></script>
-  <script src="/h5/assets/js/chai-inner-sale.js?v=20260930a"></script>
+  <script src="/h5/assets/js/chai-inner-sale.js?v=20261010b"></script>
 </body>
 </html>

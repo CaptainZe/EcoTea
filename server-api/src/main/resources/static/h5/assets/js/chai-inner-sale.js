@@ -10,6 +10,11 @@
     recycleRecent: false,
     brandIds: [],
     types: [],
+    priceMin: null,
+    priceMax: null,
+    officialPriceMin: null,
+    officialPriceMax: null,
+    nonSale: null,
     total: 0,
   };
 
@@ -23,6 +28,11 @@
   var filterDraft = {
     brandIds: [],
     types: [],
+    priceMin: null,
+    priceMax: null,
+    officialPriceMin: null,
+    officialPriceMax: null,
+    nonSale: null,
     brandKw: "",
     brandExpanded: false,
   };
@@ -66,6 +76,12 @@
     brandFilterKw: document.getElementById("brandFilterKw"),
     brandTags: document.getElementById("brandTags"),
     typeTags: document.getElementById("typeTags"),
+    priceMinInput: document.getElementById("priceMinInput"),
+    priceMaxInput: document.getElementById("priceMaxInput"),
+    officialPriceMinInput: document.getElementById("officialPriceMinInput"),
+    officialPriceMaxInput: document.getElementById("officialPriceMaxInput"),
+    officialPriceHint: document.getElementById("officialPriceHint"),
+    nonSaleTags: document.getElementById("nonSaleTags"),
     filterResetBtn: document.getElementById("filterResetBtn"),
     filterConfirmBtn: document.getElementById("filterConfirmBtn"),
     barcodeScanBtn: document.getElementById("barcodeScanBtn"),
@@ -98,6 +114,23 @@
     }
     if (state.types && state.types.length) {
       params.set("types", state.types.join(","));
+    }
+    if (state.priceMin != null && state.priceMin !== "") {
+      params.set("priceMin", String(state.priceMin));
+    }
+    if (state.priceMax != null && state.priceMax !== "") {
+      params.set("priceMax", String(state.priceMax));
+    }
+    if (state.nonSale === 0 || state.nonSale === 1) {
+      params.set("nonSale", String(state.nonSale));
+    }
+    if (state.nonSale !== 1) {
+      if (state.officialPriceMin != null && state.officialPriceMin !== "") {
+        params.set("officialPriceMin", String(state.officialPriceMin));
+      }
+      if (state.officialPriceMax != null && state.officialPriceMax !== "") {
+        params.set("officialPriceMax", String(state.officialPriceMax));
+      }
     }
     if (state.page > 1) {
       params.set("page", String(state.page));
@@ -137,10 +170,80 @@
     return out;
   }
 
+  function parsePrice(raw) {
+    if (raw == null || raw === "") {
+      return null;
+    }
+    var n = Number(raw);
+    if (isNaN(n) || n < 0) {
+      return null;
+    }
+    return n;
+  }
+
+  function normalizePricePair(min, max) {
+    if (min != null && max != null && min > max) {
+      return { min: max, max: min };
+    }
+    return { min: min, max: max };
+  }
+
+  function parseNonSale(raw) {
+    if (raw == null || raw === "") {
+      return null;
+    }
+    if (String(raw) === "1") {
+      return 1;
+    }
+    if (String(raw) === "0") {
+      return 0;
+    }
+    return null;
+  }
+
+  function syncOfficialPriceInputsDisabled() {
+    var onlyNonSale = filterDraft.nonSale === 1;
+    if (els.officialPriceMinInput) {
+      els.officialPriceMinInput.disabled = onlyNonSale;
+    }
+    if (els.officialPriceMaxInput) {
+      els.officialPriceMaxInput.disabled = onlyNonSale;
+    }
+    if (els.officialPriceHint) {
+      els.officialPriceHint.hidden = !onlyNonSale;
+    }
+  }
+
+  function renderNonSaleTags() {
+    if (!els.nonSaleTags) {
+      return;
+    }
+    var buttons = els.nonSaleTags.querySelectorAll("[data-non-sale]");
+    for (var i = 0; i < buttons.length; i++) {
+      var btn = buttons[i];
+      var val = parseNonSale(btn.getAttribute("data-non-sale"));
+      var on =
+        (val == null && filterDraft.nonSale == null) ||
+        (val != null && filterDraft.nonSale === val);
+      if (on) {
+        btn.classList.add("is-on");
+      } else {
+        btn.classList.remove("is-on");
+      }
+    }
+    syncOfficialPriceInputsDisabled();
+  }
+
   function hasActiveDrawerFilter() {
     return (
       (state.brandIds && state.brandIds.length > 0) ||
-      (state.types && state.types.length > 0)
+      (state.types && state.types.length > 0) ||
+      state.priceMin != null ||
+      state.priceMax != null ||
+      state.officialPriceMin != null ||
+      state.officialPriceMax != null ||
+      state.nonSale === 0 ||
+      state.nonSale === 1
     );
   }
 
@@ -160,11 +263,33 @@
   function draftFromState() {
     filterDraft.brandIds = cloneIdList(state.brandIds);
     filterDraft.types = cloneIdList(state.types);
+    filterDraft.priceMin = state.priceMin;
+    filterDraft.priceMax = state.priceMax;
+    filterDraft.officialPriceMin = state.officialPriceMin;
+    filterDraft.officialPriceMax = state.officialPriceMax;
+    filterDraft.nonSale = state.nonSale;
     filterDraft.brandKw = "";
     filterDraft.brandExpanded = false;
     if (els.brandFilterKw) {
       els.brandFilterKw.value = "";
     }
+    if (els.priceMinInput) {
+      els.priceMinInput.value =
+        state.priceMin != null ? String(state.priceMin) : "";
+    }
+    if (els.priceMaxInput) {
+      els.priceMaxInput.value =
+        state.priceMax != null ? String(state.priceMax) : "";
+    }
+    if (els.officialPriceMinInput) {
+      els.officialPriceMinInput.value =
+        state.officialPriceMin != null ? String(state.officialPriceMin) : "";
+    }
+    if (els.officialPriceMaxInput) {
+      els.officialPriceMaxInput.value =
+        state.officialPriceMax != null ? String(state.officialPriceMax) : "";
+    }
+    syncOfficialPriceInputsDisabled();
   }
 
   function idInList(list, id) {
@@ -239,6 +364,7 @@
   function renderFilterDraft() {
     renderBrandTags();
     renderTypeTags();
+    renderNonSaleTags();
   }
 
   function ensureFilterMeta() {
@@ -299,8 +425,29 @@
   }
 
   function applyFilterDraftAndReload() {
+    var sale = normalizePricePair(
+      parsePrice(els.priceMinInput && els.priceMinInput.value),
+      parsePrice(els.priceMaxInput && els.priceMaxInput.value)
+    );
+    var nonSale = filterDraft.nonSale;
+    var official =
+      nonSale === 1
+        ? { min: null, max: null }
+        : normalizePricePair(
+            parsePrice(
+              els.officialPriceMinInput && els.officialPriceMinInput.value
+            ),
+            parsePrice(
+              els.officialPriceMaxInput && els.officialPriceMaxInput.value
+            )
+          );
     state.brandIds = cloneIdList(filterDraft.brandIds);
     state.types = cloneIdList(filterDraft.types);
+    state.priceMin = sale.min;
+    state.priceMax = sale.max;
+    state.nonSale = nonSale;
+    state.officialPriceMin = official.min;
+    state.officialPriceMax = official.max;
     state.barcode = "";
     state.page = 1;
     updateFilterEntryIcon();
@@ -313,10 +460,27 @@
   function resetFilterDraft() {
     filterDraft.brandIds = [];
     filterDraft.types = [];
+    filterDraft.priceMin = null;
+    filterDraft.priceMax = null;
+    filterDraft.officialPriceMin = null;
+    filterDraft.officialPriceMax = null;
+    filterDraft.nonSale = null;
     filterDraft.brandKw = "";
     filterDraft.brandExpanded = false;
     if (els.brandFilterKw) {
       els.brandFilterKw.value = "";
+    }
+    if (els.priceMinInput) {
+      els.priceMinInput.value = "";
+    }
+    if (els.priceMaxInput) {
+      els.priceMaxInput.value = "";
+    }
+    if (els.officialPriceMinInput) {
+      els.officialPriceMinInput.value = "";
+    }
+    if (els.officialPriceMaxInput) {
+      els.officialPriceMaxInput.value = "";
     }
     renderFilterDraft();
   }
@@ -399,6 +563,11 @@
     state.recycleRecent = false;
     state.brandIds = [];
     state.types = [];
+    state.priceMin = null;
+    state.priceMax = null;
+    state.officialPriceMin = null;
+    state.officialPriceMax = null;
+    state.nonSale = null;
     if (els.whSelect) {
       els.whSelect.value = "";
     }
@@ -786,6 +955,23 @@
       if (state.types && state.types.length) {
         params.set("types", state.types.join(","));
       }
+      if (state.priceMin != null && state.priceMin !== "") {
+        params.set("priceMin", String(state.priceMin));
+      }
+      if (state.priceMax != null && state.priceMax !== "") {
+        params.set("priceMax", String(state.priceMax));
+      }
+      if (state.nonSale === 0 || state.nonSale === 1) {
+        params.set("nonSale", String(state.nonSale));
+      }
+      if (state.nonSale !== 1) {
+        if (state.officialPriceMin != null && state.officialPriceMin !== "") {
+          params.set("officialPriceMin", String(state.officialPriceMin));
+        }
+        if (state.officialPriceMax != null && state.officialPriceMax !== "") {
+          params.set("officialPriceMax", String(state.officialPriceMax));
+        }
+      }
     }
 
     els.meta.textContent = "加载中…";
@@ -918,6 +1104,28 @@
         var codeVal = isNaN(codeNum) ? codeRaw : codeNum;
         toggleIdInList(filterDraft.types, codeVal);
         renderTypeTags();
+        return;
+      }
+      var nonSaleBtn = e.target.closest("[data-non-sale]");
+      if (
+        nonSaleBtn &&
+        els.nonSaleTags &&
+        els.nonSaleTags.contains(nonSaleBtn)
+      ) {
+        filterDraft.nonSale = parseNonSale(
+          nonSaleBtn.getAttribute("data-non-sale")
+        );
+        if (filterDraft.nonSale === 1) {
+          filterDraft.officialPriceMin = null;
+          filterDraft.officialPriceMax = null;
+          if (els.officialPriceMinInput) {
+            els.officialPriceMinInput.value = "";
+          }
+          if (els.officialPriceMaxInput) {
+            els.officialPriceMaxInput.value = "";
+          }
+        }
+        renderNonSaleTags();
       }
     });
   }
@@ -1080,6 +1288,24 @@
   }
   state.brandIds = parseIdList(qs("brandIds"), false);
   state.types = parseIdList(qs("types"), true);
+  var salePair = normalizePricePair(
+    parsePrice(qs("priceMin")),
+    parsePrice(qs("priceMax"))
+  );
+  state.priceMin = salePair.min;
+  state.priceMax = salePair.max;
+  state.nonSale = parseNonSale(qs("nonSale"));
+  if (state.nonSale === 1) {
+    state.officialPriceMin = null;
+    state.officialPriceMax = null;
+  } else {
+    var officialPair = normalizePricePair(
+      parsePrice(qs("officialPriceMin")),
+      parsePrice(qs("officialPriceMax"))
+    );
+    state.officialPriceMin = officialPair.min;
+    state.officialPriceMax = officialPair.max;
+  }
   if (state.barcode) {
     state.keyword = "";
     els.keyword.value = "";
@@ -1088,6 +1314,11 @@
     state.recycleRecent = false;
     state.brandIds = [];
     state.types = [];
+    state.priceMin = null;
+    state.priceMax = null;
+    state.officialPriceMin = null;
+    state.officialPriceMax = null;
+    state.nonSale = null;
     if (els.whSelect) {
       els.whSelect.value = "";
     }

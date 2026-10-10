@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +28,10 @@ public class ChaiSkuRecycleController {
 
     /**
      * 上架未删 SKU 分页。keyword：品牌精确优先，否则名称模糊；barcode：条码精确；spuId：同款。
-     * brandIds / types：逗号分隔多选。
+     * brandIds / types：逗号分隔多选；
+     * recyclePriceMin / recyclePriceMax：回收价区间；
+     * officialPriceMin / officialPriceMax：官方价区间；
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）。
      * 返回回收价/破损价/无袋扣减与库存数量；列表不含分仓明细。
      */
     @GetMapping("/list")
@@ -37,10 +41,17 @@ public class ChaiSkuRecycleController {
             @RequestParam(required = false) Long spuId,
             @RequestParam(required = false) String brandIds,
             @RequestParam(required = false) String types,
+            @RequestParam(required = false) BigDecimal recyclePriceMin,
+            @RequestParam(required = false) BigDecimal recyclePriceMax,
+            @RequestParam(required = false) BigDecimal officialPriceMin,
+            @RequestParam(required = false) BigDecimal officialPriceMax,
+            @RequestParam(required = false) Integer nonSale,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         return ApiResult.ok(chaiSkuRecycleQueryService.pageRecycleList(
-                keyword, barcode, spuId, parseLongIds(brandIds), parseIntIds(types), page, size));
+                keyword, barcode, spuId, parseLongIds(brandIds), parseIntIds(types),
+                recyclePriceMin, recyclePriceMax, officialPriceMin, officialPriceMax, nonSale,
+                page, size));
     }
 
     /**

@@ -237,6 +237,23 @@
   background: #fff;
 }
 
+.filter-price-row input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--bg, #eef0eb);
+}
+
+.filter-price-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted, #6b756c);
+  line-height: 1.35;
+}
+
+.filter-price-hint[hidden] {
+  display: none !important;
+}
+
 .filter-price-sep {
   flex: 0 0 auto;
   color: var(--muted, #6b756c);
