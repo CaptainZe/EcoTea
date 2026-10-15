@@ -5,7 +5,14 @@
 > 与 `server-admin` **仅共享** MySQL / Redis；不抽共用业务 jar。  
 > **不做** `wx_user` 表（本期统计依赖微信公众平台后台）。
 
-相关：`DEPLOY_API.md`、`DEPLOY_NGINX_SSL.md`、`CODING_API.md`、`TODO_REDIS_CACHE.md`（业务缓存暂缓）。
+相关：`DEPLOY_API.md`、`DEPLOY_NGINX_SSL.md`、`CODING_API.md`、`PRD_TENANT.md`、`TODO_REDIS_CACHE.md`（业务缓存暂缓）。
+
+**多租户（规划摘要，见 `PRD_TENANT.md`）：**
+
+- 店铺为扁平租户；商品与售价全平台统一；H5 展示的可售库存按店铺隔离。
+- **现阶段**多为单一全局订阅号：在售 H5 库存按配置的「展示租户」（某一店铺）过滤，避免混仓。
+- **后续**一店一订阅号：租户绑定 `appId`，回调与 H5 按租户路由，只展示该店库存 + 统一价。
+- 对内作业以小程序为准（`PRD_WX_MINI.md`）；`inner-sale` / `inner-recycle` 等对内 H5 在小程序可用后废弃，避免两套内部入口。
 
 ---
 

@@ -28,6 +28,7 @@ CREATE TABLE `chai_brand`  (
   `name_pinyin` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '品牌名称全字母',
   `logo` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'logo',
   `order_num` int(11) NOT NULL DEFAULT 0 COMMENT '排序号',
+  `common_flag` int(11) NOT NULL DEFAULT 0 COMMENT '常用标识：0否 1是',
   `status` int(11) NOT NULL DEFAULT 0 COMMENT '状态',
   `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最后操作人',
   `update_time` bigint(20) NOT NULL COMMENT '更新时间',

@@ -1,15 +1,17 @@
 # 业务 Redis 缓存规划
 
-> 状态：**规划已按当前业务重排**；第一期主数据（`sys_dict` / `chai_brand` / `chai_expiration` / `chai_warehouse` / `wx_global_config`）**已全部接入**；列表页 TTL 仍观望。  
-> 基础设施已就绪：`DEPLOY_REDIS.md`、两端 `RedisUtils` / `LockUtils`、admin `RedisSeqUtils`（日序号）。  
+> 状态：第一期茶类主数据 **已全部接入**；组织域 **T1 tenant 热读 + T3 踢会话已接**；T2 `tenant_online` 可选未做；列表页 TTL 仍观望。  
+> 编码约定（必须遵守）：`CODING_API.md` §8、`CODING_ADMIN.md` §3.1。  
+> 基础设施：`DEPLOY_REDIS.md`、两端 `RedisUtils` / `LockUtils`、admin `RedisSeqUtils`（日序号）。  
 > 原则：admin / api **共用同一 Redis**、同一前缀 `ecotea_`（`RedisConstant.KEY_PRE`）；key 用 `_` 分隔，不用 `:`。  
-> WxJava token 等仍用 `wx:mp:`，不并入本规范。不管 tea 模块。
+> WxJava token 等仍用 `wx:mp:`，不并入本规范。不管 tea 模块。  
+> **后续新功能默认先评估缓存**（热读主数据走「api SET + admin DEL」；业务单据默认不缓存）。
 
-## 目标（本期）
+## 目标
 
-优先做 **主数据热读缓存**：读多写少，**admin 改库成功后 DEL 对应 key**，api / H5 下次 miss 再加载。  
-其中 **`sys_dict` 必做**：茶类、等级、生产批次、规格单位等展示与筛选项都依赖字典，api 价目/H5 已在直查库，必须先接 Redis。  
-销售 / 回收 **列表整页缓存默认不做**（筛选维度已膨胀，key 组合多、命中差）；确有性能证据再局部加。
+1. **主数据热读**：读多写少，**admin 改库成功后 DEL**，api / H5 miss 再加载。  
+2. **组织域**：店铺按 `tenant_id` 热读；员工会话已接 Redis，Admin 改权限/状态后须踢会话。  
+3. 销售 / 回收 **价目列表整页**、**报价/销售/回收业务单**：**默认不做**长缓存；有压测证据再局部短 TTL。
 
 ## 现状
 
@@ -24,7 +26,11 @@
 | `chai_expiration`（`ecotea_chai_expiration_online`） | **已接**：api `ChaiExpirationService.listOnlineOrdered`；admin 写后 DEL |
 | `chai_warehouse`（`ecotea_chai_warehouse_online`） | **已接**：api `ChaiWarehouseQueryService.listOnlineOrdered`；admin 写后 DEL |
 | `wx_global_config`（`ecotea_wx_global_config_{type}`） | **已接**：api `WxGlobalConfigService.getByType`；admin 按 type DEL |
-| 列表页 TTL | **未接**（观望） |
+| 员工会话 `emp_session` / `emp_uid` | **已接**（登录态，非主数据缓存） |
+| `tenant` 按 `tenant_id` | **已接**：api `TenantService.getByBizTenantId`；admin save 后 DEL |
+| 改员工踢会话 | **已接**：admin `EmployeeSessionCacheService`（改密/状态/挂店 perm） |
+| `tenant_online` | **未接**（可选） |
+| 列表页 TTL / 业务单缓存 | **不做**（观望） |
 
 ## 职责
 
@@ -34,15 +40,23 @@
 | **api** | 热读：Redis → miss → MySQL → SET（建议 `DAY_EXPIRE` 兜底） |
 | **字典（必做）** | api：`DictUtils` / `SysDictService` **走 Redis**；admin 读继续 **EhCache**，改字典成功后同时 `DictUtil.clearCache` + **DEL** `ecotea_dict_{name}` |
 
-## Key 约定（第一期：主数据）
+## Key 约定
 
 ```text
-# 写后 DEL + DAY_EXPIRE 兜底
-ecotea_dict_{name}                       # sys_dict 按 name（必做；茶类/等级/批次等）
-ecotea_chai_brand_online                 # 上架品牌列表（有序，~百级）
-ecotea_chai_expiration_online            # 上架保质期列表（~二十）
-ecotea_chai_warehouse_online             # 上架仓库列表（内部价目筛仓）
-ecotea_wx_global_config_{type}           # wx_global_config 按 type（见 WxGlobalConfigType）
+# —— 第一期主数据（写后 DEL + DAY_EXPIRE）已接 ——
+ecotea_dict_{name}                       # sys_dict 按 name
+ecotea_chai_brand_online                 # 上架品牌列表
+ecotea_chai_expiration_online            # 上架保质期列表
+ecotea_chai_warehouse_online             # 上架仓库列表
+ecotea_wx_global_config_{type}           # wx_global_config 按 type
+
+# —— 员工会话（已接）——
+ecotea_emp_session_{token}               # 会话 JSON，TTL 7 天
+ecotea_emp_uid_{employeeId}              # → 当前 token（单点）
+
+# —— 组织域（待接）——
+ecotea_tenant_{tenantId}                 # 单店整行/启用摘要（业务键 tenant.tenant_id）
+ecotea_tenant_online                     # 可选：启用店有序列表（选店补名/下拉）
 ```
 
 - value：字符串；列表 / 配置用 JSON（api `JsonUtils`）。字典可缓存整行 `value` 原文（与现 `getByNameOk` 一致），命中后再在内存拆 `key=label`。  
@@ -84,6 +98,45 @@ ecotea_wx_global_config_{type}           # wx_global_config 按 type（见 WxGlo
 - admin：`save` / `delete` 按 **type DEL**（改动少，**必须立刻生效**）。  
 - **不缓存** `wx_mp_menu`（发布低频，直查库）。
 
+## 组织域（tenant / 员工会话失效）
+
+> 产品见 `PRD_TENANT.md`；编码见 `CODING_API.md` §8.4、`CODING_ADMIN.md` §3.1。
+
+### T1. `tenant` 按业务键热读 ✅
+
+| 项 | 约定 |
+|----|------|
+| key | `ecotea_tenant_{tenantId}`；常量 `RedisConstant.TENANT_KEY` |
+| value | 整行 JSON；库无 → `"null"` + 5 分钟 |
+| api | `TenantService.getByBizTenantId` / `mapByBizTenantIds` |
+| admin | `TenantService.save`（含启停）后 `clearTenantCache` |
+| 用途 | 登录选店校验、会话补店名、后续按店隔离读 |
+
+### T2. 启用店列表（可选）⬜
+
+| 项 | 约定 |
+|----|------|
+| key | `ecotea_tenant_online` |
+| value | 启用店铺有序摘要列表 JSON（`tenantId` + `name` + `status` 等） |
+| api | 需要「全量启用店」读路径时再接；选店列表若以员工挂店为准，**可不依赖**本 key |
+| admin | 任意店铺 save / 启停后 **DEL** |
+
+### T3. Admin 改员工 → 踢小程序会话 ✅
+
+| 触发（Admin） | 失效动作 |
+|---------------|----------|
+| 改密码、改员工状态 | `EmployeeSessionCacheService.invalidateByEmployeeId` |
+| 改挂店、改 perm（`replaceBinds`） | 同上 |
+| 店铺停用 | 不扫全站会话；依赖选店/业务接口校验店状态 + T1 DEL |
+
+实现：admin 与 api 共用 key 常量（各自 `RedisConstant`），admin 直接 `RedisUtils.delete`，**无**共用业务 jar。
+
+### 组织域明确不做
+
+- 不缓存 `employee` 全表 / 分页  
+- 不缓存 `employee_tenant` / `employee_tenant_perm` 明细长 key（以会话内 perm + T3 踢会话为准）  
+- 不缓存 `admin_tenant_scope`（Admin 后台直查库）
+
 ## 第二期（可选）：列表页 TTL
 
 > **默认不做。** 下列说明仅供日后有压测/慢查询证据时参考。
@@ -109,7 +162,8 @@ ecotea_wx_global_config_{type}           # wx_global_config 按 type（见 WxGlo
 - 生产 `KEYS *` 扫删  
 - 以库存 Hash 为主方案  
 - 单 SKU/SPU 详情缓存（写路径多，收益不如主数据）  
-- 把日序号 / 分布式锁再包装成「业务缓存」（已是基础设施）
+- 把日序号 / 分布式锁再包装成「业务缓存」（已是基础设施）  
+- 报价单 / 销售单 / 回收单整单或列表长缓存（默认直查库）
 
 ## 实现顺序
 
@@ -117,9 +171,11 @@ ecotea_wx_global_config_{type}           # wx_global_config 按 type（见 WxGlo
 2. ~~**chai_brand**~~ ✅；~~**chai_expiration**~~ ✅  
 3. ~~**chai_warehouse**~~ ✅  
 4. ~~**wx_global_config**~~ ✅  
-5. 列表页 TTL：**观望**，有证据再局部加  
+5. ~~**组织域 T1 + T3**~~ ✅ `tenant` 热读 + Admin 改员工踢会话  
+6. **组织域 T2**：`tenant_online`（可选）⬜  
+7. 列表页 TTL / 业务单缓存：**观望**，有证据再局部加  
 
-## 验收要点（第一期）
+## 验收要点（第一期主数据）
 
 1. admin 改字典（如茶类 `CHAI_TYPE`、等级、生产批次）→ H5 筛选项 / 价目展示名 **立刻**新（写后 DEL）。  
 2. admin 改品牌名 / 上下架 → H5 筛选与标题/搜品牌 **立刻**新。  
@@ -127,6 +183,12 @@ ecotea_wx_global_config_{type}           # wx_global_config 按 type（见 WxGlo
 4. admin 改仓库 → 内部价目仓列表同步。  
 5. admin 改欢迎语 / 客服 / 回收 / 销售文案 → 真机或 H5 **立刻**新（写后 DEL）。  
 6. Redis miss 时行为与现直查库一致；DEL 后下一次请求应重新 SET。
+
+## 验收要点（组织域，接入后）
+
+1. admin 改店名 / 启停 → api 读 `tenant` **立刻**新（T1 DEL）。  
+2. api 连续读同一 `tenant_id` 应命中 Redis（可看 key / 日志）。  
+3. admin 改员工 perm 或停用 → 该员工小程序旧 token **失效**，须重新登录（T3）。
 
 ## 与旧版规划差异
 

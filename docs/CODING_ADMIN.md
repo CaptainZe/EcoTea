@@ -55,6 +55,16 @@ EcoTea/
 - **Apache Shiro**：管理端登录与 `@RequiresPermissions`
 - **字典**：`sys_dict` + 模板 `mo:dict` / `#dicts` + `DictUtils`
 - **Ajax 响应**：`ResultVo` / `ResultVoUtil`；异常：`ResultException`
+- **Redis**：与 `server-api` **共用同一实例**；业务 key 前缀 **`ecotea_`**（`business.common.constant.RedisConstant.KEY_PRE`）
+
+### 3.1 Redis 业务缓存（Admin 职责）
+
+> 规范细节与 api 对齐见 `CODING_API.md` §8；key / 进度见 `docs/TODO_REDIS_CACHE.md`。
+
+- Admin **写库成功后必须 DEL** 对应业务缓存 key（主数据立刻生效）；后台分页列表 **直查库**，不强制读缓存。
+- 新主数据写接口上线前：确认是否已有/需新增 Redis key，常量是否写入 `RedisConstant`（与 api 码值一致）。
+- 组织域：改店铺 → DEL `tenant` 相关 key（接入后）；改员工密码/状态/挂店/perm → **踢小程序会话**（由 api 会话 key，admin 侧调失效或约定接口，见 TODO）。
+- **禁止**生产用 `KEYS *` 扫删。
 
 ---
 
@@ -163,6 +173,21 @@ templates/business/
 | **上传** | 统一走 `UploadFileController`（§7），不重复造上传接口 |
 | **配置密钥** | 第三方配置走 `app_secret_key` 等实体 + 配置项，**禁止硬编码**密钥 |
 
+### 6.5 租户与数据范围（规划约定）
+
+> 产品定调见 `docs/PRD_TENANT.md`；DDL 见 `db/SQL_TENANT.sql`（**仅组织表**）。
+
+- **已落地 B1**：店铺租户 `/business/platform/tenant/*`；权限 `business:platform:tenant:index|edit`；菜单 `db/tmp/20261010_platform_tenant_menu.sql`。
+- **已落地 B2**：Admin 数据范围 `/business/platform/adminScope/*`；按 `sys_user` 配置平台(`0`)或多店；权限 `business:platform:adminScope:index|edit`；菜单 `db/tmp/20261010_platform_admin_scope_menu.sql`。
+- **已落地 C**：员工 `/business/platform/employee/*`（账号、挂店、perm、配额、店长模板）；密码算法同 Admin `ShiroUtil`/`EncryptUtil`；权限 `business:platform:employee:index|edit`；菜单 `db/tmp/20261010_platform_employee_menu.sql`。
+- **已落地 D（api）**：`server-api` `/employee/login|logout|session|tenants|select-tenant`；租户包与员工包分离；见 `CODING_API.md` §13。
+- 下一步：小程序 E；**库存表与库存代码暂不改**。
+- 店铺租户扁平；业务键手填 **`tenant.tenant_id`**；开店 **省/市必填**；`contact_name`/`contact_mobile` 为档案字段。
+- Admin：`sys_user` + 菜单 + **`admin_tenant_scope`**（一人多店；`0`=平台）。
+- 店员走 **`employee`** + perm 枚举（`SALE`/`RECYCLE`/`STOCK`/`FINANCE`/`SHOP`）；受 `employee_quota` 限制；**禁止**店员进 `sys_user`。
+- 共享目录不加租户；报价/销售/回收业务单见 `PRD_WX_MINI.md`（另立 DDL）；库存暂不改。
+- **缓存：** 店铺/员工写路径须按 §3.1 与 `TODO_REDIS_CACHE.md` 组织域失效；勿只改库不失效。
+
 ---
 
 ## 7. 通用：`business.controller.file`
@@ -192,10 +217,12 @@ templates/business/
 - [ ] 新页面：放 `templates/business/...`，沿用 TIMO/Layui 结构
 - [ ] Ajax 返回 `ResultVo`；不引入新的全局响应格式
 - [ ] 不提交、不写死任何环境密钥或密码
+- [ ] 主数据 / 组织写路径：是否需 DEL Redis 或踢员工会话（见 §3.1、`TODO_REDIS_CACHE.md`）
 
 **完成后**
 
 - [ ] 业务规则变更是否需同步更新对应 `docs/business/*.md`（由人维护）
+- [ ] 新增缓存 key 是否已写入两端 `RedisConstant` 与 `TODO_REDIS_CACHE.md`
 
 ---
 
@@ -204,6 +231,9 @@ templates/business/
 | 文档 | 内容 |
 |------|------|
 | **CODING_ADMIN.md**（本文） | 项目结构、技术栈、TIMO/business 边界、编码规范 |
+| `docs/CODING_API.md` | api 分层、Redis/缓存约定、员工会话 |
+| `docs/TODO_REDIS_CACHE.md` | 业务 Redis key 与接入进度 |
+| `docs/PRD_TENANT.md` | 多租户与三端规划；`db/SQL_TENANT.sql` |
 | `docs/business/*.md` | 各业务域需求与流程（如 tea 报价、SKU 等） |
 
 ---

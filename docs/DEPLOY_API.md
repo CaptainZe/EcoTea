@@ -149,7 +149,9 @@ EOF
 ## 5. 外置配置与日志
 
 - `conf/application.yml`：端口 `8081`、MyBatis 等公共配置。  
-- `conf/application-prod.yml`：数据源、Redis、`wx.mp`、`ecotea.beian`、`ecotea.security.api-key` 等（对照仓库 `application-env.yml.example`）。  
+- `conf/application-prod.yml`：数据源、Redis、`wx.mp`、`wx.miniapp`（内部小程序 AppID/Secret）、`ecotea.beian`、`ecotea.security.api-key` 等（对照仓库 `application-env.yml.example`）。  
+  - `wx.miniapp.secret` 填微信公众平台该小程序「开发设置」中的 AppSecret；与订阅号 `wx.mp.secret` 不是同一套。  
+
 - `conf/logback-spring.xml`：`logsDir` 必须为 `/data/logs/tea-api`（与仓库 `server-api/src/main/resources/logback-spring.xml` 一致）。
 
 ---
