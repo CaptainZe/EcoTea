@@ -1,0 +1,44 @@
+<view class="page" wx:if="{{ready}}">
+  <view class="preview-card">
+    <view class="preview-label">预览</view>
+    <text class="preview-text">{{preview}}</text>
+  </view>
+
+  <view class="form">
+    <view class="field">
+      <text class="label">品相</text>
+      <input class="input" value="{{packLine}}" bindinput="onPack" />
+    </view>
+    <view class="field">
+      <text class="label">售价（元）</text>
+      <input class="input" type="digit" value="{{salePriceNum}}" bindinput="onSale" />
+      <text class="hint" wx:if="{{discountHint}}">折率 {{discountHint}}</text>
+    </view>
+    <view class="field">
+      <view class="label-row">
+        <text class="label">数量</text>
+        <text class="stock-ref" wx:if="{{stockRef}}">{{stockRef}}</text>
+      </view>
+      <input class="input" type="number" value="{{qty}}" bindinput="onQty" />
+    </view>
+    <view class="field">
+      <text class="label">备注</text>
+      <textarea
+        class="area"
+        value="{{remark}}"
+        placeholder="选填"
+        maxlength="200"
+        bindinput="onRemark"
+      />
+    </view>
+  </view>
+
+  <view class="bar-space"></view>
+  <view class="bar">
+    <view class="btn" bindtap="onCopy" hover-class="btn-hover">复制文案</view>
+  </view>
+</view>
+
+<view class="empty" wx:elif="{{!loading}}">
+  <text>{{errorTip || '加载失败'}}</text>
+</view>

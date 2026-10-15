@@ -1,0 +1,20 @@
+<view class="page">
+  <view class="header">
+    <text class="label">当前店铺</text>
+    <text class="name">{{tenantName || '未选择'}}</text>
+  </view>
+
+  <view class="quick" wx:if="{{showSale || showRecycle}}">
+    <view class="section-title">快捷入口</view>
+    <view class="entry" wx:if="{{showSale}}" bindtap="onSalePrice">
+      <image class="entry-icon" src="/assets/workbench/sale-price.png" mode="aspectFit" />
+      <text class="entry-title">在售价目</text>
+    </view>
+    <view class="entry recycle" wx:if="{{showRecycle}}" bindtap="onRecyclePrice">
+      <image class="entry-icon" src="/assets/workbench/recycle-price.png" mode="aspectFit" />
+      <text class="entry-title">回收价目</text>
+    </view>
+  </view>
+
+  <view class="tip" wx:else>暂无快捷入口，可到「工作台」查看可用功能</view>
+</view>

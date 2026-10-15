@@ -1,0 +1,83 @@
+<view class="page">
+  <scroll-view class="body" scroll-y>
+    <view class="section">
+      <view class="section-title">品牌</view>
+      <view class="tag-wrap" wx:if="{{commonTags.length}}">
+        <view
+          class="ftag {{item.on ? 'is-on' : ''}}"
+          wx:for="{{commonTags}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+          bindtap="onToggleCommonBrand"
+        >{{item.name}}</view>
+      </view>
+      <view class="empty-mini" wx:elif="{{!loadingBrand}}">暂无常用品牌</view>
+      <view class="link-row" bindtap="onPickBrand">
+        <text class="link-text {{brandIds.length ? 'is-on' : ''}}">{{brandSummary}}</text>
+        <text class="link-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">茶类</view>
+      <view class="tag-wrap">
+        <view
+          class="ftag {{item.on ? 'is-on' : ''}}"
+          wx:for="{{typeTags}}"
+          wx:key="code"
+          data-code="{{item.code}}"
+          bindtap="onToggleType"
+        >{{item.text}}</view>
+        <view class="empty-mini" wx:if="{{!typeTags.length && !loadingMeta}}">暂无茶类</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">售价区间</view>
+      <view class="price-row">
+        <input class="price-input" type="digit" placeholder="最低" value="{{priceMin}}" bindinput="onPriceMin" />
+        <text class="price-sep">—</text>
+        <input class="price-input" type="digit" placeholder="最高" value="{{priceMax}}" bindinput="onPriceMax" />
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">官方价</view>
+      <view class="tag-wrap">
+        <view class="ftag {{nonSale === null ? 'is-on' : ''}}" data-v="" bindtap="onNonSale">不限</view>
+        <view class="ftag {{nonSale === 1 ? 'is-on' : ''}}" data-v="1" bindtap="onNonSale">只看非卖品</view>
+        <view class="ftag {{nonSale === 0 ? 'is-on' : ''}}" data-v="0" bindtap="onNonSale">不看非卖品</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">官方价区间</view>
+      <view class="price-row">
+        <input
+          class="price-input"
+          type="digit"
+          placeholder="最低"
+          value="{{officialMin}}"
+          disabled="{{nonSale === 1}}"
+          bindinput="onOfficialMin"
+        />
+        <text class="price-sep">—</text>
+        <input
+          class="price-input"
+          type="digit"
+          placeholder="最高"
+          value="{{officialMax}}"
+          disabled="{{nonSale === 1}}"
+          bindinput="onOfficialMax"
+        />
+      </view>
+      <view class="hint" wx:if="{{nonSale === 1}}">非卖品无官方价，区间已禁用</view>
+    </view>
+  </scroll-view>
+
+  <view class="footer">
+    <view class="btn-reset" bindtap="onReset">重置</view>
+    <view class="btn-ok" bindtap="onConfirm">确定</view>
+  </view>
+</view>

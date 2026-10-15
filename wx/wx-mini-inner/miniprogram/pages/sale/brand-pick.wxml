@@ -1,0 +1,97 @@
+<view class="page">
+  <view class="top-bar">
+    <view class="search-wrap">
+      <input
+        class="search-input"
+        placeholder="搜索品牌"
+        value="{{keyword}}"
+        confirm-type="search"
+        bindinput="onKeyword"
+      />
+      <view class="search-clear" wx:if="{{keyword}}" catchtap="onClearKeyword">×</view>
+    </view>
+    <view class="done-btn" bindtap="onConfirm">完成</view>
+  </view>
+
+  <view class="tip" wx:if="{{selectedCount}}">已选 {{selectedCount}} 个</view>
+
+  <!-- 搜索结果 -->
+  <scroll-view class="list-scroll flex-fill" scroll-y wx:if="{{searching}}">
+    <view
+      class="row {{item.on ? 'is-on' : ''}}"
+      wx:for="{{searchList}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      data-name="{{item.name}}"
+      bindtap="onToggle"
+    >
+      <image wx:if="{{item.logo}}" class="logo" src="{{item.logo}}" mode="aspectFill" />
+      <view wx:else class="logo logo-ph">{{item.letter}}</view>
+      <text class="name">{{item.name}}</text>
+      <view class="check {{item.on ? 'is-on' : ''}}">{{item.on ? '✓' : ''}}</view>
+    </view>
+    <view class="empty-mini" wx:if="{{!searchList.length}}">无匹配品牌</view>
+  </scroll-view>
+
+  <!-- 全量 A-Z -->
+  <view class="main flex-fill" wx:elif="{{!loading && groups.length}}">
+    <scroll-view
+      class="list-scroll"
+      scroll-y
+      scroll-with-animation="{{scrollAnim}}"
+      scroll-top="{{scrollTop}}"
+      bindscroll="onListScroll"
+    >
+      <view
+        class="sec-anchor"
+        id="{{g.secId}}"
+        data-key="{{g.initial}}"
+        wx:for="{{groups}}"
+        wx:for-item="g"
+        wx:key="initial"
+      >
+        <view class="block-hd">{{g.initial}}</view>
+        <view
+          class="row {{row.on ? 'is-on' : ''}}"
+          wx:for="{{g.items}}"
+          wx:for-item="row"
+          wx:key="id"
+          data-id="{{row.id}}"
+          data-name="{{row.name}}"
+          bindtap="onToggle"
+        >
+          <image wx:if="{{row.logo}}" class="logo" src="{{row.logo}}" mode="aspectFill" />
+          <view wx:else class="logo logo-ph">{{row.letter}}</view>
+          <text class="name">{{row.name}}</text>
+          <view class="check {{row.on ? 'is-on' : ''}}">{{row.on ? '✓' : ''}}</view>
+        </view>
+      </view>
+      <view class="list-pad"></view>
+    </scroll-view>
+
+    <view
+      class="index-rail"
+      catchtouchstart="onIndexTouchStart"
+      catchtouchmove="onIndexTouchMove"
+      catchtouchend="onIndexTouchEnd"
+      catchtouchcancel="onIndexTouchEnd"
+    >
+      <view
+        class="index-item {{item === activeIndex ? 'is-on' : ''}}"
+        wx:for="{{indexList}}"
+        wx:key="*this"
+        data-key="{{item}}"
+        catchtap="onTapIndex"
+      >{{item}}</view>
+    </view>
+
+    <view class="index-bubble" wx:if="{{indexBubble}}">{{indexBubble}}</view>
+  </view>
+
+  <view class="empty flex-fill" wx:elif="{{!loading}}">暂无上架品牌</view>
+  <view class="empty flex-fill" wx:else>加载中…</view>
+
+  <view class="footer">
+    <view class="btn-reset" bindtap="onReset">重置已选</view>
+  </view>
+</view>

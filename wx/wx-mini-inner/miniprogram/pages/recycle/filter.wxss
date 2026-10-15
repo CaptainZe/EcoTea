@@ -1,0 +1,148 @@
+@import '../../styles/recycle-theme.wxss';
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--rec-bg);
+}
+
+.body {
+  flex: 1;
+  height: 0;
+  padding: 24rpx 32rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.section {
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 650;
+  margin-bottom: 16rpx;
+  color: var(--rec-ink);
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 80rpx;
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  background: var(--rec-card);
+  border: 1rpx solid var(--rec-line);
+  border-radius: 12rpx;
+  box-sizing: border-box;
+}
+
+.link-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--rec-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-text.is-on {
+  color: var(--rec-accent);
+  font-weight: 650;
+}
+
+.link-arrow {
+  margin-left: 12rpx;
+  font-size: 36rpx;
+  color: var(--rec-muted);
+  line-height: 1;
+}
+
+.tag-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.ftag {
+  font-size: 26rpx;
+  color: var(--rec-ink);
+  background: var(--rec-card);
+  border: 1rpx solid var(--rec-line);
+  padding: 12rpx 22rpx;
+  border-radius: 10rpx;
+}
+
+.ftag.is-on {
+  color: var(--rec-accent);
+  background: var(--rec-accent-soft);
+  border-color: var(--rec-accent);
+  font-weight: 650;
+}
+
+.empty-mini {
+  color: var(--rec-muted);
+  font-size: 24rpx;
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.price-input {
+  flex: 1;
+  height: 68rpx;
+  padding: 0 20rpx;
+  background: var(--rec-card);
+  border: 1rpx solid var(--rec-line);
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
+
+.price-sep {
+  color: var(--rec-muted);
+}
+
+.hint {
+  margin-top: 12rpx;
+  color: var(--rec-price);
+  font-size: 22rpx;
+}
+
+.footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid var(--rec-line);
+  background: var(--rec-card);
+}
+
+.btn-reset,
+.btn-ok {
+  flex: 1;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.btn-reset {
+  background: var(--rec-card);
+  color: var(--rec-ink);
+  border: 2rpx solid var(--rec-line);
+}
+
+.btn-ok {
+  background: var(--rec-accent);
+  color: #fff;
+  border: 2rpx solid var(--rec-accent);
+  font-weight: 650;
+}

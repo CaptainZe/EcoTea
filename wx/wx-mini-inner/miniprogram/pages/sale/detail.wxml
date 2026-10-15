@@ -1,0 +1,91 @@
+<view class="page" wx:if="{{view}}">
+  <view class="swiper-wrap">
+    <swiper
+      class="swiper"
+      current="{{imageIndex}}"
+      indicator-dots="{{images.length > 1}}"
+      indicator-color="rgba(28, 36, 28, 0.25)"
+      indicator-active-color="#3d5a3d"
+      circular="{{images.length > 1}}"
+      bindchange="onSwiperChange"
+      bindtap="onPreview"
+    >
+      <block wx:if="{{images.length}}">
+        <swiper-item wx:for="{{images}}" wx:for-item="img" wx:key="*this">
+          <image class="slide" src="{{img}}" mode="aspectFit" />
+        </swiper-item>
+      </block>
+      <swiper-item wx:else>
+        <image class="slide" src="/assets/common/no-image.png" mode="aspectFit" />
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="panel">
+    <view class="brand" wx:if="{{view.brandName}}">{{view.brandName}}</view>
+    <view class="title">{{view.name || view.title}}</view>
+    <view class="price-row">
+      <text class="sale">{{view.salePlain}}</text>
+      <text class="official" wx:if="{{view.officialPlain}}">{{view.officialPlain}}</text>
+      <text class="discount" wx:if="{{view.discountShow}}">{{view.discountShow}}</text>
+    </view>
+    <view class="stock-line">
+      <text class="stock {{view.stockScarce ? 'scarce' : ''}}">{{view.stockText}}</text>
+      <text class="dmg" wx:for="{{view.stockExtras}}" wx:for-item="ex" wx:key="*this">{{ex}}</text>
+    </view>
+  </view>
+
+  <view class="panel fields" wx:if="{{view.hasAttrs}}">
+    <view class="field" wx:if="{{view.gradeName}}">
+      <text class="label">等级</text>
+      <text class="value">{{view.gradeName}}</text>
+    </view>
+    <view class="field" wx:if="{{view.specShow}}">
+      <text class="label">规格</text>
+      <text class="value">{{view.specShow}}</text>
+    </view>
+    <view class="field" wx:if="{{view.prodBatchShow}}">
+      <text class="label">批次</text>
+      <text class="value">{{view.prodBatchShow}}</text>
+    </view>
+    <view class="field" wx:if="{{view.expirationName}}">
+      <text class="label">保质期</text>
+      <text class="value">{{view.expirationName}}</text>
+    </view>
+    <view class="field" wx:if="{{view.skuCode}}">
+      <text class="label">编码</text>
+      <view class="value-row">
+        <text class="value">{{view.skuCode}}</text>
+        <text class="copy-link" catchtap="onCopySkuCode">复制</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel" wx:if="{{view.whRows.length}}">
+    <view class="section-title">分仓库存</view>
+    <view class="wh" wx:for="{{view.whRows}}" wx:for-item="wh" wx:key="whId">
+      <text class="wh-name">{{wh.shortName}}</text>
+      <view class="wh-qty-wrap">
+        <text class="wh-qty">{{wh.qty}} 件</text>
+        <text class="dmg" wx:for="{{wh.extras}}" wx:for-item="ex" wx:key="*this">{{ex}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="bar-space"></view>
+  <view class="bar">
+    <button class="btn ghost" bindtap="onOpenCopy">文案</button>
+    <button class="btn ghost" loading="{{saving}}" disabled="{{saving || !images.length}}" bindtap="onSaveImages">
+      存图
+    </button>
+    <button
+      class="btn primary {{inQuote ? 'is-in' : ''}}"
+      disabled="{{inQuote}}"
+      bindtap="onAddQuote"
+    >{{inQuote ? '已加入' : '加入报价'}}</button>
+  </view>
+</view>
+
+<view class="empty" wx:elif="{{!loading}}">
+  <text>{{errorTip || '暂不可售'}}</text>
+</view>

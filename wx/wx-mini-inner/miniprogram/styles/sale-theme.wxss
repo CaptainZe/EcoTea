@@ -1,0 +1,38 @@
+/* 对齐 H5 chai-sale.css 色板 */
+page {
+  --sale-bg: #f3f5f1;
+  --sale-card: #ffffff;
+  --sale-ink: #1c241c;
+  --sale-muted: #6b756c;
+  --sale-line: #d8ddd6;
+  --sale-accent: #3d5a3d;
+  --sale-accent-soft: #e8efe6;
+  --sale-price: #b45309;
+  --sale-danger: #9a3412;
+  --sale-scarce: #c2410c;
+  background: var(--sale-bg);
+  color: var(--sale-ink);
+}
+
+.sale-btn {
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+.sale-btn-ghost {
+  background: var(--sale-card) !important;
+  color: var(--sale-accent) !important;
+  border: 2rpx solid var(--sale-accent) !important;
+}
+
+.sale-btn-primary {
+  background: var(--sale-accent) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.sale-btn-muted {
+  background: var(--sale-accent-soft) !important;
+  color: var(--sale-accent) !important;
+  border: 2rpx solid var(--sale-accent) !important;
+}

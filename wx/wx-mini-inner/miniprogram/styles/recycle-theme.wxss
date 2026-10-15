@@ -1,0 +1,15 @@
+/* 回收价目：中性色与在售一致，主色对齐工作台回收组 #b45309 */
+page {
+  --rec-bg: #f3f5f1;
+  --rec-card: #ffffff;
+  --rec-ink: #1c241c;
+  --rec-muted: #6b756c;
+  --rec-line: #d8ddd6;
+  --rec-accent: #b45309;
+  --rec-accent-soft: #fff7ed;
+  --rec-price: #b45309;
+  --rec-danger: #9a3412;
+  --rec-scarce: #c2410c;
+  background: var(--rec-bg);
+  color: var(--rec-ink);
+}

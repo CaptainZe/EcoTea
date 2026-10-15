@@ -1,0 +1,27 @@
+<view class="page">
+  <block wx:if="{{!empty}}">
+    <view class="group" wx:for="{{groups}}" wx:key="perm">
+      <view class="group-title" style="color: {{item.accent}};">{{item.title}}</view>
+      <view class="grid">
+        <view
+          class="entry"
+          wx:for="{{item.entries}}"
+          wx:for-item="entry"
+          wx:key="key"
+          data-url="{{entry.url}}"
+          bindtap="onTapEntry"
+        >
+          <view class="entry-icon-wrap" style="background: {{item.accent}}14;">
+            <image class="entry-icon" src="{{entry.icon}}" mode="aspectFit" />
+          </view>
+          <text class="entry-title">{{entry.title}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="empty" wx:else>
+    <text class="empty-text">暂无可用功能</text>
+    <text class="empty-tip">请联系店长或平台开通权限</text>
+  </view>
+</view>

@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="title">员工登录</view>
+  <view class="field">
+    <text class="label">登录名</text>
+    <input class="input" placeholder="请输入登录名" value="{{username}}" bindinput="onUsername" />
+  </view>
+  <view class="field">
+    <text class="label">密码</text>
+    <input class="input" password placeholder="请输入密码" value="{{password}}" bindinput="onPassword" />
+  </view>
+  <button class="btn" type="primary" loading="{{loading}}" disabled="{{loading || wxLoading}}" bindtap="onSubmit">
+    登录
+  </button>
+  <view class="divider">
+    <view class="divider-line"></view>
+    <text class="divider-text">或</text>
+    <view class="divider-line"></view>
+  </view>
+  <button
+    class="btn btn-wx"
+    loading="{{wxLoading}}"
+    disabled="{{loading || wxLoading}}"
+    bindtap="onWxLogin"
+  >微信一键登录</button>
+  <view class="hint">未绑定微信时请先用账号密码登录，再在「我的」中绑定</view>
+</view>

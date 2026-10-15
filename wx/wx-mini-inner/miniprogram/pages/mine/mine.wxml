@@ -1,0 +1,41 @@
+<view class="container">
+  <view class="card">
+    <view class="row">
+      <text class="label">姓名</text>
+      <text class="value">{{realName || '-'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">登录名</text>
+      <text class="value">{{username || '-'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">当前店铺</text>
+      <text class="value">{{tenantName || '未选择'}}</text>
+    </view>
+    <view class="row">
+      <text class="label">微信绑定</text>
+      <text class="value {{wxBound ? 'on' : ''}}">{{wxBound ? '已绑定' : '未绑定'}}</text>
+    </view>
+  </view>
+
+  <button
+    class="btn"
+    wx:if="{{!wxBound}}"
+    loading="{{wxBusy}}"
+    disabled="{{wxBusy}}"
+    bindtap="onWxBind"
+  >绑定微信</button>
+  <button
+    class="btn btn-ghost"
+    wx:else
+    loading="{{wxBusy}}"
+    disabled="{{wxBusy}}"
+    bindtap="onWxUnbind"
+  >解绑微信</button>
+
+  <button class="btn" bindtap="onSwitchTenant">切换店铺</button>
+  <button class="btn btn-ghost" bindtap="onChangePassword">修改密码</button>
+  <button class="btn btn-danger" loading="{{loggingOut}}" disabled="{{loggingOut}}" bindtap="onLogout">
+    退出登录
+  </button>
+</view>

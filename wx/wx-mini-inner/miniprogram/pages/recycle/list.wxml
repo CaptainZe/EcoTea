@@ -1,0 +1,99 @@
+<view class="page">
+  <view class="sticky-head">
+    <view class="search-bar">
+      <view class="search-field">
+        <input
+          class="search-input"
+          placeholder="品牌 / 品名"
+          confirm-type="search"
+          value="{{keyword}}"
+          disabled="{{!!barcode || !!spuId}}"
+          bindinput="onKeyword"
+          bindconfirm="onSearch"
+        />
+        <view
+          class="search-btn {{barcode || spuId ? 'is-disabled' : ''}}"
+          bindtap="onSearch"
+        >搜索</view>
+      </view>
+      <view class="scan-btn" bindtap="onScan" aria-label="扫码">
+        <image class="scan-icon" src="/assets/common/scan.png" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="toolbar">
+      <view class="toolbar-spacer"></view>
+      <view class="filter-entry {{filterActive ? 'is-on' : ''}}" bindtap="onOpenFilter">
+        <image
+          class="filter-icon"
+          src="{{filterActive ? '/assets/common/filter-on.png' : '/assets/common/filter-off.png'}}"
+          mode="aspectFit"
+        />
+        <text>筛选</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="mode-bar" wx:if="{{barcode || spuId || filterSummary || keyword}}">
+    <text class="mode-text" wx:if="{{barcode}}">条码：{{barcode}}</text>
+    <text class="mode-text" wx:elif="{{spuId}}">正在查看同款</text>
+    <text class="mode-text" wx:elif="{{filterSummary}}">{{filterSummary}}</text>
+    <text class="mode-text" wx:elif="{{keyword}}">搜索：{{keyword}}</text>
+    <text class="mode-clear" bindtap="onClearMode">返回全部</text>
+  </view>
+
+  <view class="meta" wx:if="{{matchHint}}">{{matchHint}}</view>
+
+  <view class="loading-tip" wx:if="{{loading && !list.length}}">加载中…</view>
+
+  <view class="list" wx:elif="{{list.length}}">
+    <view class="card" wx:for="{{list}}" wx:key="id">
+      <view class="card-media" data-id="{{item.id}}" bindtap="onTapItem">
+        <image class="cover" src="{{item.coverImage || '/assets/common/no-image.png'}}" mode="aspectFill" />
+      </view>
+      <view class="card-main">
+        <view class="body" data-id="{{item.id}}" bindtap="onTapItem">
+          <view class="title">{{item.title || item.name}}</view>
+          <view class="tags" wx:if="{{item.tags.length}}">
+            <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+          </view>
+          <view class="row-price">
+            <text class="price">{{item.recyclePlain}}</text>
+            <text class="official" wx:if="{{item.officialShort}}">{{item.officialShort}}</text>
+            <text class="discount" wx:if="{{item.discountShow}}">{{item.discountShow}}</text>
+          </view>
+          <view class="extra" wx:if="{{item.extraLine}}">{{item.extraLine}}</view>
+        </view>
+        <view class="card-foot">
+          <view class="stock-line">
+            <text class="stock {{item.stockScarce ? 'scarce' : ''}}">{{item.stockText}}</text>
+            <text class="dmg" wx:for="{{item.stockExtras}}" wx:for-item="ex" wx:key="*this">{{ex}}</text>
+          </view>
+          <view class="card-actions">
+            <view class="same-btn" wx:if="{{item.showSame}}" data-spu="{{item.spuId}}" catchtap="onSameSpu">看同款</view>
+            <view
+              class="quote-btn {{item.inQuote ? 'is-in' : ''}}"
+              data-id="{{item.id}}"
+              catchtap="onAddQuote"
+            >{{item.inQuote ? '已加入' : '加入报价'}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:elif="{{!loading}}">
+    <text>{{emptyTip}}</text>
+    <view class="empty-hint" wx:if="{{barcode || spuId || filterActive || keyword}}">可点「返回全部」或调整筛选条件</view>
+  </view>
+
+  <view class="footer" wx:if="{{list.length}}">
+    <text wx:if="{{loadingMore}}">加载中…</text>
+    <text wx:elif="{{noMore}}">没有更多了</text>
+  </view>
+
+  <view class="fab" wx:if="{{quoteCount > 0}}" bindtap="onOpenQuote">
+    <image class="fab-icon" src="/assets/recycle/quote-fab.png" mode="aspectFit" />
+    <text class="fab-badge">{{quoteCount}}</text>
+  </view>
+</view>

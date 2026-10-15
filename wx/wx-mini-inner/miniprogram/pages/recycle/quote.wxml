@@ -1,0 +1,173 @@
+<view class="page">
+  <view class="meta-bar" wx:if="{{items.length}}">
+    <text class="meta">{{metaText}}</text>
+    <text class="clear" bindtap="onClear">清空</text>
+  </view>
+
+  <view class="list" wx:if="{{items.length}}">
+    <view class="card" wx:for="{{items}}" wx:key="id">
+      <image
+        class="cover"
+        src="{{item.coverImage || '/assets/common/no-image.png'}}"
+        mode="aspectFill"
+        data-id="{{item.id}}"
+        bindtap="onOpenDetail"
+      />
+      <view class="body">
+        <view class="title" data-id="{{item.id}}" bindtap="onOpenDetail">{{item.displayTitle}}</view>
+        <view class="tags" wx:if="{{item.tags.length}}">
+          <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+        </view>
+        <view class="ref-row">
+          <text class="ref">{{item.refText}}</text>
+          <text class="discount" wx:if="{{item.discountShort}}">{{item.discountShort}}</text>
+        </view>
+        <view class="stock {{item.stockScarce ? 'scarce' : ''}}">{{item.stockText}}</view>
+
+        <view class="price-row">
+          <text class="price-label">报价</text>
+          <input
+            class="price-input"
+            type="digit"
+            value="{{item.quotePriceText}}"
+            data-id="{{item.id}}"
+            bindblur="onPriceBlur"
+          />
+          <text class="unit">元</text>
+        </view>
+
+        <view class="qty-row">
+          <view class="step" data-id="{{item.id}}" data-delta="-1" bindtap="onQtyStep">−</view>
+          <input
+            class="qty-input"
+            type="number"
+            value="{{item.qty}}"
+            data-id="{{item.id}}"
+            bindblur="onQtyBlur"
+          />
+          <view class="step" data-id="{{item.id}}" data-delta="1" bindtap="onQtyStep">+</view>
+          <view class="qty-end">
+            <text
+              class="swap"
+              wx:if="{{item.spuId}}"
+              data-id="{{item.id}}"
+              data-spu="{{item.spuId}}"
+              catchtap="onOpenSwap"
+            >换同款</text>
+            <text class="danger" data-id="{{item.id}}" catchtap="onRemove">移除</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>
+    <text>回收报价单是空的</text>
+    <view class="go" bindtap="onGoRecycle">去回收价目看看</view>
+  </view>
+
+  <view class="bar-space" wx:if="{{items.length}}"></view>
+  <view class="bar" wx:if="{{items.length}}">
+    <view class="bar-top">
+      <view class="sum">
+        <view class="pay">{{orderAdd > 0 ? '应付' : '合计'}} <text class="pay-num">¥{{payableText}}</text></view>
+        <view class="sum-extra" wx:if="{{orderAdd > 0}}">
+          <text>小计 ¥{{subtotalText}}</text>
+          <text class="add">加价 +¥{{orderAddText}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="bar-actions">
+      <button class="btn ghost" bindtap="onOrderAdd">{{orderAddBtnText}}</button>
+      <button class="btn ghost" bindtap="onCopyText">生成文字</button>
+      <button class="btn primary" bindtap="onGenImage" loading="{{genLoading}}">生成图片</button>
+    </view>
+  </view>
+
+  <view class="modal" wx:if="{{addOpen}}" catchtouchmove="noop">
+    <view class="modal-mask" bindtap="onCloseAdd"></view>
+    <view class="modal-panel">
+      <view class="modal-title">整单改价</view>
+      <view class="modal-hint">小计 ¥{{subtotalText}} · 输入加价金额</view>
+      <view class="add-input-row">
+        <text class="add-prefix">+¥</text>
+        <input
+          class="add-input"
+          type="digit"
+          focus="{{addOpen}}"
+          value="{{addDraft}}"
+          placeholder="0"
+          bindinput="onAddInput"
+        />
+      </view>
+      <view class="modal-actions">
+        <button class="modal-btn cancel" bindtap="onCloseAdd">取消</button>
+        <button class="modal-btn clear" bindtap="onClearAdd">清除</button>
+        <button class="modal-btn ok" bindtap="onConfirmAdd">确定</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="sheet" wx:if="{{swapOpen}}" catchtouchmove="noop">
+    <view class="sheet-mask" bindtap="onCloseSwap"></view>
+    <view class="sheet-panel">
+      <view class="sheet-hd">
+        <text class="sheet-title">换同款</text>
+        <text class="sheet-x" bindtap="onCloseSwap">×</text>
+      </view>
+      <text class="sheet-hint">{{swapHint}}</text>
+      <scroll-view scroll-y class="sheet-list" wx:if="{{swapList.length}}">
+        <view
+          class="swap-card {{item.isCurrent ? 'is-current' : ''}}"
+          wx:for="{{swapList}}"
+          wx:key="id"
+        >
+          <image class="swap-cover" src="{{item.coverImage || '/assets/common/no-image.png'}}" mode="aspectFill" />
+          <view class="swap-body">
+            <view class="title">{{item.title || item.name}}</view>
+            <view class="tags" wx:if="{{item.tags.length}}">
+              <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+            </view>
+            <view class="row-price">
+              <text class="sale">{{item.recyclePlain}}</text>
+              <text class="official" wx:if="{{item.officialShort}}">{{item.officialShort}}</text>
+              <text class="discount" wx:if="{{item.discountShow}}">{{item.discountShow}}</text>
+            </view>
+            <view class="stock-line">
+              <text class="stock {{item.stockScarce ? 'scarce' : ''}}">{{item.stockText}}</text>
+            </view>
+            <view class="swap-act">
+              <view class="swap-btn is-muted" wx:if="{{item.isCurrent}}">当前</view>
+              <view class="swap-btn is-muted" wx:elif="{{item.inQuote}}">已加入</view>
+              <view class="swap-btn" wx:else data-id="{{item.id}}" bindtap="onPickSwap">替换</view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="sheet-empty" wx:elif="{{!swapLoading}}">暂无其它同款</view>
+      <view class="sheet-empty" wx:else>加载中…</view>
+    </view>
+  </view>
+
+  <view class="preview" wx:if="{{previewOpen}}">
+    <view class="preview-mask" catchtouchmove="noop" bindtap="onClosePreview"></view>
+    <view class="preview-panel">
+      <view class="preview-hd">
+        <text class="preview-title">回收报价单图片</text>
+        <text class="sheet-x" bindtap="onClosePreview">×</text>
+      </view>
+      <text class="preview-hint">可保存到相册后发给客户</text>
+      <scroll-view scroll-y class="preview-body">
+        <image class="preview-img" src="{{previewPath}}" mode="widthFix" show-menu-by-longpress />
+      </scroll-view>
+      <view class="preview-actions">
+        <view class="pbtn ghost" bindtap="onClosePreview">关闭</view>
+        <view class="pbtn primary {{saveLoading ? 'is-loading' : ''}}" bindtap="onSavePreview">
+          {{saveLoading ? '保存中…' : '保存相册'}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <canvas type="2d" id="quoteCanvas" class="off-canvas"></canvas>
+</view>

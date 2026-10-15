@@ -1,0 +1,13 @@
+{
+  "name": "wx-mini-inner",
+  "version": "0.1.0",
+  "description": "EcoTea 内部作业小程序",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {
+    "miniprogram-api-typings": "^2.8.3-1"
+  }
+}

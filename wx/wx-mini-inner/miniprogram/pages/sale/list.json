@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "在售价目",
+  "navigationBarBackgroundColor": "#f3f5f1",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f3f5f1",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 80,
+  "usingComponents": {}
+}

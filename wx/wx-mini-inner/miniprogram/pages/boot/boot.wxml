@@ -1,0 +1,3 @@
+<view class="boot">
+  <view class="text">{{tip}}</view>
+</view>

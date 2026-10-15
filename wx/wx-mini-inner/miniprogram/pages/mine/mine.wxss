@@ -1,0 +1,48 @@
+.card {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 8rpx 28rpx;
+  margin-bottom: 40rpx;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: #888;
+}
+
+.value {
+  color: #333;
+  max-width: 60%;
+  text-align: right;
+}
+
+.value.on {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.btn {
+  margin-top: 24rpx;
+  background: #0f766e;
+  color: #fff;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: #0f766e;
+  border: 2rpx solid #0f766e;
+}
+
+.btn-danger {
+  background: #b91c1c;
+}
