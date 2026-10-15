@@ -40,6 +40,12 @@
             <artifactId>wx-java-mp-spring-boot-starter</artifactId>
             <version>${wxjava.version}</version>
         </dependency>
+        <!-- 内部小程序：code2session / 员工绑定登录；配置前缀 wx.miniapp.* -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>wx-java-miniapp-spring-boot-starter</artifactId>
+            <version>${wxjava.version}</version>
+        </dependency>
         <!-- WxJava 默认 Apache HttpClient；Boot 2.7 未传递引入，缺则启动 NoClassDefFoundError: HttpContext -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

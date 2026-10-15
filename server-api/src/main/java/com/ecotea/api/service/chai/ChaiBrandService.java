@@ -6,6 +6,9 @@ import com.ecotea.api.common.utils.JsonUtils;
 import com.ecotea.api.common.utils.RedisUtils;
 import com.ecotea.api.domain.chai.ChaiBrand;
 import com.ecotea.api.mapper.chai.ChaiBrandMapper;
+import com.ecotea.api.vo.chai.ChaiBrandPickerGroupVO;
+import com.ecotea.api.vo.chai.ChaiBrandPickerItemVO;
+import com.ecotea.api.vo.chai.ChaiBrandPickerVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +35,7 @@ public class ChaiBrandService {
     private final ChaiBrandMapper chaiBrandMapper;
 
     /**
-     * 上架品牌：按首字母 A-Z，同字母再按每字首字母串；非 A-Z 垫底（与 admin listOnlineOrdered 一致）。
+     * 上架品牌（H5）：常用（common_flag=1）置顶，再按首字母 A-Z / 全字母 / 名称。
      * Redis → miss → MySQL → SET（DAY_EXPIRE）。
      */
     public List<ChaiBrand> listOnlineOrdered() {
@@ -45,7 +49,8 @@ public class ChaiBrandService {
         List<ChaiBrand> list = chaiBrandMapper.selectList(new LambdaQueryWrapper<ChaiBrand>()
                 .eq(ChaiBrand::getStatus, 1));
         list.sort(Comparator
-                .comparingInt((ChaiBrand b) -> isLetterInitial(b.getNameInitial()) ? 0 : 1)
+                .comparingInt((ChaiBrand b) -> Integer.valueOf(1).equals(b.getCommonFlag()) ? 0 : 1)
+                .thenComparingInt(b -> isLetterInitial(b.getNameInitial()) ? 0 : 1)
                 .thenComparing(b -> nullToEmpty(b.getNameInitial()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(b -> nullToEmpty(b.getNamePinyin()), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(b -> nullToEmpty(b.getName()), String.CASE_INSENSITIVE_ORDER)
@@ -55,6 +60,69 @@ public class ChaiBrandService {
             RedisUtils.set(RedisUtils.defaultRedis(), key, json, RedisConstant.DAY_EXPIRE);
         }
         return list;
+    }
+
+    /**
+     * 品牌选页结构：常用快捷区 + 全量字母分组 + 右侧索引。
+     * <p>复用 {@link #listOnlineOrdered()} 缓存，不改变其排序与 H5 行为；
+     * 字母区为全量（含常用品牌），常用区单独便于快选。</p>
+     */
+    public ChaiBrandPickerVO buildOnlinePicker() {
+        List<ChaiBrand> rows = listOnlineOrdered();
+        ChaiBrandPickerVO vo = new ChaiBrandPickerVO();
+        if (rows == null || rows.isEmpty()) {
+            return vo;
+        }
+
+        Comparator<ChaiBrand> alphaCmp = Comparator
+                .comparingInt((ChaiBrand b) -> isLetterInitial(normalizeInitial(b.getNameInitial())) ? 0 : 1)
+                .thenComparing(b -> normalizeInitial(b.getNameInitial()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(b -> nullToEmpty(b.getNamePinyin()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(b -> nullToEmpty(b.getName()), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(b -> b.getId() == null ? 0L : b.getId());
+
+        List<ChaiBrand> commonRows = new ArrayList<>();
+        for (ChaiBrand brand : rows) {
+            if (Integer.valueOf(1).equals(brand.getCommonFlag())) {
+                commonRows.add(brand);
+            }
+        }
+        commonRows.sort(alphaCmp);
+        for (ChaiBrand brand : commonRows) {
+            vo.getCommon().add(toPickerItem(brand));
+        }
+
+        Map<String, List<ChaiBrand>> byInitial = new LinkedHashMap<>();
+        for (char c = 'A'; c <= 'Z'; c++) {
+            byInitial.put(String.valueOf(c), new ArrayList<>());
+        }
+        byInitial.put("#", new ArrayList<>());
+        for (ChaiBrand brand : rows) {
+            String initial = normalizeInitial(brand.getNameInitial());
+            byInitial.get(initial).add(brand);
+        }
+
+        for (Map.Entry<String, List<ChaiBrand>> e : byInitial.entrySet()) {
+            List<ChaiBrand> bucket = e.getValue();
+            if (bucket.isEmpty()) {
+                continue;
+            }
+            bucket.sort(alphaCmp);
+            ChaiBrandPickerGroupVO group = new ChaiBrandPickerGroupVO();
+            group.setInitial(e.getKey());
+            for (ChaiBrand brand : bucket) {
+                group.getItems().add(toPickerItem(brand));
+            }
+            vo.getGroups().add(group);
+        }
+
+        if (!vo.getCommon().isEmpty()) {
+            vo.getIndex().add("常");
+        }
+        for (ChaiBrandPickerGroupVO group : vo.getGroups()) {
+            vo.getIndex().add(group.getInitial());
+        }
+        return vo;
     }
 
     /**
@@ -114,6 +182,28 @@ public class ChaiBrandService {
         return chaiBrandMapper.selectList(new LambdaQueryWrapper<ChaiBrand>()
                 .orderByDesc(ChaiBrand::getOrderNum)
                 .orderByDesc(ChaiBrand::getUpdateTime));
+    }
+
+    private static ChaiBrandPickerItemVO toPickerItem(ChaiBrand brand) {
+        ChaiBrandPickerItemVO item = new ChaiBrandPickerItemVO();
+        item.setId(brand.getId());
+        item.setName(brand.getName());
+        item.setNameInitial(normalizeInitial(brand.getNameInitial()));
+        item.setNamePinyin(brand.getNamePinyin());
+        item.setLogo(brand.getLogo());
+        return item;
+    }
+
+    /** 非 A-Z 一律归为 # */
+    private static String normalizeInitial(String initial) {
+        if (initial == null || initial.isEmpty()) {
+            return "#";
+        }
+        String t = initial.trim().toUpperCase();
+        if (t.length() == 1 && t.charAt(0) >= 'A' && t.charAt(0) <= 'Z') {
+            return t;
+        }
+        return "#";
     }
 
     private static boolean isLetterInitial(String initial) {

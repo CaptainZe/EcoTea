@@ -28,6 +28,20 @@ wx:
       # Boot 2.7 自带 httpclient5 过旧，与 WxJava 4.8 默认 HttpComponents 不兼容，固定用 4.x
       http-client-type: HttpClient
 
+  # 微信小程序（内部工具 wx-mini-inner）；仅登录/绑定用时可先不配 token/aes-key
+  # AppID 与 wx/wx-mini-inner/project.config.json 保持一致；Secret 勿提交 git
+  miniapp:
+    appid: wx28864054909d5425
+    secret: your-mini-app-secret
+    # token / aes-key：消息推送才需要；仅 code2session 可留空
+    token:
+    aes-key:
+    msg-data-format: JSON
+    config-storage:
+      type: Memory
+      # 与 mp 相同：Boot 2.7 固定 HttpClient 4.x
+      http-client-type: HttpClient
+
 # 以下 ecotea.* 写在 application-dev/prod.yml（公共 application.yml 不放）
 # 网站备案页脚（H5 通用）；填真实文案后生效，空则不展示
 ecotea:
@@ -42,5 +56,3 @@ ecotea:
   # 管理端写操作鉴权（与 admin ecotea.api.api-key 一致；勿写入公开文档）
   security:
     api-key: ""
-
-

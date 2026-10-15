@@ -14,8 +14,11 @@ public interface ErrorCode {
     /** 参数校验失败 */
     int BAD_REQUEST = 400;
 
-    /** 未授权（如 Api-Key 无效） */
+    /** 未授权（如 Api-Key 无效、员工 token 无效） */
     int UNAUTHORIZED = 401;
+
+    /** 已登录但未选店 */
+    int TENANT_NOT_SELECTED = 4031;
 
     /** 系统异常（对外统一文案，细节只写日志） */
     int SYSTEM_ERROR = 500;

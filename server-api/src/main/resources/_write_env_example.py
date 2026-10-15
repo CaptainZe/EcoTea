@@ -1,0 +1,67 @@
+# -*- coding: utf-8 -*-
+"""One-shot helper: rewrite application-env.yml.example (delete after use)."""
+from pathlib import Path
+
+path = Path(__file__).with_name("application-env.yml.example")
+text = """# 复制为 application-dev.yml 或 application-prod.yml 后填写真实值（本文件可提交 git）
+# 公共配置见同目录 application.yml（可提交）；本文件仅环境相关
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/tea?useSSL=false&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: your_db_user
+    password: your_db_password
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    # password: your_redis_password
+
+logging:
+  level:
+    com.ecotea.api: DEBUG   # prod 建议改为 INFO
+
+# 微信公众号（订阅号）；未接入前可先占位
+wx:
+  mp:
+    app-id: your-app-id
+    secret: your-app-secret
+    token: your-server-token
+    aes-key: # 明文模式可留空；安全模式必填
+    config-storage:
+      type: RedisTemplate
+      key-prefix: "wx:mp:"
+      # Boot 2.7 自带 httpclient5 过旧，与 WxJava 4.8 默认 HttpComponents 不兼容，固定用 4.x
+      http-client-type: HttpClient
+
+  # 微信小程序（内部工具 wx-mini-inner）；仅登录/绑定用时可先不配 token/aes-key
+  # AppID 与 wx/wx-mini-inner/project.config.json 保持一致；Secret 勿提交 git
+  miniapp:
+    appid: wx28864054909d5425
+    secret: your-mini-app-secret
+    # token / aes-key：消息推送才需要；仅 code2session 可留空
+    token:
+    aes-key:
+    msg-data-format: JSON
+    config-storage:
+      type: Memory
+      # 与 mp 相同：Boot 2.7 固定 HttpClient 4.x
+      http-client-type: HttpClient
+
+# 以下 ecotea.* 写在 application-dev/prod.yml（公共 application.yml 不放）
+# 网站备案页脚（H5 通用）；填真实文案后生效，空则不展示
+ecotea:
+  site:
+    # 对外 HTTPS 根地址，不要末尾斜杠；被动回复里的 H5 链接用它拼接
+    public-base-url: https://api.ecotea.cn
+  beian:
+    icp-text: "闽ICP备2026034474号-1"
+    icp-url: "https://beian.miit.gov.cn"
+    mps-text: "闽公网安备35010302001018号"
+    mps-url: "https://beian.mps.gov.cn/#/query/webSearch?code=35010302001018"
+  # 管理端写操作鉴权（与 admin ecotea.api.api-key 一致；勿写入公开文档）
+  security:
+    api-key: ""
+"""
+path.write_text(text, encoding="utf-8", newline="\n")
+assert "微信小程序" in path.read_text(encoding="utf-8")
+print("wrote", path)
