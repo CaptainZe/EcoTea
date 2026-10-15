@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>Admin数据范围</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> Admin数据范围</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">用户名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="username" th:value="${param.username}" placeholder="精确匹配"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">昵称</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="nickname" th:value="${param.nickname}" placeholder="模糊匹配"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th width="80">操作</th>
+                    <th width="120">用户名</th>
+                    <th width="120">昵称</th>
+                    <th width="80">状态</th>
+                    <th>数据范围</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${list}">
+                    <td>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="配置数据范围"
+                           th:attr="data-url=@{/business/platform/adminScope/edit(userId=${row.user.id})}"
+                           data-size="720,640">配置</a>
+                    </td>
+                    <td th:text="${row.user.username}"></td>
+                    <td th:text="${row.user.nickname}"></td>
+                    <td th:text="${#dicts.dataStatus(row.user.status)}"></td>
+                    <td th:text="${row.scopeSummary}"
+                        th:style="${row.platform} ? 'color: #16A34A; font-weight: 600;' : (${row.scopeCount == 0} ? 'color: #9CA3AF;' : '')"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

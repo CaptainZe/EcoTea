@@ -104,6 +104,34 @@ final class PcaCodeCatalog {
         return null;
     }
 
+    /**
+     * 省、市必填；区/县可空。合法时返回 null。
+     */
+    String validateProvinceCity(String provinceCode, String cityCode, String districtCode) {
+        if (!StringUtils.hasText(provinceCode)) {
+            return "省必选";
+        }
+        if (!StringUtils.hasText(cityCode)) {
+            return "市必选";
+        }
+        String p = provinceCode.trim();
+        String c = cityCode.trim();
+        if (!contains(p)) {
+            return "省份编码无效";
+        }
+        if (!parentCodeByCode.getOrDefault(c, "").equals(p)) {
+            return "所选市不属于该省";
+        }
+        if (!StringUtils.hasText(districtCode)) {
+            return null;
+        }
+        String d = districtCode.trim();
+        if (!parentCodeByCode.getOrDefault(d, "").equals(c)) {
+            return "所选区/县不属于该市";
+        }
+        return null;
+    }
+
     private PcaOptionVo toOption(PcaNode node) {
         return new PcaOptionVo(node.getCode(), node.getName());
     }

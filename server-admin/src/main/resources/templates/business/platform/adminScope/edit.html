@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>配置数据范围</title>
+    <style>
+        .scope-form .layui-form-label { width: 100px; }
+        .scope-form .layui-input-block { margin-left: 130px; }
+        .scope-tip { color: #999; font-size: 12px; line-height: 1.6; margin-top: 4px; }
+        .tenant-box {
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px 12px;
+            border-radius: 2px;
+        }
+        .tenant-box .layui-form-checkbox { margin: 4px 12px 4px 0; }
+        .user-meta { font-size: 14px; color: #333; padding-top: 9px; }
+    </style>
+</head>
+<body>
+<div class="timo-compile" th:if="${user != null}">
+    <form id="scopeForm" class="layui-form scope-form" method="POST">
+        <input type="hidden" name="userId" th:value="${user.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">用户</label>
+            <div class="layui-input-block">
+                <div class="user-meta"
+                     th:text="${user.username + ' / ' + (user.nickname != null ? user.nickname : '')}"></div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">范围类型</label>
+            <div class="layui-input-block">
+                <input type="radio" name="scopeMode" value="platform" title="平台"
+                       th:checked="${platform}" lay-filter="scopeMode">
+                <input type="radio" name="scopeMode" value="shop" title="指定店铺"
+                       th:checked="${!platform}" lay-filter="scopeMode">
+                <div class="scope-tip">选平台将清除该用户其它店铺行，仅保留 tenant_id=0</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item" id="tenantPickBlock" th:style="${platform} ? 'display:none' : ''">
+            <label class="layui-form-label required">店铺</label>
+            <div class="layui-input-block">
+                <div class="tenant-box" th:if="${tenants != null and !#lists.isEmpty(tenants)}">
+                    <input th:each="t : ${tenants}" type="checkbox" name="tenantIds"
+                           th:title="${t.name + ' (' + t.tenantId + ')'}"
+                           th:value="${t.tenantId}"
+                           th:checked="${selectedTenantIds != null and #sets.contains(selectedTenantIds, t.tenantId)}"
+                           lay-skin="primary">
+                </div>
+                <div class="scope-tip" th:if="${tenants == null or #lists.isEmpty(tenants)}">暂无启用中的店铺，请先在「店铺租户」中开店</div>
+                <div class="scope-tip" th:unless="${tenants == null or #lists.isEmpty(tenants)}">可多选；一人多店</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitScope">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn layui-btn-warm" id="btnClearScope">
+                <i class="fa fa-eraser"></i> 清空
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<div class="timo-compile" th:if="${user == null}">
+    <p style="padding: 24px;" th:text="${error != null ? error : '用户不存在'}"></p>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script th:inline="javascript">
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        var userId = /*[[${user != null ? user.id : null}]]*/ null;
+
+        form.on('radio(scopeMode)', function (data) {
+            if (data.value === 'platform') {
+                $('#tenantPickBlock').hide();
+            } else {
+                $('#tenantPickBlock').show();
+            }
+        });
+
+        form.on('submit(submitScope)', function () {
+            $.ajax({
+                url: '/business/platform/adminScope/save',
+                type: 'POST',
+                data: $('#scopeForm').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+
+        $('#btnClearScope').on('click', function () {
+            if (!userId) {
+                return;
+            }
+            if (!confirm('确认清空该用户的全部数据范围？')) {
+                return;
+            }
+            $.ajax({
+                url: '/business/platform/adminScope/clear',
+                type: 'POST',
+                data: {userId: userId},
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '操作失败');
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

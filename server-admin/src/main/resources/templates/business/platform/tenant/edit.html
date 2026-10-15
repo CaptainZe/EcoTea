@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑店铺</title>
+    <style>
+        .tenant-form .layui-form-label {
+            width: 120px;
+        }
+        .tenant-form .layui-input-block {
+            margin-left: 150px;
+            max-width: 560px;
+        }
+        .tenant-form .tenant-pca-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            max-width: 560px;
+        }
+        .tenant-form .tenant-pca-row .layui-form-select,
+        .tenant-form .tenant-pca-row select {
+            flex: 1;
+            min-width: 0;
+        }
+        .tenant-form .tenant-pca-row > .layui-input-inline {
+            float: none;
+            margin: 0;
+            width: auto;
+            flex: 1;
+            min-width: 0;
+        }
+        .tenant-form .field-tip {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form tenant-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">业务租户ID</label>
+            <div class="layui-input-block">
+                <input type="number" name="tenantId" class="layui-input" th:value="${editItem?.tenantId}"
+                       th:readonly="${editItem != null and editItem.id != null}"
+                       required lay-verify="required" placeholder="手填，创建后不可改，如 1000">
+                <div class="field-tip">业务键，其它表关联此 ID；创建后不可修改</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">店铺名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" class="layui-input" th:value="${editItem?.name}"
+                       required lay-verify="required" maxlength="255" placeholder="如: 总部店">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">员工名额</label>
+            <div class="layui-input-block">
+                <input type="number" name="employeeQuota" class="layui-input" th:value="${editItem?.employeeQuota}"
+                       required lay-verify="required|number" min="0" placeholder="启用员工上限，0=不可再加人">
+                <div class="field-tip">仅平台可配；统计启用中的员工挂店数</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">省市区</label>
+            <div class="layui-input-block">
+                <div class="tenant-pca-row">
+                    <div class="layui-input-inline">
+                        <select id="tenantProvince" name="province" lay-filter="pcaProvince"
+                                class="layui-input timo-search-select" lay-search lay-verify="required">
+                            <option value="">请选择省</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="tenantCity" name="city" lay-filter="pcaCity"
+                                class="layui-input timo-search-select" lay-search lay-verify="required">
+                            <option value="">请选择市</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline">
+                        <select id="tenantDistrict" name="district" lay-filter="pcaDistrict"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">请选择区/县</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-tip">省、市必填；区/县可选</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">详细地址</label>
+            <div class="layui-input-block">
+                <input type="text" name="address" class="layui-input" th:value="${editItem?.address}"
+                       maxlength="500" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">负责人</label>
+            <div class="layui-input-block">
+                <input type="text" name="contactName" class="layui-input" th:value="${editItem?.contactName}"
+                       maxlength="64" placeholder="档案用，非登录账号">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">负责人手机</label>
+            <div class="layui-input-block">
+                <input type="text" name="contactMobile" class="layui-input" th:value="${editItem?.contactMobile}"
+                       maxlength="32" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" lay-verify="required">
+                    <option value="1" th:selected="${editItem == null or editItem.status == null or editItem.status == 1}">启用</option>
+                    <option value="0" th:selected="${editItem != null and editItem.status == 0}">停用</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+                <input type="text" name="remark" class="layui-input" th:value="${editItem?.remark}"
+                       maxlength="500" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/sys/pca-cascade.js}"></script>
+<script th:inline="javascript">
+    var tenantPcaInitial = {
+        province: /*[[${editItem != null ? editItem.province : null}]]*/ null,
+        city: /*[[${editItem != null ? editItem.city : null}]]*/ null,
+        district: /*[[${editItem != null ? editItem.district : null}]]*/ null
+    };
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        form.render('select');
+
+        new PcaCascade({
+            $: $,
+            province: '#tenantProvince',
+            city: '#tenantCity',
+            district: '#tenantDistrict',
+            layForm: form,
+            allowEmpty: true,
+            initial: tenantPcaInitial
+        }).init();
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/platform/tenant/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

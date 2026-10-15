@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>挂店与权限</title>
+    <style>
+        .shops-wrap { padding: 12px 16px 80px; }
+        .shops-meta { margin-bottom: 12px; color: #333; }
+        .shop-card {
+            border: 1px solid #e6e6e6;
+            border-radius: 2px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            background: #fafafa;
+        }
+        .shop-card .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .shop-card .card-title { font-weight: 600; }
+        .perm-box .layui-form-checkbox { margin: 4px 10px 4px 0; }
+        .field-tip { color: #999; font-size: 12px; margin-top: 6px; }
+        .timo-finally {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 10px 16px 14px; background: #fff; margin: 0;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<div class="shops-wrap" th:if="${employee != null}">
+    <div class="shops-meta">
+        员工：<b th:text="${employee.username}"></b>
+        / <span th:text="${employee.realName}"></span>
+        <span th:if="${employee.status == 1}" style="color:#16A34A;margin-left:8px;">启用</span>
+        <span th:unless="${employee.status == 1}" style="color:#9CA3AF;margin-left:8px;">停用</span>
+    </div>
+
+    <form class="layui-form" id="shopsForm">
+        <div id="bindList"></div>
+
+        <div class="layui-form-item" style="margin-top: 8px;">
+            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btnAddShop">
+                <i class="fa fa-plus"></i> 添加店铺
+            </button>
+            <span class="field-tip" style="margin-left: 8px;">保存时整单覆盖；可多店；空列表=解绑全部</span>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="button" class="layui-btn" id="btnSaveShops">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<div th:if="${employee == null}" style="padding:24px;" th:text="${error != null ? error : '员工不存在'}"></div>
+
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    var employeeId = /*[[${employee != null ? employee.id : null}]]*/ null;
+    var tenants = /*[[${tenants}]]*/ [];
+    var permOptions = /*[[${permOptions}]]*/ [];
+    var managerPermCodes = /*[[${managerPermCodes}]]*/ [];
+    var initialBinds = /*[[${binds}]]*/ [];
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        var seq = 0;
+
+        function tenantOptions(selected) {
+            var html = '<option value="">请选择店铺</option>';
+            (tenants || []).forEach(function (t) {
+                var sel = selected && (t.tenantId == selected) ? ' selected' : '';
+                html += '<option value="' + t.tenantId + '"' + sel + '>'
+                    + t.name + ' (' + t.tenantId + ') 名额' + (t.employeeQuota || 0) + '</option>';
+            });
+            return html;
+        }
+
+        function permHtml(namePrefix, selected) {
+            selected = selected || [];
+            var html = '';
+            (permOptions || []).forEach(function (p) {
+                var code = p.code;
+                var title = p.message;
+                var checked = selected.indexOf(code) >= 0 ? ' checked' : '';
+                html += '<input type="checkbox" lay-skin="primary" title="' + title + '" value="' + code
+                    + '" data-perm="' + namePrefix + '"' + checked + '>';
+            });
+            return html;
+        }
+
+        function addCard(bind) {
+            bind = bind || {tenantId: '', status: 1, permCodes: []};
+            var id = 'card_' + (seq++);
+            var html = ''
+                + '<div class="shop-card" id="' + id + '">'
+                + '  <div class="card-head">'
+                + '    <span class="card-title">挂店</span>'
+                + '    <button type="button" class="layui-btn layui-btn-danger layui-btn-xs btn-remove">移除</button>'
+                + '  </div>'
+                + '  <div class="layui-form-item">'
+                + '    <label class="layui-form-label" style="width:80px;">店铺</label>'
+                + '    <div class="layui-input-block" style="margin-left:110px;">'
+                + '      <select class="bind-tenant" lay-search>' + tenantOptions(bind.tenantId) + '</select>'
+                + '    </div>'
+                + '  </div>'
+                + '  <div class="layui-form-item">'
+                + '    <label class="layui-form-label" style="width:80px;">状态</label>'
+                + '    <div class="layui-input-block" style="margin-left:110px;">'
+                + '      <select class="bind-status">'
+                + '        <option value="1"' + (bind.status == 1 ? ' selected' : '') + '>启用</option>'
+                + '        <option value="0"' + (bind.status != 1 ? ' selected' : '') + '>停用</option>'
+                + '      </select>'
+                + '    </div>'
+                + '  </div>'
+                + '  <div class="layui-form-item">'
+                + '    <label class="layui-form-label" style="width:80px;">权限</label>'
+                + '    <div class="layui-input-block" style="margin-left:110px;">'
+                + '      <button type="button" class="layui-btn layui-btn-primary layui-btn-xs btn-mgr">店长模板</button>'
+                + '      <button type="button" class="layui-btn layui-btn-primary layui-btn-xs btn-clr">清空</button>'
+                + '      <div class="perm-box">' + permHtml(id, bind.permCodes || []) + '</div>'
+                + '    </div>'
+                + '  </div>'
+                + '</div>';
+            $('#bindList').append(html);
+            form.render();
+        }
+
+        (initialBinds && initialBinds.length ? initialBinds : []).forEach(function (b) {
+            addCard(b);
+        });
+        if (!initialBinds || !initialBinds.length) {
+            addCard(null);
+        }
+
+        $('#btnAddShop').on('click', function () {
+            addCard(null);
+        });
+
+        $('#bindList').on('click', '.btn-remove', function () {
+            $(this).closest('.shop-card').remove();
+        });
+        $('#bindList').on('click', '.btn-mgr', function () {
+            var $box = $(this).closest('.layui-form-item').find('.perm-box input[type=checkbox]');
+            $box.each(function () {
+                this.checked = managerPermCodes.indexOf(this.value) >= 0;
+            });
+            form.render('checkbox');
+        });
+        $('#bindList').on('click', '.btn-clr', function () {
+            $(this).closest('.layui-form-item').find('.perm-box input[type=checkbox]').prop('checked', false);
+            form.render('checkbox');
+        });
+
+        $('#btnSaveShops').on('click', function () {
+            if (!employeeId) {
+                return;
+            }
+            var binds = [];
+            var ok = true;
+            $('#bindList .shop-card').each(function () {
+                var $card = $(this);
+                var tenantId = $card.find('.bind-tenant').val();
+                if (!tenantId) {
+                    alert('请为每个挂店选择店铺，或移除空卡片');
+                    ok = false;
+                    return false;
+                }
+                var status = parseInt($card.find('.bind-status').val(), 10);
+                var perms = [];
+                $card.find('.perm-box input[type=checkbox]:checked').each(function () {
+                    perms.push(this.value);
+                });
+                binds.push({tenantId: parseInt(tenantId, 10), status: status, permCodes: perms});
+            });
+            if (!ok) {
+                return;
+            }
+            $.ajax({
+                url: '/business/platform/employee/shops/save',
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify({employeeId: employeeId, binds: binds}),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

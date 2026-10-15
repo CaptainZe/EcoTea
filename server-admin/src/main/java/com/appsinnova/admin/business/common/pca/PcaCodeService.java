@@ -56,4 +56,9 @@ public class PcaCodeService {
     public String validateRegion(String provinceCode, String cityCode, String districtCode) {
         return catalog.validateRegion(provinceCode, cityCode, districtCode);
     }
+
+    /** 省、市必填；区/县可空。合法时返回 null。 */
+    public String validateProvinceCity(String provinceCode, String cityCode, String districtCode) {
+        return catalog.validateProvinceCity(provinceCode, cityCode, districtCode);
+    }
 }

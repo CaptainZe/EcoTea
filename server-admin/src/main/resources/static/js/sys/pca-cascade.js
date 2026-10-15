@@ -11,7 +11,9 @@
         this.baseUrl = options.baseUrl || '/business/sys/pca';
         this.$province = this.$(options.province);
         this.$city = this.$(options.city);
-        this.$district = this.$(options.district);
+        // district 可选：未传或找不到节点时跳过区级联动（避免 layui 把隐藏 select 渲成整行）
+        this.$district = options.district ? this.$(options.district) : this.$();
+        this.hasDistrict = !!(this.$district && this.$district.length);
         this.layForm = options.layForm;
         this.allowEmpty = options.allowEmpty !== false;
         this.initial = options.initial || {};
@@ -27,6 +29,9 @@
     };
 
     PcaCascade.prototype.fillSelect = function ($el, list, emptyLabel, selectedCode) {
+        if (!$el || !$el.length) {
+            return;
+        }
         var html = '';
         if (this.allowEmpty) {
             html += emptyOption(emptyLabel);
@@ -53,7 +58,9 @@
 
     PcaCascade.prototype.resetCityDistrict = function (cityLabel, districtLabel) {
         this.fillSelect(this.$city, [], cityLabel || '请选择市', null);
-        this.fillSelect(this.$district, [], districtLabel || '请选择区/县', null);
+        if (this.hasDistrict) {
+            this.fillSelect(this.$district, [], districtLabel || '请选择区/县', null);
+        }
         this.renderSelect();
     };
 
@@ -77,9 +84,11 @@
         }
         self.fetch('/cities', {provinceCode: provinceCode}, function (list) {
             self.fillSelect(self.$city, list, '请选择市', selectedCity);
-            self.fillSelect(self.$district, [], '请选择区/县', null);
+            if (self.hasDistrict) {
+                self.fillSelect(self.$district, [], '请选择区/县', null);
+            }
             self.renderSelect();
-            if (selectedCity) {
+            if (selectedCity && self.hasDistrict) {
                 self.loadDistricts(selectedCity, selectedDistrict);
             }
         });
@@ -87,6 +96,9 @@
 
     PcaCascade.prototype.loadDistricts = function (cityCode, selectedDistrict) {
         var self = this;
+        if (!self.hasDistrict) {
+            return;
+        }
         if (!cityCode) {
             self.fillSelect(self.$district, [], '请选择区/县', null);
             self.renderSelect();

@@ -241,6 +241,9 @@ public class ChaiBrandService {
         if (param.getStatus() != null) {
             preList.add(cb.equal(root.get("status").as(Integer.class), param.getStatus()));
         }
+        if (param.getCommonFlag() != null) {
+            preList.add(cb.equal(root.get("commonFlag").as(Integer.class), param.getCommonFlag()));
+        }
         return preList;
     }
 }

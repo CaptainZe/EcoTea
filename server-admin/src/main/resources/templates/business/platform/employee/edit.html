@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>编辑员工</title>
+    <style>
+        .emp-form .layui-form-label { width: 120px; }
+        .emp-form .layui-input-block { margin-left: 150px; max-width: 560px; }
+        .emp-form .field-tip { color: #999; font-size: 12px; line-height: 1.6; margin-top: 4px; }
+        .emp-form .perm-box { padding: 6px 0; }
+        .emp-form .perm-box .layui-form-checkbox { margin: 4px 10px 4px 0; }
+        .bind-block { border-top: 1px dashed #e5e5e5; padding-top: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="timo-compile">
+    <form id="editform" class="layui-form emp-form" method="POST">
+        <input type="hidden" name="id" th:if="${editItem}" th:value="${editItem.id}"/>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">登录名</label>
+            <div class="layui-input-block">
+                <input type="text" name="username" class="layui-input" th:value="${editItem?.username}"
+                       th:readonly="${!isNew}" required lay-verify="required" maxlength="64"
+                       placeholder="小程序登录名，创建后不可改">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label" th:classappend="${isNew} ? ' required' : ''">密码</label>
+            <div class="layui-input-block">
+                <input type="password" name="plainPassword" class="layui-input" maxlength="32"
+                       th:required="${isNew}" th:attr="lay-verify=${isNew} ? 'required' : ''"
+                       th:placeholder="${isNew} ? '6～32 位' : '留空表示不修改'">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">真实姓名</label>
+            <div class="layui-input-block">
+                <input type="text" name="realName" class="layui-input" th:value="${editItem?.realName}"
+                       required lay-verify="required" maxlength="64" placeholder="如: 张三">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">手机</label>
+            <div class="layui-input-block">
+                <input type="text" name="mobile" class="layui-input" th:value="${editItem?.mobile}"
+                       maxlength="32" placeholder="选填">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label required">状态</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="status" lay-verify="required">
+                    <option value="1" th:selected="${editItem == null or editItem.status == null or editItem.status == 1}">启用</option>
+                    <option value="0" th:selected="${editItem != null and editItem.status == 0}">停用</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="bind-block" th:if="${isNew}">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">挂靠店铺</label>
+                <div class="layui-input-block">
+                    <select name="bindTenantId" class="timo-search-select" lay-search lay-verify="required" lay-filter="bindTenant">
+                        <option value="">请选择店铺</option>
+                        <option th:each="t : ${tenants}" th:value="${t.tenantId}"
+                                th:text="${t.name + ' (' + t.tenantId + ') 名额' + t.employeeQuota}"></option>
+                    </select>
+                    <div class="field-tip" id="quotaTip">启用占用受店铺 employee_quota 限制</div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">挂店状态</label>
+                <div class="layui-input-block">
+                    <select name="bindStatus" class="timo-search-select" lay-verify="required">
+                        <option value="1" selected>启用</option>
+                        <option value="0">停用</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">店内权限</label>
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btnManagerTpl">店长模板</button>
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btnClearPerm">清空</button>
+                    <div class="perm-box">
+                        <input th:each="p : ${permCodes}" type="checkbox" name="bindPermCodes"
+                               th:title="${p.message}" th:value="${p.code}" lay-skin="primary">
+                    </div>
+                    <div class="field-tip">首任店长可点「店长模板」一键勾选全部权限（销售/回收/库存/财务/店铺管理）</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item timo-finally">
+            <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
+                <i class="fa fa-check-circle"></i> 保存
+            </button>
+            <button type="button" class="layui-btn btn-secondary close-popup">
+                <i class="fa fa-times-circle"></i> 关闭
+            </button>
+        </div>
+    </form>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script th:inline="javascript">
+    var managerPermCodes = /*[[${managerPermCodes}]]*/ [];
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+
+        form.on('select(bindTenant)', function (data) {
+            if (!data.value) {
+                $('#quotaTip').text('启用占用受店铺 employee_quota 限制');
+                return;
+            }
+            $.get('/business/platform/employee/quota', {tenantId: data.value}, function (res) {
+                if (res.code == 200 && res.data) {
+                    $('#quotaTip').text('当前占用 ' + res.data[0] + ' / 配额 ' + res.data[1]);
+                }
+            });
+        });
+
+        $('#btnManagerTpl').on('click', function () {
+            $('input[name=bindPermCodes]').each(function () {
+                this.checked = managerPermCodes.indexOf(this.value) >= 0;
+            });
+            form.render('checkbox');
+        });
+        $('#btnClearPerm').on('click', function () {
+            $('input[name=bindPermCodes]').prop('checked', false);
+            form.render('checkbox');
+        });
+
+        form.on('submit(submitForm)', function () {
+            $.ajax({
+                url: '/business/platform/employee/save',
+                type: 'POST',
+                data: $('#editform').serialize(),
+                success: function (res) {
+                    if (res.code == 200) {
+                        window.parent.location.reload();
+                    } else {
+                        alert(res.msg || '保存失败');
+                    }
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

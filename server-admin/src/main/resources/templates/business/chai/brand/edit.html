@@ -90,6 +90,15 @@
         </div>
 
         <div class="layui-form-item">
+            <label class="layui-form-label required">是否常用</label>
+            <div class="layui-input-block">
+                <select class="timo-search-select" name="commonFlag" mo:dict="YES_OR_NO"
+                        mo-selected="${editItem.commonFlag}" lay-verify="required"></select>
+                <div class="field-tip">常用品牌在 H5 筛选列表中优先展示</div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
             <label class="layui-form-label required">排序号（大到小）</label>
             <div class="layui-input-block">
                 <input type="number" name="orderNum" class="layui-input" th:value="${editItem?.orderNum}"

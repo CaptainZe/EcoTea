@@ -37,4 +37,12 @@ public interface RedisConstant {
     String CHAI_WAREHOUSE_ONLINE_KEY = KEY_PRE + "chai_warehouse_online";
     /** key 模板：{@code ecotea_wx_global_config_{type}}，用法 {@code String.format(WX_GLOBAL_CONFIG_KEY, type)} */
     String WX_GLOBAL_CONFIG_KEY = KEY_PRE + "wx_global_config_%s";
+
+    /* ***** 组织域（与 api 必须一致） ***** */
+    /** key 模板：{@code ecotea_tenant_{tenantId}}，业务键 tenant.tenant_id */
+    String TENANT_KEY = KEY_PRE + "tenant_%s";
+    /** 会话：{@code ecotea_emp_session_{token}}（api 写入；admin 改员工后踢会话） */
+    String EMP_SESSION_KEY = KEY_PRE + "emp_session_%s";
+    /** 单点：{@code ecotea_emp_uid_{employeeId}} → token */
+    String EMP_UID_TOKEN_KEY = KEY_PRE + "emp_uid_%s";
 }

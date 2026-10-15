@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>店铺租户</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 店铺租户</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">租户ID</label>
+                    <div class="layui-input-block">
+                        <input type="number" name="tenantId" th:value="${param.tenantId}" placeholder="业务租户ID"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">店铺名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="name" th:value="${param.name}" placeholder="名称模糊"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="status">
+                            <option value="">全部</option>
+                            <option value="1" th:selected="${param.status != null and !#lists.isEmpty(param.status) and param.status[0] == '1'}">启用</option>
+                            <option value="0" th:selected="${param.status != null and !#lists.isEmpty(param.status) and param.status[0] == '0'}">停用</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">省</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchProvince" name="province" lay-filter="pcaProvince"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">市</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchCity" name="city" lay-filter="pcaCity"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">区/县</label>
+                    <div class="layui-input-block timo-search-status" style="width: 140px;">
+                        <select id="searchDistrict" name="district" lay-filter="pcaDistrict"
+                                class="layui-input timo-search-select" lay-search>
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加店铺"
+                        th:attr="data-url=@{/business/platform/tenant/edit}" data-size="960,780">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status" data-msg="是否确认启用选中店铺"
+                               th:href="@{/business/platform/tenant/status/1}">启用</a></dd>
+                        <dd><a class="ajax-status" data-msg="停用后该店员工将无法正常使用，是否确认"
+                               th:href="@{/business/platform/tenant/status/0}">停用</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="100">操作</th>
+                    <th width="90" class="sortable" data-field="status">状态</th>
+                    <th width="100" class="sortable" data-field="tenantId">租户ID</th>
+                    <th width="160">店铺名称</th>
+                    <th width="90">员工名额</th>
+                    <th width="200">省市区</th>
+                    <th width="100">负责人</th>
+                    <th width="120">手机</th>
+                    <th width="100">操作人</th>
+                    <th width="140" class="sortable" data-field="updateTime">更新时间</th>
+                    <th width="140" class="sortable" data-field="createTime">创建时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑店铺"
+                           th:attr="data-url=@{'/business/platform/tenant/edit/'+${item.id}}" data-size="960,780">编辑</a>
+                        <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
+                           data-msg="是否确认停用"
+                           th:href="@{/business/platform/tenant/status/0(ids=${item.id})}">停用</a>
+                        <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;"
+                           data-msg="是否确认启用"
+                           th:href="@{/business/platform/tenant/status/1(ids=${item.id})}">启用</a>
+                    </td>
+                    <td th:text="${item.status == 1} ? '启用' : '停用'"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${item.tenantId}"></td>
+                    <td th:text="${item.name}" th:title="${item.name}"></td>
+                    <td th:text="${item.employeeQuota}"></td>
+                    <td th:text="${(item.provinceName != null and !#strings.isEmpty(item.provinceName) ? item.provinceName : '')
+                        + (item.cityName != null and !#strings.isEmpty(item.cityName) ? item.cityName : '')
+                        + (item.districtName != null and !#strings.isEmpty(item.districtName) ? item.districtName : '')}"></td>
+                    <td th:text="${item.contactName}" th:title="${item.contactName}"></td>
+                    <td th:text="${item.contactMobile}" th:title="${item.contactMobile}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.createTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+<script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/sys/pca-cascade.js}"></script>
+<script th:inline="javascript">
+    var tenantSearchPcaInitial = {
+        province: /*[[${param.province != null and !#lists.isEmpty(param.province) ? param.province[0] : ''}]]*/ '',
+        city: /*[[${param.city != null and !#lists.isEmpty(param.city) ? param.city[0] : ''}]]*/ '',
+        district: /*[[${param.district != null and !#lists.isEmpty(param.district) ? param.district[0] : ''}]]*/ ''
+    };
+</script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var $ = layui.jquery;
+        new PcaCascade({
+            $: $,
+            province: '#searchProvince',
+            city: '#searchCity',
+            district: '#searchDistrict',
+            layForm: form,
+            allowEmpty: true,
+            initial: tenantSearchPcaInitial
+        }).init();
+    });
+</script>
+</body>
+</html>

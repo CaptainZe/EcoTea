@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
+    <title>员工账号</title>
+</head>
+<body class="timo-layout-page">
+<div class="layui-card">
+    <div class="layui-card-header timo-card-header">
+        <span><i class="fa fa-bars"></i> 员工账号</span>
+        <i class="layui-icon layui-icon-refresh refresh-btn"></i>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-row timo-card-screen">
+            <div class="layui-form pull-left layui-form-pane timo-search-box">
+                <div class="layui-inline">
+                    <label class="layui-form-label">登录名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="username" th:value="${param.username}" placeholder="模糊"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="realName" th:value="${param.realName}" placeholder="模糊"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="status">
+                            <option value="">全部</option>
+                            <option value="1" th:selected="${param.status != null and !#lists.isEmpty(param.status) and param.status[0] == '1'}">启用</option>
+                            <option value="0" th:selected="${param.status != null and !#lists.isEmpty(param.status) and param.status[0] == '0'}">停用</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">店铺</label>
+                    <div class="layui-input-block timo-search-status" style="width: 180px;">
+                        <select class="timo-search-select layui-input" name="filterTenantId" lay-search>
+                            <option value="">全部</option>
+                            <option th:each="t : ${tenants}" th:value="${t.tenantId}"
+                                    th:text="${t.name + ' (' + t.tenantId + ')'}"
+                                    th:selected="${param.filterTenantId != null and !#lists.isEmpty(param.filterTenantId) and param.filterTenantId[0] == (t.tenantId + '')}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn timo-search-btn">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pull-right screen-btn-group">
+                <button class="layui-btn open-popup" data-title="添加员工"
+                        th:attr="data-url=@{/business/platform/employee/edit}" data-size="920,780">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <div class="btn-group">
+                    <button class="layui-btn">操作<span class="caret"></span></button>
+                    <dl class="layui-nav-child layui-anim layui-anim-upbit">
+                        <dd><a class="ajax-status" data-msg="是否确认启用选中员工"
+                               th:href="@{/business/platform/employee/status/1}">启用</a></dd>
+                        <dd><a class="ajax-status" data-msg="停用后该员工无法登录小程序，是否确认"
+                               th:href="@{/business/platform/employee/status/0}">停用</a></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="timo-table-wrap">
+            <table class="layui-table timo-table">
+                <thead>
+                <tr>
+                    <th class="timo-table-checkbox">
+                        <label class="timo-checkbox"><input type="checkbox">
+                            <i class="layui-icon layui-icon-ok"></i></label>
+                    </th>
+                    <th width="140">操作</th>
+                    <th width="80">状态</th>
+                    <th width="120">登录名</th>
+                    <th width="100">姓名</th>
+                    <th width="120">手机</th>
+                    <th>挂店</th>
+                    <th width="100">操作人</th>
+                    <th width="140">更新时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${list}">
+                    <td><label class="timo-checkbox"><input type="checkbox" th:value="${item.id}">
+                        <i class="layui-icon layui-icon-ok"></i></label></td>
+                    <td>
+                        <a class="open-popup" style="color: #1D4ED8; font-weight: 600;" data-title="编辑员工"
+                           th:attr="data-url=@{'/business/platform/employee/edit/'+${item.id}}" data-size="720,560">编辑</a>
+                        <a class="open-popup" style="color: #0F766E; font-weight: 600;" data-title="挂店与权限"
+                           th:attr="data-url=@{'/business/platform/employee/shops/'+${item.id}}" data-size="960,780">挂店</a>
+                        <a th:if="${item.status == 1}" class="ajax-get" style="color: #B45309; font-weight: 600;"
+                           data-msg="是否确认停用"
+                           th:href="@{/business/platform/employee/status/0(ids=${item.id})}">停用</a>
+                        <a th:if="${item.status != 1}" class="ajax-get" style="color: #16A34A; font-weight: 600;"
+                           data-msg="是否确认启用"
+                           th:href="@{/business/platform/employee/status/1(ids=${item.id})}">启用</a>
+                    </td>
+                    <td th:text="${item.status == 1} ? '启用' : '停用'"
+                        th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
+                    <td th:text="${item.username}"></td>
+                    <td th:text="${item.realName}"></td>
+                    <td th:text="${item.mobile}"></td>
+                    <td th:text="${item.tenantSummary}" th:title="${item.tenantSummary}"></td>
+                    <td th:text="${item.operator}"></td>
+                    <td th:text="${#dates.format(new java.util.Date(item.updateTime.longValue()), 'yyyy/MM/dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:replace="/common/fragment :: page"></div>
+    </div>
+</div>
+<script th:replace="/common/template :: script"></script>
+</body>
+</html>

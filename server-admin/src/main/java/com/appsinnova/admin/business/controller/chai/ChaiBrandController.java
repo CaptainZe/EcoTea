@@ -41,7 +41,10 @@ public class ChaiBrandController {
             editItem = new ChaiBrand();
             editItem.setStatus(ChaiStatus.ONLINE.getCode());
             editItem.setOrderNum(0);
+            editItem.setCommonFlag(0);
             editItem.setLogo("");
+        } else if (editItem.getCommonFlag() == null) {
+            editItem.setCommonFlag(0);
         }
         model.addAttribute("editItem", editItem);
         return "/business/chai/brand/edit";
@@ -75,6 +78,9 @@ public class ChaiBrandController {
         }
         if (saveItem.getOrderNum() == null) {
             saveItem.setOrderNum(0);
+        }
+        if (saveItem.getCommonFlag() == null) {
+            saveItem.setCommonFlag(0);
         }
         // logo 非必填
         if (StringUtils.isBlank(saveItem.getLogo())) {

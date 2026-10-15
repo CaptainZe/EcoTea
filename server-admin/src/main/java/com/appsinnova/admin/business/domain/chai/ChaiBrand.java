@@ -27,6 +27,8 @@ public class ChaiBrand implements Serializable {
     private String namePinyin;
     private String logo;
     private Integer orderNum;
+    /** 常用标识：0否 1是 */
+    private Integer commonFlag;
     private Integer status;
     private String operator;
     private Long updateTime;

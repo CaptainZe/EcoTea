@@ -1,0 +1,20 @@
+package com.appsinnova.admin.business.common.enums.platform;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/** 员工账号状态：0停用 1启用 */
+@Getter
+@AllArgsConstructor
+public enum EmployeeStatus {
+    DISABLED(0, "停用"),
+    ENABLED(1, "启用"),
+    ;
+
+    private final Integer code;
+    private final String message;
+
+    public static boolean isEnabled(Integer code) {
+        return ENABLED.code.equals(code);
+    }
+}
