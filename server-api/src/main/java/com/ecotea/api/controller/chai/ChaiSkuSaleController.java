@@ -32,7 +32,9 @@ public class ChaiSkuSaleController {
      * recycleRecent=1：近 N 日回收入库（N 见 ChaiConstant.RECYCLE_RECENT_DAYS），按最近回收倒序。
      * brandIds / types：逗号分隔多选；
      * priceMin / priceMax：售价区间；officialPriceMin / officialPriceMax：官方价区间；
-     * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）。
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）；
+     * year：SKU 年份精确匹配；
+     * prodBatch：生产批次精确匹配（如 100 上半年 / 200 下半年）。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuSalePageVO> list(
@@ -49,6 +51,8 @@ public class ChaiSkuSaleController {
             @RequestParam(required = false) BigDecimal officialPriceMin,
             @RequestParam(required = false) BigDecimal officialPriceMax,
             @RequestParam(required = false) Integer nonSale,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer prodBatch,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         boolean withWhNames = includeWh != null && includeWh != 0;
@@ -56,7 +60,7 @@ public class ChaiSkuSaleController {
         return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(
                 keyword, barcode, spuId, whId, withWhNames, recycleRecentFlag,
                 parseLongIds(brandIds), parseIntIds(types),
-                priceMin, priceMax, officialPriceMin, officialPriceMax, nonSale,
+                priceMin, priceMax, officialPriceMin, officialPriceMax, nonSale, year, prodBatch,
                 page, size));
     }
 

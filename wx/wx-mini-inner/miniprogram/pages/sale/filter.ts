@@ -68,31 +68,33 @@ Page({
 
   onLoad() {
     const channel = this.getOpenerEventChannel()
-    this._channel = channel
-    channel.on('initFilter', (payload: SaleFilterResult & { brandNames?: string[] }) => {
-      const brandIds = (payload && payload.brandIds) || []
-      const brandNames = (payload && payload.brandNames) || []
-      const types = (payload && payload.types) || []
-      const nonSale = payload ? payload.nonSale : null
-      brandIds.forEach((id, i) => {
-        if (brandNames[i]) this._nameMap[id] = brandNames[i]
+    this._channel = channel || null
+    if (channel && typeof channel.on === 'function') {
+      channel.on('initFilter', (payload: SaleFilterResult & { brandNames?: string[] }) => {
+        const brandIds = (payload && payload.brandIds) || []
+        const brandNames = (payload && payload.brandNames) || []
+        const types = (payload && payload.types) || []
+        const nonSale = payload ? payload.nonSale : null
+        brandIds.forEach((id, i) => {
+          if (brandNames[i]) this._nameMap[id] = brandNames[i]
+        })
+        this.setData({
+          brandIds: brandIds.slice(),
+          brandNames: brandNames.slice(),
+          brandSummary: brandSummaryOf(brandIds, brandNames),
+          types: types.slice(),
+          priceMin: payload && payload.priceMin != null ? String(payload.priceMin) : '',
+          priceMax: payload && payload.priceMax != null ? String(payload.priceMax) : '',
+          officialMin:
+            payload && payload.officialPriceMin != null ? String(payload.officialPriceMin) : '',
+          officialMax:
+            payload && payload.officialPriceMax != null ? String(payload.officialPriceMax) : '',
+          nonSale: nonSale == null ? null : nonSale,
+        })
+        this.refreshTypeTags(types)
+        this.refreshCommonTags(brandIds)
       })
-      this.setData({
-        brandIds: brandIds.slice(),
-        brandNames: brandNames.slice(),
-        brandSummary: brandSummaryOf(brandIds, brandNames),
-        types: types.slice(),
-        priceMin: payload && payload.priceMin != null ? String(payload.priceMin) : '',
-        priceMax: payload && payload.priceMax != null ? String(payload.priceMax) : '',
-        officialMin:
-          payload && payload.officialPriceMin != null ? String(payload.officialPriceMin) : '',
-        officialMax:
-          payload && payload.officialPriceMax != null ? String(payload.officialPriceMax) : '',
-        nonSale: nonSale == null ? null : nonSale,
-      })
-      this.refreshTypeTags(types)
-      this.refreshCommonTags(brandIds)
-    })
+    }
     this.loadTypes()
     this.loadCommonBrands()
   },
@@ -129,22 +131,35 @@ Page({
   },
 
   refreshTypeTags(types: number[]) {
-    const typeSet = new Set(types.map(String))
+    const typeMap: Record<string, boolean> = {}
+    types.forEach((t) => {
+      typeMap[String(t)] = true
+    })
     this.setData({
-      typeTags: this.data.typesAll.map((t) => ({
-        ...t,
-        on: typeSet.has(String(t.code)),
-      })),
+      typeTags: this.data.typesAll.map((t) => {
+        return {
+          code: t.code,
+          text: t.text,
+          on: !!typeMap[String(t.code)],
+        }
+      }),
     })
   },
 
   refreshCommonTags(brandIds: number[]) {
-    const idSet = new Set(brandIds)
+    const idMap: Record<string, boolean> = {}
+    brandIds.forEach((id) => {
+      idMap[String(id)] = true
+    })
     this.setData({
-      commonTags: (this.data.commonRaw || []).map((b) => ({
-        ...b,
-        on: idSet.has(b.id),
-      })),
+      commonTags: (this.data.commonRaw || []).map((b) => {
+        return {
+          id: b.id,
+          name: b.name,
+          nameInitial: b.nameInitial,
+          on: !!idMap[String(b.id)],
+        }
+      }),
     })
   },
 

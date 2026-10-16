@@ -22,6 +22,10 @@
     </view>
 
     <view class="toolbar">
+      <view class="tool-chip {{year ? 'is-on' : ''}}" bindtap="onYearTap">{{yearLabel}}</view>
+      <picker mode="selector" range="{{prodBatchLabels}}" value="{{prodBatchIndex}}" bindchange="onProdBatchChange">
+        <view class="tool-chip {{prodBatchIndex > 0 ? 'is-on' : ''}}">{{prodBatchChipText}}</view>
+      </picker>
       <view class="toolbar-spacer"></view>
       <view class="filter-entry {{filterActive ? 'is-on' : ''}}" bindtap="onOpenFilter">
         <image

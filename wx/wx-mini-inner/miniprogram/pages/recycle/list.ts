@@ -2,6 +2,12 @@ import { fetchRecycleList, RecycleSkuItem } from '../../services/recycle-api'
 import { add as addQuote, has as hasQuote, kindCount } from '../../services/recycle-quote'
 import { assertRecycleAccess } from '../../utils/recycle-guard'
 import { RecycleListRow, toListRow } from '../../utils/recycle-list-format'
+import {
+  parseYearInput,
+  prodBatchFromSheetIndex,
+  PROD_BATCH_SHEET_LABELS,
+  yearChipLabel,
+} from '../../utils/year-filter'
 import type { RecycleFilterResult } from './filter'
 
 const PAGE_SIZE = 20
@@ -40,6 +46,13 @@ Page({
     nonSale: null as number | null,
     filterActive: false,
     filterSummary: '',
+
+    year: null as number | null,
+    yearLabel: '年份',
+    prodBatchLabels: PROD_BATCH_SHEET_LABELS.slice(),
+    prodBatchIndex: 0,
+    prodBatchChipText: '上下年',
+    prodBatch: null as number | null,
   },
 
   onLoad() {
@@ -100,6 +113,48 @@ Page({
       nonSale: null,
       filterActive: false,
       filterSummary: '',
+      year: null,
+      yearLabel: '年份',
+      prodBatchIndex: 0,
+      prodBatchChipText: '上下年',
+      prodBatch: null,
+    })
+    this.reload()
+  },
+
+  onYearTap() {
+    const self = this
+    const current = this.data.year != null ? String(this.data.year) : ''
+    wx.showModal({
+      title: '按年份查询',
+      editable: true,
+      placeholderText: '输入4位年份，留空清除',
+      content: current,
+      success(res) {
+        if (!res.confirm) {
+          return
+        }
+        const parsed = parseYearInput(res.content || '')
+        if (!parsed.ok) {
+          wx.showToast({ title: parsed.message, icon: 'none' })
+          return
+        }
+        self.setData({
+          year: parsed.year,
+          yearLabel: yearChipLabel(parsed.year),
+        })
+        self.reload()
+      },
+    })
+  },
+
+  onProdBatchChange(e: WechatMiniprogram.PickerChange) {
+    const idx = Number(e.detail.value || 0)
+    const labels = this.data.prodBatchLabels || []
+    this.setData({
+      prodBatchIndex: idx,
+      prodBatch: prodBatchFromSheetIndex(idx),
+      prodBatchChipText: idx > 0 ? labels[idx] || '上下年' : '上下年',
     })
     this.reload()
   },
@@ -243,6 +298,8 @@ Page({
       officialPriceMin: this.data.officialPriceMin,
       officialPriceMax: this.data.officialPriceMax,
       nonSale: this.data.nonSale,
+      year: this.data.year,
+      prodBatch: this.data.prodBatch,
       page,
       size: PAGE_SIZE,
     })
@@ -261,7 +318,12 @@ Page({
           emptyTip = '未找到该条码商品'
         } else if (spuId) {
           emptyTip = '暂无同款'
-        } else if (this.data.keyword || this.data.filterActive) {
+        } else if (
+          this.data.keyword ||
+          this.data.filterActive ||
+          this.data.year ||
+          this.data.prodBatch
+        ) {
           emptyTip = '未找到相关商品'
         }
         this.setData({

@@ -59,6 +59,8 @@ export interface SaleListQuery {
   officialPriceMin?: number | null
   officialPriceMax?: number | null
   nonSale?: number | null
+  year?: number | null
+  prodBatch?: number | null
   includeWh?: number
   page?: number
   size?: number
@@ -106,6 +108,12 @@ export function fetchSaleList(params: SaleListQuery): Promise<ApiResult<SaleSkuP
     if (params.officialPriceMax != null) {
       data.officialPriceMax = params.officialPriceMax
     }
+  }
+  if (params.year != null) {
+    data.year = params.year
+  }
+  if (params.prodBatch != null) {
+    data.prodBatch = params.prodBatch
   }
   return request<SaleSkuPage>({
     url: '/chai/sku/sale/list',

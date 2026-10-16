@@ -64,7 +64,7 @@ public class ChaiSkuSaleQueryService {
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
         return pageSaleList(keyword, null, spuId, null, false, false,
                 Collections.emptyList(), Collections.emptyList(),
-                null, null, null, null, null, page, size);
+                null, null, null, null, null, null, null, page, size);
     }
 
     /**
@@ -75,7 +75,7 @@ public class ChaiSkuSaleQueryService {
                                           long page, long size) {
         return pageSaleList(keyword, null, spuId, whId, includeWh, recycleRecent,
                 Collections.emptyList(), Collections.emptyList(),
-                null, null, null, null, null, page, size);
+                null, null, null, null, null, null, null, page, size);
     }
 
     /**
@@ -86,14 +86,16 @@ public class ChaiSkuSaleQueryService {
      * recycleRecent：近 {@link ChaiConstant#RECYCLE_RECENT_DAYS} 日回收入库，并按最近回收时间倒序；
      * brandIds / types：多选；priceMin / priceMax：售价区间；
      * officialPriceMin / officialPriceMax：官方价区间；
-     * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）。
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）；
+     * year：SKU 年份精确匹配（null 不限）；
+     * prodBatch：生产批次精确匹配（null 不限）。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, String barcode, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
                                           List<Long> brandIds, List<Integer> types,
                                           BigDecimal priceMin, BigDecimal priceMax,
                                           BigDecimal officialPriceMin, BigDecimal officialPriceMax,
-                                          Integer nonSale,
+                                          Integer nonSale, Integer year, Integer prodBatch,
                                           long page, long size) {
         if (page < 1) {
             page = 1;
@@ -188,6 +190,12 @@ public class ChaiSkuSaleQueryService {
         if (officialMax != null) {
             wrapper.le(ChaiSku::getOfficialPrice, officialMax);
         }
+        if (year != null) {
+            wrapper.eq(ChaiSku::getYear, year);
+        }
+        if (prodBatch != null) {
+            wrapper.eq(ChaiSku::getProdBatch, prodBatch);
+        }
 
         if (recycleRecent) {
             // 越新回收的越靠前
@@ -231,9 +239,9 @@ public class ChaiSkuSaleQueryService {
         result.setRecycleRecent(recycleRecent);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, barcode={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, matchType={}, page={}, size={}, total={}",
+        log.info("chai sku sale list, keyword={}, barcode={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, year={}, prodBatch={}, matchType={}, page={}, size={}, total={}",
                 kw, code, spuId, whId, includeWh, recycleRecent, brandIdList, typeList,
-                min, max, officialMin, officialMax, nonSale,
+                min, max, officialMin, officialMax, nonSale, year, prodBatch,
                 matchType, page, size, mpPage.getTotal());
         return result;
     }

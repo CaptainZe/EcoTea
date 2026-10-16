@@ -61,6 +61,8 @@ export interface RecycleListQuery {
   officialPriceMin?: number | null
   officialPriceMax?: number | null
   nonSale?: number | null
+  year?: number | null
+  prodBatch?: number | null
   page?: number
   size?: number
 }
@@ -100,6 +102,12 @@ export function fetchRecycleList(params: RecycleListQuery): Promise<ApiResult<Re
     if (params.officialPriceMax != null) {
       data.officialPriceMax = params.officialPriceMax
     }
+  }
+  if (params.year != null) {
+    data.year = params.year
+  }
+  if (params.prodBatch != null) {
+    data.prodBatch = params.prodBatch
   }
   return request<RecycleSkuPage>({
     url: '/chai/sku/recycle/list',

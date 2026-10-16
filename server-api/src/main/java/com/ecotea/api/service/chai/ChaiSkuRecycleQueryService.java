@@ -58,7 +58,7 @@ public class ChaiSkuRecycleQueryService {
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, Long spuId, long page, long size) {
         return pageRecycleList(keyword, null, spuId, Collections.emptyList(), Collections.emptyList(),
-                null, null, null, null, null, page, size);
+                null, null, null, null, null, null, null, page, size);
     }
 
     /**
@@ -67,13 +67,15 @@ public class ChaiSkuRecycleQueryService {
      * brandIds / types：多选筛选；
      * recyclePriceMin / recyclePriceMax：回收价区间；
      * officialPriceMin / officialPriceMax：官方价区间；
-     * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）。
+     * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）；
+     * year：SKU 年份精确匹配（null 不限）；
+     * prodBatch：生产批次精确匹配（null 不限）。
      */
     public ChaiSkuRecyclePageVO pageRecycleList(String keyword, String barcode, Long spuId,
                                                 List<Long> brandIds, List<Integer> types,
                                                 BigDecimal recyclePriceMin, BigDecimal recyclePriceMax,
                                                 BigDecimal officialPriceMin, BigDecimal officialPriceMax,
-                                                Integer nonSale,
+                                                Integer nonSale, Integer year, Integer prodBatch,
                                                 long page, long size) {
         if (page < 1) {
             page = 1;
@@ -160,6 +162,12 @@ public class ChaiSkuRecycleQueryService {
         if (officialMax != null) {
             wrapper.le(ChaiSku::getOfficialPrice, officialMax);
         }
+        if (year != null) {
+            wrapper.eq(ChaiSku::getYear, year);
+        }
+        if (prodBatch != null) {
+            wrapper.eq(ChaiSku::getProdBatch, prodBatch);
+        }
 
         wrapper.orderByDesc(ChaiSku::getYear)
                 .orderByDesc(ChaiSku::getProdBatch)
@@ -187,8 +195,8 @@ public class ChaiSkuRecycleQueryService {
         result.setSpuId(spuId);
         result.setList(list);
 
-        log.info("chai sku recycle list, keyword={}, barcode={}, spuId={}, brandIds={}, types={}, recyclePriceMin={}, recyclePriceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, matchType={}, page={}, size={}, total={}",
-                kw, code, spuId, brandIdList, typeList, recycleMin, recycleMax, officialMin, officialMax, nonSale,
+        log.info("chai sku recycle list, keyword={}, barcode={}, spuId={}, brandIds={}, types={}, recyclePriceMin={}, recyclePriceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, year={}, prodBatch={}, matchType={}, page={}, size={}, total={}",
+                kw, code, spuId, brandIdList, typeList, recycleMin, recycleMax, officialMin, officialMax, nonSale, year, prodBatch,
                 matchType, page, size, mpPage.getTotal());
         return result;
     }

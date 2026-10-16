@@ -83,6 +83,29 @@
   border-bottom: 1rpx solid var(--rec-line);
 }
 
+.tool-chip {
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 20rpx;
+  background: var(--rec-bg);
+  border: 1rpx solid var(--rec-line);
+  border-radius: 28rpx;
+  font-size: 24rpx;
+  color: var(--rec-ink);
+  max-width: 200rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.tool-chip.is-on {
+  background: var(--rec-accent-soft);
+  border-color: var(--rec-accent);
+  color: var(--rec-accent);
+  font-weight: 650;
+}
+
 .toolbar-spacer {
   flex: 1;
 }
