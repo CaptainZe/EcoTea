@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>回收价目（内部）</title>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260930c"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20261010b"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20261016b"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260918c"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260918c"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-recycle-quote.css?v=20260918c"/>
@@ -32,7 +32,10 @@
   </form>
 
   <div class="list-toolbar" id="listToolbar">
-    <div class="list-toolbar-left"></div>
+    <div class="list-toolbar-left">
+      <button type="button" class="tool-chip" id="yearChipBtn" aria-label="年份筛选">年份</button>
+      <button type="button" class="tool-chip" id="prodBatchChipBtn" aria-label="上下年筛选">上下年</button>
+    </div>
     <button type="button" class="filter-entry" id="filterEntryBtn" aria-label="筛选">
       <img class="filter-entry-icon" id="filterEntryIcon" src="/h5/assets/image/filter_off.png" alt=""/>
       <span>筛选</span>
@@ -118,9 +121,10 @@
   </div>
 
   <script src="/h5/assets/js/chai-list-filter.js?v=20260918c"></script>
+  <script src="/h5/assets/js/chai-period-filter.js?v=20261016b"></script>
   <script src="/h5/assets/js/chai-inner-util.js?v=20260918c"></script>
   <script src="/h5/assets/js/chai-recycle-quote.js?v=20260928a"></script>
   <script src="/h5/assets/js/chai-barcode-scan.js?v=20260930c"></script>
-  <script src="/h5/assets/js/chai-inner-recycle.js?v=20261010b"></script>
+  <script src="/h5/assets/js/chai-inner-recycle.js?v=20261016b"></script>
 </body>
 </html>

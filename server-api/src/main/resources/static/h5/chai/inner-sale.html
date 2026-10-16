@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>在售价目（内部）</title>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale.css?v=20260920d"/>
-  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20261010b"/>
+  <link rel="stylesheet" href="/h5/assets/css/chai-list-filter.css?v=20261016b"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-stock.css?v=20260920d"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-inner.css?v=20260930b"/>
   <link rel="stylesheet" href="/h5/assets/css/chai-sale-quote.css?v=20260920d"/>
@@ -40,6 +40,8 @@
       <select id="whSelect" name="whId" aria-label="仓库筛选">
         <option value="">全部仓</option>
       </select>
+      <button type="button" class="tool-chip" id="yearChipBtn" aria-label="年份筛选">年份</button>
+      <button type="button" class="tool-chip" id="prodBatchChipBtn" aria-label="上下年筛选">上下年</button>
     </div>
     <button type="button" class="filter-entry" id="filterEntryBtn" aria-label="筛选">
       <img class="filter-entry-icon" id="filterEntryIcon" src="/h5/assets/image/filter_off.png" alt=""/>
@@ -127,9 +129,10 @@
 
   <script src="/h5/assets/js/chai-sale-stock.js?v=20260920d"></script>
   <script src="/h5/assets/js/chai-list-filter.js?v=20260920d"></script>
+  <script src="/h5/assets/js/chai-period-filter.js?v=20261016b"></script>
   <script src="/h5/assets/js/chai-inner-util.js?v=20260920d"></script>
   <script src="/h5/assets/js/chai-sale-quote.js?v=20260920d"></script>
   <script src="/h5/assets/js/chai-barcode-scan.js?v=20260930c"></script>
-  <script src="/h5/assets/js/chai-inner-sale.js?v=20261010b"></script>
+  <script src="/h5/assets/js/chai-inner-sale.js?v=20261016b"></script>
 </body>
 </html>

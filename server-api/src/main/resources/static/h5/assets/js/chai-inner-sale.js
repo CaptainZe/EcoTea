@@ -15,6 +15,8 @@
     officialPriceMin: null,
     officialPriceMax: null,
     nonSale: null,
+    year: null,
+    prodBatch: null,
     total: 0,
   };
 
@@ -53,6 +55,8 @@
     keyword: document.getElementById("keyword"),
     recycleSelect: document.getElementById("recycleSelect"),
     whSelect: document.getElementById("whSelect"),
+    yearChipBtn: document.getElementById("yearChipBtn"),
+    prodBatchChipBtn: document.getElementById("prodBatchChipBtn"),
     meta: document.getElementById("meta"),
     list: document.getElementById("list"),
     empty: document.getElementById("empty"),
@@ -132,6 +136,12 @@
         params.set("officialPriceMax", String(state.officialPriceMax));
       }
     }
+    if (state.year != null) {
+      params.set("year", String(state.year));
+    }
+    if (state.prodBatch != null) {
+      params.set("prodBatch", String(state.prodBatch));
+    }
     if (state.page > 1) {
       params.set("page", String(state.page));
     }
@@ -142,6 +152,27 @@
       window.location.pathname + (q ? "?" + q : "")
     );
     rememberListUrl();
+  }
+
+  function periodApi() {
+    return window.ChaiPeriodFilter || null;
+  }
+
+  function syncPeriodChips() {
+    var api = periodApi();
+    if (!api) {
+      return;
+    }
+    api.syncChip(
+      els.yearChipBtn,
+      api.yearLabel(state.year),
+      state.year != null
+    );
+    api.syncChip(
+      els.prodBatchChipBtn,
+      api.prodBatchLabel(state.prodBatch),
+      state.prodBatch != null
+    );
   }
 
   function parseIdList(raw, asInt) {
@@ -568,12 +599,15 @@
     state.officialPriceMin = null;
     state.officialPriceMax = null;
     state.nonSale = null;
+    state.year = null;
+    state.prodBatch = null;
     if (els.whSelect) {
       els.whSelect.value = "";
     }
     if (els.recycleSelect) {
       els.recycleSelect.value = "";
     }
+    syncPeriodChips();
     updateFilterEntryIcon();
     state.page = 1;
     updateFilterBar();
@@ -588,6 +622,16 @@
     state.whId = readWhIdFromSelect();
     state.recycleRecent = readRecycleRecentFromSelect();
     state.page = 1;
+    updateFilterBar();
+    syncUrl();
+    load();
+  }
+
+  function applyPeriodAndReload() {
+    syncKeywordFromInput();
+    state.barcode = "";
+    state.page = 1;
+    syncPeriodChips();
     updateFilterBar();
     syncUrl();
     load();
@@ -972,6 +1016,12 @@
           params.set("officialPriceMax", String(state.officialPriceMax));
         }
       }
+      if (state.year != null) {
+        params.set("year", String(state.year));
+      }
+      if (state.prodBatch != null) {
+        params.set("prodBatch", String(state.prodBatch));
+      }
     }
 
     els.meta.textContent = "加载中…";
@@ -1062,6 +1112,36 @@
   }
   if (els.whSelect) {
     els.whSelect.addEventListener("change", applyFiltersAndReload);
+  }
+  if (els.yearChipBtn) {
+    els.yearChipBtn.addEventListener("click", function () {
+      var api = periodApi();
+      if (!api) {
+        return;
+      }
+      api.openYearModal({
+        year: state.year,
+        onDone: function (year) {
+          state.year = year;
+          applyPeriodAndReload();
+        },
+      });
+    });
+  }
+  if (els.prodBatchChipBtn) {
+    els.prodBatchChipBtn.addEventListener("click", function () {
+      var api = periodApi();
+      if (!api) {
+        return;
+      }
+      api.openProdBatchSheet({
+        prodBatch: state.prodBatch,
+        onDone: function (prodBatch) {
+          state.prodBatch = prodBatch;
+          applyPeriodAndReload();
+        },
+      });
+    });
   }
 
   if (els.filterEntryBtn) {
@@ -1286,6 +1366,14 @@
   if (els.recycleSelect) {
     els.recycleSelect.value = state.recycleRecent ? "1" : "";
   }
+  var yearParsed = periodApi()
+    ? periodApi().parseYear(qs("year"))
+    : { ok: true, year: null };
+  state.year = yearParsed.ok ? yearParsed.year : null;
+  var batchRaw = qs("prodBatch");
+  var batchN = batchRaw ? parseInt(batchRaw, 10) : NaN;
+  state.prodBatch = batchN === 100 || batchN === 200 ? batchN : null;
+  syncPeriodChips();
   state.brandIds = parseIdList(qs("brandIds"), false);
   state.types = parseIdList(qs("types"), true);
   var salePair = normalizePricePair(
@@ -1319,17 +1407,21 @@
     state.officialPriceMin = null;
     state.officialPriceMax = null;
     state.nonSale = null;
+    state.year = null;
+    state.prodBatch = null;
     if (els.whSelect) {
       els.whSelect.value = "";
     }
     if (els.recycleSelect) {
       els.recycleSelect.value = "";
     }
+    syncPeriodChips();
   }
   var pageRaw = qs("page");
   state.page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
   updateFilterBar();
   updateFilterEntryIcon();
+  syncPeriodChips();
   rememberListUrl();
   ensureFilterMeta();
 
