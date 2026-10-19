@@ -8,6 +8,6 @@
 | [`d-deploy/`](../d-deploy/) | 部署与运维（`DEPLOY_*.md`） |
 | [`d-ui/`](../d-ui/) | 各端 UI 规范（如 `UI_SPEC_WX_MINI_INNER.md`） |
 | [`d-db/`](../d-db/) | SQL 脚本与库表文档 |
-| **本目录 `d-docs/`** | `CODING_*`、`TODO_*` 等 |
+| **本目录 `d-docs/`** | `CODING_*`、`TODO_*`、`CHANGELOG_*` 等 |
 
 新增文档时按上表归类。仓库内文档类目录统一使用 `d-` 前缀，避免与代码目录混淆。
