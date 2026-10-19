@@ -58,10 +58,10 @@
     } catch (e) {
       saved = null;
     }
-    if (saved && saved.indexOf("/h5/chai/inner-recycle.html") === 0) {
+    if (saved && saved.indexOf("/h5/chai/r-list.html") === 0) {
       els.backLink.href = saved;
     } else {
-      els.backLink.href = defaultHref || "/h5/chai/inner-recycle.html";
+      els.backLink.href = defaultHref || "/h5/chai/r-list.html";
     }
   }
 
@@ -170,7 +170,7 @@
     els.status.hidden = false;
     var back =
       (els.backLink && els.backLink.getAttribute("href")) ||
-      "/h5/chai/inner-recycle.html";
+      "/h5/chai/r-list.html";
     els.status.innerHTML =
       escapeHtml(msg || "暂不可查") +
       '<br/><br/><a href="' +
@@ -395,7 +395,7 @@
     if (item.spuId && sameCount != null && sameCount > 1) {
       els.sameBtn.hidden = false;
       els.sameBtn.href =
-        "/h5/chai/inner-recycle.html?spuId=" +
+        "/h5/chai/r-list.html?spuId=" +
         encodeURIComponent(item.spuId);
     } else {
       els.sameBtn.hidden = true;
@@ -573,7 +573,7 @@
     });
   }
 
-  bindListBack("/h5/chai/inner-recycle.html");
+  bindListBack("/h5/chai/r-list.html");
   if (window.ChaiRecycleQuote && window.ChaiRecycleQuote.mountFab) {
     window.ChaiRecycleQuote.mountFab();
     window.ChaiRecycleQuote.onChange(syncQuoteBtn);

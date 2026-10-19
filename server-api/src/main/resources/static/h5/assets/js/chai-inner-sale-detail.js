@@ -61,10 +61,10 @@
     } catch (e) {
       saved = null;
     }
-    if (saved && saved.indexOf("/h5/chai/inner-sale.html") === 0) {
+    if (saved && saved.indexOf("/h5/chai/p-list.html") === 0) {
       els.backLink.href = saved;
     } else {
-      els.backLink.href = defaultHref || "/h5/chai/inner-sale.html";
+      els.backLink.href = defaultHref || "/h5/chai/p-list.html";
     }
   }
 
@@ -173,7 +173,7 @@
     els.status.hidden = false;
     var back =
       (els.backLink && els.backLink.getAttribute("href")) ||
-      "/h5/chai/inner-sale.html";
+      "/h5/chai/p-list.html";
     els.status.innerHTML =
       escapeHtml(msg || "暂不可售") +
       '<br/><br/><a href="' +
@@ -997,7 +997,7 @@
     });
   }
 
-  bindListBack("/h5/chai/inner-sale.html");
+  bindListBack("/h5/chai/p-list.html");
   load();
   if (els.quoteBtn) {
     els.quoteBtn.addEventListener("click", function () {
