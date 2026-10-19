@@ -183,6 +183,29 @@ export function add(item: SaleSkuItem): boolean {
   return true
 }
 
+/** 不在单则加入；已在单则数量 +1。返回 added / inc / false */
+export function addOrInc(item: SaleSkuItem): 'added' | 'inc' | false {
+  if (!item || item.id == null) return false
+  const data = read()
+  const idx = findIndex(data.items, item.id)
+  if (idx >= 0) {
+    const cur = Math.max(1, Math.floor(Number(data.items[idx].qty) || 1))
+    data.items[idx].qty = cur + 1
+    data.items[idx].updatedAt = Date.now()
+    write(data)
+    return 'inc'
+  }
+  const snap = snapshotOf(item)
+  data.items.push({
+    ...snap,
+    qty: 1,
+    quotePrice: toNum(snap.salePrice),
+    updatedAt: Date.now(),
+  })
+  write(data)
+  return 'added'
+}
+
 export function setQty(id: number | string, qty: number | string): void {
   const q = Number(qty)
   if (!q || isNaN(q) || q < 1) {

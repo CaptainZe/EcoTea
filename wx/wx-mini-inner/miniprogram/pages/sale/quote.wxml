@@ -1,7 +1,13 @@
 <view class="page">
-  <view class="meta-bar" wx:if="{{items.length}}">
-    <text class="meta">{{metaText}}</text>
-    <text class="clear" bindtap="onClear">清空</text>
+  <view class="meta-bar">
+    <text class="meta">{{items.length ? metaText : '扫码或从价目添加'}}</text>
+    <view class="meta-actions">
+      <view class="scan-entry" bindtap="onScan">
+        <image class="scan-entry-icon" src="/assets/common/scan.png" mode="aspectFit" />
+        <text>扫码</text>
+      </view>
+      <text class="clear" wx:if="{{items.length}}" bindtap="onClear">清空</text>
+    </view>
   </view>
 
   <view class="list" wx:if="{{items.length}}">
@@ -63,7 +69,10 @@
 
   <view class="empty" wx:else>
     <text>销售报价单是空的</text>
-    <view class="go" bindtap="onGoSale">去在售价目看看</view>
+    <view class="empty-actions">
+      <view class="go ghost" bindtap="onScan">扫码添加</view>
+      <view class="go" bindtap="onGoSale">去在售价目看看</view>
+    </view>
   </view>
 
   <view class="bar-space" wx:if="{{items.length}}"></view>
@@ -105,6 +114,54 @@
         <button class="modal-btn cancel" bindtap="onCloseDiscount">取消</button>
         <button class="modal-btn clear" bindtap="onClearDiscount">清除</button>
         <button class="modal-btn ok" bindtap="onConfirmDiscount">确定</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 扫码结果 -->
+  <view class="sheet" wx:if="{{scanOpen}}" catchtouchmove="noop">
+    <view class="sheet-mask" bindtap="onCloseScan"></view>
+    <view class="sheet-panel">
+      <view class="sheet-hd">
+        <text class="sheet-title">扫码结果</text>
+        <text class="sheet-x" bindtap="onCloseScan">×</text>
+      </view>
+      <text class="sheet-hint" wx:if="{{scanCode}}">条码：{{scanCode}}</text>
+      <text class="sheet-hint" wx:elif="{{scanLoading}}">查询中…</text>
+      <scroll-view scroll-y class="sheet-list" wx:if="{{scanList.length}}">
+        <view
+          class="scan-card {{item.selected ? 'is-on' : ''}} {{item.inQuote ? 'is-disabled' : ''}}"
+          wx:for="{{scanList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onToggleScan"
+        >
+          <text class="badge-in" wx:if="{{item.inQuote}}">已在单</text>
+          <view class="scan-check {{item.selected ? 'is-on' : ''}} {{item.inQuote ? 'is-disabled' : ''}}"></view>
+          <image class="swap-cover" src="{{item.coverImage || '/assets/common/no-image.png'}}" mode="aspectFill" />
+          <view class="swap-body">
+            <view class="title">{{item.title}}</view>
+            <view class="tags" wx:if="{{item.tags.length}}">
+              <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+            </view>
+            <view class="row-price">
+              <text class="sale">{{item.priceText}}</text>
+            </view>
+            <view class="stock-line">
+              <text class="stock">{{item.stockText}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="sheet-empty" wx:elif="{{scanLoading}}">加载中…</view>
+      <view class="sheet-empty" wx:else>未找到该商品</view>
+      <view class="scan-ft" wx:if="{{scanList.length}}">
+        <view class="scan-btn ghost" bindtap="onScanContinue">继续扫码</view>
+        <view class="scan-btn primary" bindtap="onScanDone">添加完毕</view>
+      </view>
+      <view class="scan-ft" wx:else>
+        <view class="scan-btn ghost" bindtap="onCloseScan">关闭</view>
+        <view class="scan-btn primary" bindtap="onScan">重新扫码</view>
       </view>
     </view>
   </view>

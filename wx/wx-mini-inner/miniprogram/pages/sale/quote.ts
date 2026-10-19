@@ -1,6 +1,7 @@
 import { getCurrentTenant } from '../../services/auth-api'
 import { fetchSaleList, SaleSkuItem } from '../../services/sale-api'
 import {
+  addOrInc,
   clear,
   displayTitle,
   formatQuotePlainText,
@@ -39,6 +40,17 @@ type QuoteRow = SaleQuoteItem & {
 
 type SwapRow = ReturnType<typeof toListRow> & {
   isCurrent: boolean
+}
+
+type ScanPickRow = {
+  id: number
+  title: string
+  tags: string[]
+  priceText: string
+  stockText: string
+  coverImage: string
+  inQuote: boolean
+  selected: boolean
 }
 
 function formatSaleRef(item: SaleQuoteItem): string {
@@ -134,6 +146,12 @@ Page({
     swapFromId: 0 as number | 0,
     swapList: [] as SwapRow[],
     swapRaw: [] as SaleSkuItem[],
+
+    scanOpen: false,
+    scanLoading: false,
+    scanCode: '',
+    scanList: [] as ScanPickRow[],
+    scanRaw: [] as SaleSkuItem[],
   },
 
   onShow() {
@@ -220,6 +238,158 @@ Page({
         this.refresh()
       },
     })
+  },
+
+  onScan() {
+    wx.scanCode({
+      onlyFromCamera: false,
+      scanType: ['barCode', 'qrCode'],
+      success: (res) => {
+        const raw = (res && res.result) || ''
+        const code = String(raw).replace(/\D/g, '').trim()
+        if (!code) {
+          wx.showToast({ title: '未识别到条码', icon: 'none' })
+          return
+        }
+        this.openScanResult(code)
+      },
+      fail: (err) => {
+        if (err && err.errMsg && err.errMsg.indexOf('cancel') >= 0) {
+          return
+        }
+        wx.showToast({ title: '扫码失败', icon: 'none' })
+      },
+    })
+  },
+
+  openScanResult(code: string) {
+    this.setData({
+      scanOpen: true,
+      scanLoading: true,
+      scanCode: code,
+      scanList: [],
+      scanRaw: [],
+    })
+    fetchSaleList({
+      barcode: code,
+      includeWh: 1,
+      page: 1,
+      size: 50,
+    })
+      .then((res) => {
+        if (res.code !== 0 || !res.data) {
+          this.setData({ scanLoading: false, scanList: [], scanRaw: [] })
+          wx.showToast({ title: res.message || '查询失败', icon: 'none' })
+          return
+        }
+        const raw = res.data.list || []
+        const list = raw.map((it) => {
+          const inQuote = hasQuote(it.id)
+          const stock = formatStockLine(it as SaleQuoteItem)
+          return {
+            id: it.id,
+            title: it.title || it.name || '商品',
+            tags: buildTags(it),
+            priceText: formatSalePlain(it),
+            stockText: stock.text,
+            coverImage: it.coverImage || '',
+            inQuote,
+            selected: raw.length === 1 && !inQuote,
+          }
+        })
+        this.setData({
+          scanLoading: false,
+          scanRaw: raw,
+          scanList: list,
+        })
+      })
+      .catch(() => {
+        this.setData({ scanLoading: false, scanList: [], scanRaw: [] })
+        wx.showToast({ title: '网络异常', icon: 'none' })
+      })
+  },
+
+  onCloseScan() {
+    this.setData({
+      scanOpen: false,
+      scanLoading: false,
+      scanCode: '',
+      scanList: [],
+      scanRaw: [],
+    })
+  },
+
+  onToggleScan(e: WechatMiniprogram.TouchEvent) {
+    const id = Number(e.currentTarget.dataset.id || 0)
+    if (!id) return
+    const hit = (this.data.scanList || []).find((r) => r.id === id)
+    if (hit && hit.inQuote) {
+      wx.showToast({ title: '已在报价单', icon: 'none' })
+      return
+    }
+    const list = (this.data.scanList || []).map((row) => {
+      if (row.id !== id) return row
+      return {
+        id: row.id,
+        title: row.title,
+        tags: row.tags,
+        priceText: row.priceText,
+        stockText: row.stockText,
+        coverImage: row.coverImage,
+        inQuote: row.inQuote,
+        selected: !row.selected,
+      }
+    })
+    this.setData({ scanList: list })
+  },
+
+  /** 把可勾选且已选的写入报价单；已在单跳过 */
+  commitScanSelection(): number {
+    const selectedIds: Record<string, boolean> = {}
+    ;(this.data.scanList || []).forEach((row) => {
+      if (row.selected && !row.inQuote) selectedIds[String(row.id)] = true
+    })
+    let n = 0
+    ;(this.data.scanRaw || []).forEach((it) => {
+      if (!selectedIds[String(it.id)]) return
+      if (hasQuote(it.id)) return
+      const r = addOrInc(it)
+      if (r) n += 1
+    })
+    if (n) this.refresh()
+    return n
+  },
+
+  onScanContinue() {
+    const n = this.commitScanSelection()
+    if (n) {
+      wx.showToast({ title: '已处理 ' + n + ' 件', icon: 'none' })
+    }
+    this.setData({
+      scanOpen: false,
+      scanLoading: false,
+      scanCode: '',
+      scanList: [],
+      scanRaw: [],
+    })
+    const self = this
+    setTimeout(function () {
+      self.onScan()
+    }, n ? 320 : 0)
+  },
+
+  onScanDone() {
+    const hasList = (this.data.scanList || []).length > 0
+    const hasSelected = (this.data.scanList || []).some((r) => r.selected)
+    if (hasList && !hasSelected) {
+      wx.showToast({ title: '请先勾选商品', icon: 'none' })
+      return
+    }
+    const n = this.commitScanSelection()
+    this.onCloseScan()
+    if (n) {
+      wx.showToast({ title: '已加入 ' + n + ' 种', icon: 'success' })
+    }
   },
 
   onDiscount() {
