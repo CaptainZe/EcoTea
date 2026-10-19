@@ -1,15 +1,15 @@
-/* 对齐 H5 chai-sale.css 色板 */
+/* 销售线：中性色走全局 Token，强调色映射为 --sale-* 供存量页继续使用 */
 page {
-  --sale-bg: #f3f5f1;
-  --sale-card: #ffffff;
-  --sale-ink: #1c241c;
-  --sale-muted: #6b756c;
-  --sale-line: #d8ddd6;
-  --sale-accent: #3d5a3d;
-  --sale-accent-soft: #e8efe6;
-  --sale-price: #b45309;
-  --sale-danger: #9a3412;
-  --sale-scarce: #c2410c;
+  --sale-bg: var(--color-bg-page);
+  --sale-card: var(--color-bg-card);
+  --sale-ink: var(--color-text-primary);
+  --sale-muted: var(--color-text-secondary);
+  --sale-line: var(--color-border);
+  --sale-accent: var(--color-sale);
+  --sale-accent-soft: var(--color-sale-soft);
+  --sale-price: var(--color-price);
+  --sale-danger: var(--color-danger);
+  --sale-scarce: var(--color-scarce);
   background: var(--sale-bg);
   color: var(--sale-ink);
 }

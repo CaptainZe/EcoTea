@@ -34,21 +34,27 @@
 .scan-entry {
   display: flex;
   align-items: center;
-  gap: 6rpx;
-  color: var(--rec-accent);
-  font-size: 26rpx;
-  font-weight: 650;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
 }
 
 .scan-entry-icon {
-  width: 32rpx;
-  height: 32rpx;
+  width: 36rpx;
+  height: 36rpx;
 }
 
-.clear {
-  color: var(--rec-scarce);
-  font-size: 26rpx;
+.meta-actions .clear {
+  height: 56rpx;
+  line-height: 52rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid var(--color-danger);
+  background: #fdf4f0;
+  color: var(--color-danger);
+  font-size: 24rpx;
   font-weight: 650;
+  box-sizing: border-box;
 }
 
 .list {
@@ -121,7 +127,7 @@
   height: 36rpx;
   padding: 0 12rpx;
   border-radius: 999rpx;
-  background: #fff7ed;
+  background: var(--color-recycle-soft);
   color: var(--rec-price);
   font-size: 20rpx;
   font-weight: 700;
@@ -204,18 +210,32 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  gap: 16rpx;
+}
+
+.swap,
+.danger {
+  height: 56rpx;
+  line-height: 52rpx;
+  padding: 0 16rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: 650;
+  box-sizing: border-box;
+  border-width: 2rpx;
+  border-style: solid;
 }
 
 .swap {
-  color: var(--rec-accent);
-  font-size: 24rpx;
-  font-weight: 650;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  border-color: var(--color-brand);
 }
 
 .danger {
-  color: var(--rec-scarce);
-  font-size: 24rpx;
+  color: var(--color-danger);
+  background: #fdf4f0;
+  border-color: var(--color-danger);
 }
 
 .empty {
@@ -425,7 +445,7 @@
 .modal-btn.clear {
   background: var(--rec-card) !important;
   color: var(--rec-price) !important;
-  border: 2rpx solid #f5d0a9 !important;
+  border: 2rpx solid var(--color-price-line) !important;
 }
 
 .modal-btn.ok {

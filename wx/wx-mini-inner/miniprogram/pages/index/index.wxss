@@ -34,7 +34,7 @@
 .section-title {
   font-size: 28rpx;
   font-weight: 600;
-  color: #0f766e;
+  color: var(--color-brand);
   padding: 0 12rpx 20rpx;
 }
 
@@ -53,13 +53,13 @@
   height: 56rpx;
   margin-bottom: 12rpx;
   padding: 20rpx;
-  background: rgba(15, 118, 110, 0.08);
+  background: var(--color-brand-soft);
   border-radius: 24rpx;
   box-sizing: content-box;
 }
 
 .entry.recycle .entry-icon {
-  background: rgba(180, 83, 9, 0.1);
+  background: var(--color-recycle-soft);
 }
 
 .entry-title {

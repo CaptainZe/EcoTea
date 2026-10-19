@@ -1,4 +1,5 @@
 import { getCurrentTenant } from '../../services/auth-api'
+import { COLOR_BRAND, COLOR_RECYCLE } from '../../styles/token-colors'
 
 type EntryDef = {
   key: string
@@ -19,7 +20,7 @@ const ALL_GROUPS: GroupDef[] = [
   {
     perm: 'SALE',
     title: '销售',
-    accent: '#0f766e',
+    accent: COLOR_BRAND,
     entries: [
       { key: 'sale-price', title: '在售价目', icon: '/assets/workbench/sale-price.png', url: '/pages/sale/list' },
       { key: 'sale-quote', title: '报价单', icon: '/assets/workbench/sale-quote.png', url: '/pages/sale/quote' },
@@ -29,7 +30,7 @@ const ALL_GROUPS: GroupDef[] = [
   {
     perm: 'RECYCLE',
     title: '回收',
-    accent: '#b45309',
+    accent: COLOR_RECYCLE,
     entries: [
       { key: 'recycle-price', title: '回收价目', icon: '/assets/workbench/recycle-price.png', url: '/pages/recycle/list' },
       { key: 'recycle-quote', title: '报价单', icon: '/assets/workbench/recycle-quote.png', url: '/pages/recycle/quote' },

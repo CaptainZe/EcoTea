@@ -82,7 +82,7 @@
   color: var(--sale-price);
   font-size: 24rpx;
   font-weight: 650;
-  background: #fff7ed;
+  background: var(--color-recycle-soft);
   padding: 2rpx 12rpx;
   border-radius: 999rpx;
 }

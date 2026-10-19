@@ -1,0 +1,21 @@
+/* 内部小程序设计令牌。约定见 d-ui/UI_SPEC_WX_MINI_INNER.md §2。 */
+page {
+  --color-brand: #0f766e;
+  --color-brand-soft: #e6f4f2;
+  --color-sale: #3d5a3d;
+  --color-sale-soft: #e8efe6;
+  --color-recycle: #b45309;
+  --color-recycle-soft: #fff7ed;
+  --color-bg-page: #f3f5f1;
+  --color-bg-card: #ffffff;
+  --color-border: #d8ddd6;
+  --color-text-primary: #1c241c;
+  --color-text-secondary: #6b756c;
+  --color-text-disabled: #9ca3af;
+  --color-price: #b45309;
+  --color-price-line: #f5d0a9;
+  --color-danger: #9a3412;
+  --color-scarce: #c2410c;
+  --color-mask: rgba(0, 0, 0, 0.5);
+  --color-success: #0f766e;
+}

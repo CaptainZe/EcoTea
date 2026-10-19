@@ -11,14 +11,23 @@ import {
   subtotalAmount,
 } from '../services/sale-quote'
 
+import {
+  COLOR_BRAND,
+  COLOR_BRAND_SOFT,
+  COLOR_BG_CARD,
+  COLOR_PRICE,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_SECONDARY,
+} from '../styles/token-colors'
+
 const W = 750
 const PAD = 28
-const SHEET_BG = '#0f766e'
-const CARD_BG = '#ffffff'
-const PRICE = '#b45309'
-const TEXT = '#1c241c'
-const MUTED = '#6b756c'
-const ACCENT_SOFT = '#ecfdf5'
+const SHEET_BG = COLOR_BRAND
+const CARD_BG = COLOR_BG_CARD
+const PRICE = COLOR_PRICE
+const TEXT = COLOR_TEXT_PRIMARY
+const MUTED = COLOR_TEXT_SECONDARY
+const ACCENT_SOFT = COLOR_BRAND_SOFT
 const LABEL_W = 88
 
 function loadImage(canvas: WechatMiniprogram.Canvas, src: string): Promise<WechatMiniprogram.Image> {

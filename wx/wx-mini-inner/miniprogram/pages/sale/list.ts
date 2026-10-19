@@ -168,8 +168,17 @@ Page({
   },
 
   onSearch() {
-    if (this.data.barcode || this.data.spuId) return
+    if (this.data.barcode) return
+    if (this.data.spuId) {
+      this.setData({ spuId: 0 }, () => this.reload())
+      return
+    }
     this.reload()
+  },
+
+  onClearSpu() {
+    if (!this.data.spuId) return
+    this.setData({ spuId: 0 }, () => this.reload())
   },
 
   onClearMode() {

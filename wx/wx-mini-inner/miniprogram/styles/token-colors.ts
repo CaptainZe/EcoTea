@@ -1,0 +1,10 @@
+/** 与 styles/tokens.wxss 同值。WXSS 变量进不了 TS / canvas，字面量集中在此。 */
+export const COLOR_BRAND = '#0f766e'
+export const COLOR_BRAND_SOFT = '#e6f4f2'
+export const COLOR_BG_CARD = '#ffffff'
+export const COLOR_TEXT_PRIMARY = '#1c241c'
+export const COLOR_TEXT_SECONDARY = '#6b756c'
+export const COLOR_PRICE = '#b45309'
+export const COLOR_RECYCLE = '#b45309'
+export const COLOR_RECYCLE_SOFT = '#fff7ed'
+export const COLOR_DANGER = '#9a3412'

@@ -11,15 +11,23 @@ import {
   subtotalAmount,
 } from '../services/recycle-quote'
 
+import {
+  COLOR_BG_CARD,
+  COLOR_PRICE,
+  COLOR_RECYCLE,
+  COLOR_RECYCLE_SOFT,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_SECONDARY,
+} from '../styles/token-colors'
+
 const W = 750
 const PAD = 28
-/** 工作台回收琥珀主色 */
-const SHEET_BG = '#b45309'
-const CARD_BG = '#ffffff'
-const PRICE = '#b45309'
-const TEXT = '#1c241c'
-const MUTED = '#6b756c'
-const ACCENT_SOFT = '#fff7ed'
+const SHEET_BG = COLOR_RECYCLE
+const CARD_BG = COLOR_BG_CARD
+const PRICE = COLOR_PRICE
+const TEXT = COLOR_TEXT_PRIMARY
+const MUTED = COLOR_TEXT_SECONDARY
+const ACCENT_SOFT = COLOR_RECYCLE_SOFT
 const LABEL_W = 88
 
 function loadImage(canvas: WechatMiniprogram.Canvas, src: string): Promise<WechatMiniprogram.Image> {

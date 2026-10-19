@@ -23,8 +23,8 @@
 }
 
 .item-on {
-  border-color: #0f766e;
-  background: #f0fdfa;
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
 }
 
 .name {
@@ -40,6 +40,6 @@
 
 .btn {
   margin-top: 40rpx;
-  background: #0f766e;
+  background: var(--color-brand);
   color: #fff;
 }

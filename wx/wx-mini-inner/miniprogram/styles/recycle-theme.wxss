@@ -1,15 +1,15 @@
-/* 回收价目：中性色与在售一致，主色对齐工作台回收组 #b45309 */
+/* 回收线：中性色走全局 Token，强调色映射为 --rec-* 供存量页继续使用 */
 page {
-  --rec-bg: #f3f5f1;
-  --rec-card: #ffffff;
-  --rec-ink: #1c241c;
-  --rec-muted: #6b756c;
-  --rec-line: #d8ddd6;
-  --rec-accent: #b45309;
-  --rec-accent-soft: #fff7ed;
-  --rec-price: #b45309;
-  --rec-danger: #9a3412;
-  --rec-scarce: #c2410c;
+  --rec-bg: var(--color-bg-page);
+  --rec-card: var(--color-bg-card);
+  --rec-ink: var(--color-text-primary);
+  --rec-muted: var(--color-text-secondary);
+  --rec-line: var(--color-border);
+  --rec-accent: var(--color-recycle);
+  --rec-accent-soft: var(--color-recycle-soft);
+  --rec-price: var(--color-price);
+  --rec-danger: var(--color-danger);
+  --rec-scarce: var(--color-scarce);
   background: var(--rec-bg);
   color: var(--rec-ink);
 }

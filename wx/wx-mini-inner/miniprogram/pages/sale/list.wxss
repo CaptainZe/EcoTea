@@ -123,7 +123,7 @@
 }
 
 .filter-entry.is-on {
-  color: #b45309;
+  color: var(--color-price);
   font-weight: 650;
 }
 
@@ -136,16 +136,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 28rpx;
+  padding: 12rpx 28rpx;
   background: var(--sale-accent-soft);
   color: var(--sale-accent);
   font-size: 24rpx;
 }
 
+.mode-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mode-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
 .mode-clear {
   color: var(--sale-accent);
   font-weight: 650;
-  padding: 8rpx 0 8rpx 16rpx;
+  padding: 4rpx 0 4rpx 16rpx;
 }
 
 .meta {
@@ -244,7 +258,7 @@
   color: var(--sale-price);
   font-size: 22rpx;
   font-weight: 650;
-  background: #fff7ed;
+  background: var(--color-recycle-soft);
   padding: 2rpx 10rpx;
   border-radius: 999rpx;
 }
@@ -301,6 +315,7 @@
 .same-btn,
 .quote-btn {
   font-size: 24rpx;
+  font-weight: 650;
   color: var(--sale-accent);
   border: 2rpx solid var(--sale-accent);
   border-radius: 28rpx;

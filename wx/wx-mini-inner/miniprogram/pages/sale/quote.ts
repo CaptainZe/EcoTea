@@ -19,6 +19,7 @@ import {
   subtotalAmount,
   toNum,
 } from '../../services/sale-quote'
+import { COLOR_DANGER } from '../../styles/token-colors'
 import { saveLocalImageToAlbum } from '../../utils/album'
 import { renderQuoteImageFile } from '../../utils/quote-image'
 import {
@@ -231,7 +232,7 @@ Page({
       title: '清空销售报价单',
       content: '确定清空销售报价单？清空后需重新添加商品。',
       confirmText: '清空',
-      confirmColor: '#9a3412',
+      confirmColor: COLOR_DANGER,
       success: (res) => {
         if (!res.confirm) return
         clear()

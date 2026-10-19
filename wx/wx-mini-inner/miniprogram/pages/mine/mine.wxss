@@ -27,22 +27,22 @@
 }
 
 .value.on {
-  color: #0f766e;
+  color: var(--color-brand);
   font-weight: 600;
 }
 
 .btn {
   margin-top: 24rpx;
-  background: #0f766e;
+  background: var(--color-brand);
   color: #fff;
 }
 
 .btn-ghost {
   background: #fff;
-  color: #0f766e;
-  border: 2rpx solid #0f766e;
+  color: var(--color-brand);
+  border: 2rpx solid var(--color-brand);
 }
 
 .btn-danger {
-  background: #b91c1c;
+  background: var(--color-danger);
 }

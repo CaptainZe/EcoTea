@@ -18,6 +18,7 @@ import {
   subtotalAmount,
   toNum,
 } from '../../services/recycle-quote'
+import { COLOR_DANGER } from '../../styles/token-colors'
 import { saveLocalImageToAlbum } from '../../utils/album'
 import { assertRecycleAccess } from '../../utils/recycle-guard'
 import { renderRecycleQuoteImageFile } from '../../utils/recycle-quote-image'
@@ -367,7 +368,7 @@ Page({
       title: '清空回收报价单',
       content: '确定清空回收报价单？清空后需重新添加商品。',
       confirmText: '清空',
-      confirmColor: '#9a3412',
+      confirmColor: COLOR_DANGER,
       success: (res) => {
         if (!res.confirm) return
         clear()

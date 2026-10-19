@@ -9,6 +9,7 @@ import {
   wxUnbind,
 } from '../../services/auth-api'
 import { reLaunchTo } from '../../services/session'
+import { COLOR_DANGER } from '../../styles/token-colors'
 
 Page({
   data: {
@@ -87,7 +88,7 @@ Page({
       title: '解绑微信',
       content: '解绑后无法使用微信一键登录，确定解绑？',
       confirmText: '解绑',
-      confirmColor: '#b91c1c',
+      confirmColor: COLOR_DANGER,
       success: (modal) => {
         if (!modal.confirm) return
         this.setData({ wxBusy: true })

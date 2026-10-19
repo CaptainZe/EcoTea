@@ -2,11 +2,10 @@
   <view class="meta-bar">
     <text class="meta">{{items.length ? metaText : '扫码或从价目添加'}}</text>
     <view class="meta-actions">
-      <view class="scan-entry" bindtap="onScan">
+      <view class="scan-entry" bindtap="onScan" aria-label="扫码">
         <image class="scan-entry-icon" src="/assets/common/scan.png" mode="aspectFit" />
-        <text>扫码</text>
       </view>
-      <text class="clear" wx:if="{{items.length}}" bindtap="onClear">清空</text>
+      <view class="clear" wx:if="{{items.length}}" bindtap="onClear">清空</view>
     </view>
   </view>
 
@@ -53,14 +52,14 @@
           />
           <view class="step" data-id="{{item.id}}" data-delta="1" bindtap="onQtyStep">+</view>
           <view class="qty-end">
-            <text
+            <view
               class="swap"
               wx:if="{{item.spuId}}"
               data-id="{{item.id}}"
               data-spu="{{item.spuId}}"
               catchtap="onOpenSwap"
-            >换同款</text>
-            <text class="danger" data-id="{{item.id}}" catchtap="onRemove">移除</text>
+            >换同款</view>
+            <view class="danger" data-id="{{item.id}}" catchtap="onRemove">移除</view>
           </view>
         </view>
       </view>

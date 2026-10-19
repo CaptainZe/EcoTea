@@ -7,12 +7,12 @@
           placeholder="品牌 / 品名"
           confirm-type="search"
           value="{{keyword}}"
-          disabled="{{!!barcode || !!spuId}}"
+          disabled="{{!!barcode}}"
           bindinput="onKeyword"
           bindconfirm="onSearch"
         />
         <view
-          class="search-btn {{barcode || spuId ? 'is-disabled' : ''}}"
+          class="search-btn {{barcode ? 'is-disabled' : ''}}"
           bindtap="onSearch"
         >搜索</view>
       </view>
@@ -38,15 +38,21 @@
     </view>
   </view>
 
-  <view class="mode-bar" wx:if="{{barcode || spuId || filterSummary || keyword}}">
-    <text class="mode-text" wx:if="{{barcode}}">条码：{{barcode}}</text>
-    <text class="mode-text" wx:elif="{{spuId}}">正在查看同款</text>
-    <text class="mode-text" wx:elif="{{filterSummary}}">{{filterSummary}}</text>
-    <text class="mode-text" wx:elif="{{keyword}}">搜索：{{keyword}}</text>
-    <text class="mode-clear" bindtap="onClearMode">返回全部</text>
+  <view class="mode-bar" wx:if="{{spuId || barcode || filterSummary || keyword}}">
+    <text class="mode-text">
+      <text wx:if="{{spuId}}">同款</text>
+      <text wx:if="{{spuId && (barcode || filterSummary || keyword)}}"> · </text>
+      <text wx:if="{{barcode}}">条码：{{barcode}}</text>
+      <text wx:elif="{{filterSummary}}">{{filterSummary}}</text>
+      <text wx:elif="{{keyword}}">搜索：{{keyword}}</text>
+    </text>
+    <view class="mode-actions">
+      <text class="mode-clear" wx:if="{{spuId}}" bindtap="onClearSpu">关闭同款</text>
+      <text class="mode-clear" wx:if="{{barcode || filterSummary || keyword}}" bindtap="onClearMode">返回全部</text>
+    </view>
   </view>
 
-  <view class="meta" wx:if="{{matchHint}}">{{matchHint}}</view>
+  <view class="meta" wx:if="{{matchHint && !spuId}}">{{matchHint}}</view>
 
   <view class="loading-tip" wx:if="{{loading && !list.length}}">加载中…</view>
 
@@ -88,7 +94,8 @@
 
   <view class="empty" wx:elif="{{!loading}}">
     <text>{{emptyTip}}</text>
-    <view class="empty-hint" wx:if="{{barcode || spuId || filterActive || keyword}}">可点「返回全部」或调整筛选条件</view>
+    <view class="empty-hint" wx:if="{{barcode || filterActive || keyword}}">可点「返回全部」或调整筛选条件</view>
+    <view class="empty-hint" wx:elif="{{spuId}}">可点「关闭同款」或直接搜索</view>
   </view>
 
   <view class="footer" wx:if="{{list.length}}">
