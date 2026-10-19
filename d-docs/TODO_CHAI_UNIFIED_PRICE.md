@@ -51,17 +51,17 @@
 
 ### 全量
 
-- 更新 `db/SQL_CHAI_DOMAIN.sql`：`chai_spu`、`chai_sku` 增加 `unified_price`。
+- 更新 `d-db/SQL_CHAI_DOMAIN.sql`：`chai_spu`、`chai_sku` 增加 `unified_price`。
 
 ### 增量（临时，发版用）
 
-- `db/tmp/YYYYMMDD_chai_unified_price.sql`（发版时再落文件）
+- `d-db/tmp/YYYYMMDD_chai_unified_price.sql`（发版时再落文件）
 
 ## 分步实现（按序，待做）
 
 ### U1 DDL
 
-- [ ] 全量改 `db/SQL_CHAI_DOMAIN.sql`
+- [ ] 全量改 `d-db/SQL_CHAI_DOMAIN.sql`
 - [ ] 写临时增量 SQL（目标库手工执行）
 
 ### U2 实体

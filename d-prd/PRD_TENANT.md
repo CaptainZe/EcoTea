@@ -1,8 +1,8 @@
 # EcoTea 多租户与三端规划（PRD）
 
 > 文档名：`PRD_TENANT.md`  
-> 状态：**规划定稿；Admin B1/B2/C + API D 已落地** — 产品与模型约定；DDL 见 [`db/SQL_TENANT.sql`](../db/SQL_TENANT.sql)（**仅组织表**）。  
-> 配套：`PRD_WX_MINI.md`（小程序）、`PRD_WX_MP.md`（订阅号 H5）、`CODING_ADMIN.md` / `CODING_API.md`（编码边界）。
+> 状态：**规划定稿；Admin B1/B2/C + API D 已落地** — 产品与模型约定；DDL 见 [`d-db/SQL_TENANT.sql`](../d-db/SQL_TENANT.sql)（**仅组织表**）。  
+> 配套：`PRD_WX_MINI.md`（小程序）、`PRD_WX_MP.md`（订阅号 H5）、[`d-docs/CODING_ADMIN.md`](../d-docs/CODING_ADMIN.md) / [`d-docs/CODING_API.md`](../d-docs/CODING_API.md)（编码边界）；小程序 UI 见 [`d-ui/UI_SPEC_WX_MINI_INNER.md`](../d-ui/UI_SPEC_WX_MINI_INNER.md)。
 
 ---
 
@@ -63,7 +63,7 @@ Platform（平台运营）
 | `employee_tenant` | 员工所属店 |
 | `employee_tenant_perm` | 店内权限码 |
 
-DDL：[`db/SQL_TENANT.sql`](../db/SQL_TENANT.sql)。  
+DDL：[`d-db/SQL_TENANT.sql`](../d-db/SQL_TENANT.sql)。  
 MySQL 中 `UNIQUE INDEX` 与 `UNIQUE KEY` **等价**；本项目与现有 `chai_*` 脚本统一用 `UNIQUE INDEX`。
 
 **不用** `sys_dept` 冒充租户。
@@ -190,7 +190,7 @@ MySQL 中 `UNIQUE INDEX` 与 `UNIQUE KEY` **等价**；本项目与现有 `chai_
 
 | 步骤 | 内容 |
 |------|------|
-| **A** | 执行组织 DDL（[`SQL_TENANT.sql`](../db/SQL_TENANT.sql)，无库存 ALTER） |
+| **A** | 执行组织 DDL（[`SQL_TENANT.sql`](../d-db/SQL_TENANT.sql)，无库存 ALTER） |
 | **B1** | Admin：`platform` 店铺租户 CRUD / 启停（手填 `tenant_id`、省/市、负责人、配额）— **已做代码** |
 | **B2** | Admin：`admin_tenant_scope`（平台/多店）— **已做代码** |
 | **C** | Admin：员工 + 挂店 + perm + 配额校验 + 首任店长— **已做代码** |
@@ -217,7 +217,8 @@ MySQL 中 `UNIQUE INDEX` 与 `UNIQUE KEY` **等价**；本项目与现有 `chai_
 | 路径 | 内容 |
 |------|------|
 | **本文** | 组织优先、库存后置 |
-| [`db/SQL_TENANT.sql`](../db/SQL_TENANT.sql) | 仅 5 张组织表 |
+| [`d-db/SQL_TENANT.sql`](../d-db/SQL_TENANT.sql) | 仅 5 张组织表 |
 | `PRD_WX_MINI.md` | 小程序产品 |
 | `PRD_WX_MP.md` | 订阅号 + H5 |
-| `CODING_ADMIN.md` / `CODING_API.md` | 编码边界 |
+| [`../d-docs/CODING_ADMIN.md`](../d-docs/CODING_ADMIN.md) / [`../d-docs/CODING_API.md`](../d-docs/CODING_API.md) | 编码边界 |
+| [`../d-ui/UI_SPEC_WX_MINI_INNER.md`](../d-ui/UI_SPEC_WX_MINI_INNER.md) | 内部小程序 UI |

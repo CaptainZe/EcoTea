@@ -1,6 +1,6 @@
 /*
   EcoTea 多租户 — 组织账号（当前阶段）
-  产品约定：docs/PRD_TENANT.md
+  产品约定：d-prd/PRD_TENANT.md
 
   本脚本仅建组织相关表，不改库存/仓库表（库存加 tenant_id 与重构后置）。
 

@@ -87,7 +87,7 @@ com.ecotea.api
 
 ## 8. Redis、锁与业务缓存
 
-> 明细 key / 接入进度见 `docs/TODO_REDIS_CACHE.md`。本文只定**必须遵守**的约定。
+> 明细 key / 接入进度见 `d-docs/TODO_REDIS_CACHE.md`。本文只定**必须遵守**的约定。
 
 ### 8.1 基础设施
 
@@ -156,7 +156,7 @@ com.ecotea.api
 
 ## 13. 租户与员工会话（D 已落地）
 
-> 产品定调见 `docs/PRD_TENANT.md`。
+> 产品定调见 `d-prd/PRD_TENANT.md`。
 
 ### 13.1 包目录
 

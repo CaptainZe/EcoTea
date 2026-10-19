@@ -267,13 +267,13 @@ SPU 列表「条码」入口 → `/business/chai/spu/barcode/{id}`。页内：
 
 ### 全量
 
-- 更新 `db/SQL_CHAI_DOMAIN.sql`：`chai_spu`、`chai_sku` 增加 `barcode`。
+- 更新 `d-db/SQL_CHAI_DOMAIN.sql`：`chai_spu`、`chai_sku` 增加 `barcode`。
 
 
 
 ### 增量
 
-- `db/tmp/20260929_chai_barcode.sql`
+- `d-db/tmp/20260929_chai_barcode.sql`
 
 本期 **不加** `UNIQUE(barcode)`，**不加** 条码来源字段。
 
@@ -344,7 +344,7 @@ SPU 列表「条码」入口 → `/business/chai/spu/barcode/{id}`。页内：
 ### B5 运营工具箱 + 批量打印系统码
 
 - [x] `ChaiToolboxController`：`/business/chai/toolbox`（运营用；**不**挂 `/business/tools/chai`）  
-- [x] 权限 / 菜单：`business:chai:toolbox:index`（增量 SQL：`db/tmp/20260930_chai_toolbox_menu.sql`，需填父菜单 id 并赋权）  
+- [x] 权限 / 菜单：`business:chai:toolbox:index`（增量 SQL：`d-db/tmp/20260930_chai_toolbox_menu.sql`，需填父菜单 id 并赋权）  
 - [x] 工具首页：系统码总数 + 各品牌系统码数量；品牌多选  
 - [x] 打印页：按品牌排序输出 `29…` 标签；浏览器连续打印  
 - [x] 单次数量上限与空结果提示  

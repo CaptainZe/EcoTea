@@ -2,7 +2,7 @@
 
 > 状态：第一期茶类主数据 **已全部接入**；组织域 **T1 tenant 热读 + T3 踢会话已接**；T2 `tenant_online` 可选未做；列表页 TTL 仍观望。  
 > 编码约定（必须遵守）：`CODING_API.md` §8、`CODING_ADMIN.md` §3.1。  
-> 基础设施：`DEPLOY_REDIS.md`、两端 `RedisUtils` / `LockUtils`、admin `RedisSeqUtils`（日序号）。  
+> 基础设施：[`d-deploy/DEPLOY_REDIS.md`](../d-deploy/DEPLOY_REDIS.md)、两端 `RedisUtils` / `LockUtils`、admin `RedisSeqUtils`（日序号）。  
 > 原则：admin / api **共用同一 Redis**、同一前缀 `ecotea_`（`RedisConstant.KEY_PRE`）；key 用 `_` 分隔，不用 `:`。  
 > WxJava token 等仍用 `wx:mp:`，不并入本规范。不管 tea 模块。  
 > **后续新功能默认先评估缓存**（热读主数据走「api SET + admin DEL」；业务单据默认不缓存）。
@@ -17,7 +17,7 @@
 
 | 已有 | 说明 |
 |------|------|
-| Redis 部署与连接 | 见 `DEPLOY_REDIS.md` |
+| Redis 部署与连接 | 见 [`d-deploy/DEPLOY_REDIS.md`](../d-deploy/DEPLOY_REDIS.md) |
 | `RedisUtils` / `RedisTemplateHolder` | admin、api 对齐 |
 | `LockUtils` | 分布式锁（NX） |
 | `RedisSeqUtils` | 出入库等日序号 `ecotea_seq_{biz}_{yyyyMMdd}` |
@@ -100,7 +100,7 @@ ecotea_tenant_online                     # 可选：启用店有序列表（选�
 
 ## 组织域（tenant / 员工会话失效）
 
-> 产品见 `PRD_TENANT.md`；编码见 `CODING_API.md` §8.4、`CODING_ADMIN.md` §3.1。
+> 产品见 [`d-prd/PRD_TENANT.md`](../d-prd/PRD_TENANT.md)；编码见 `CODING_API.md` §8.4、`CODING_ADMIN.md` §3.1。
 
 ### T1. `tenant` 按业务键热读 ✅
 

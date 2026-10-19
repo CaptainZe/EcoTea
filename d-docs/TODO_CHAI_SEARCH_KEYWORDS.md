@@ -33,11 +33,11 @@
 
 ### 全量
 
-- 更新 `db/SQL_CHAI_DOMAIN.sql` 为**最新完整**表结构 + 索引。
+- 更新 `d-db/SQL_CHAI_DOMAIN.sql` 为**最新完整**表结构 + 索引。
 
 ### 增量（临时，发版用）
 
-- `db/tmp/20260929_chai_search_keywords.sql`
+- `d-db/tmp/20260929_chai_search_keywords.sql`
 
 说明：
 
@@ -48,8 +48,8 @@
 
 ### S1 DDL
 
-- [x] 全量改 `db/SQL_CHAI_DOMAIN.sql`
-- [x] 写临时增量 SQL：`db/tmp/20260929_chai_search_keywords.sql`（目标库需手工执行）
+- [x] 全量改 `d-db/SQL_CHAI_DOMAIN.sql`
+- [x] 写临时增量 SQL：`d-db/tmp/20260929_chai_search_keywords.sql`（目标库需手工执行）
 
 ### S2 实体
 

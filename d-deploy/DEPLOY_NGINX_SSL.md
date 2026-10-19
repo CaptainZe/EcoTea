@@ -5,7 +5,7 @@
 > **官网根域** `ecotea.cn` / `www.ecotea.cn` → 同上游 api（静态 H5，根路径跳转 `/h5/index.html`）。  
 > 证书：阿里云 **个人测试证书 pro**（DV，约 6 个月）；下载格式选 **Nginx**。本期不用 Let’s Encrypt / certbot（后续可选）。
 
-相关文档：MySQL 见 `DEPLOY_MYSQL.md`；Redis 见 `DEPLOY_REDIS.md`；api 进程部署见 `DEPLOY_API.md`；业务缓存规划见 `TODO_REDIS_CACHE.md`；微信订阅号需求见 `PRD_WX_MP.md`。
+相关文档：MySQL 见 `DEPLOY_MYSQL.md`；Redis 见 `DEPLOY_REDIS.md`；api 进程部署见 `DEPLOY_API.md`；业务缓存规划见 [`d-docs/TODO_REDIS_CACHE.md`](../d-docs/TODO_REDIS_CACHE.md)；微信订阅号需求见 [`d-prd/PRD_WX_MP.md`](../d-prd/PRD_WX_MP.md)。
 
 ---
 

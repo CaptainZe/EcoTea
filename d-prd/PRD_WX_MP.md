@@ -5,7 +5,7 @@
 > 与 `server-admin` **仅共享** MySQL / Redis；不抽共用业务 jar。  
 > **不做** `wx_user` 表（本期统计依赖微信公众平台后台）。
 
-相关：`DEPLOY_API.md`、`DEPLOY_NGINX_SSL.md`、`CODING_API.md`、`PRD_TENANT.md`、`TODO_REDIS_CACHE.md`（业务缓存暂缓）。
+相关：[`d-deploy/DEPLOY_API.md`](../d-deploy/DEPLOY_API.md)、[`d-deploy/DEPLOY_NGINX_SSL.md`](../d-deploy/DEPLOY_NGINX_SSL.md)、[`d-docs/CODING_API.md`](../d-docs/CODING_API.md)、`PRD_TENANT.md`、[`d-docs/TODO_REDIS_CACHE.md`](../d-docs/TODO_REDIS_CACHE.md)（业务缓存暂缓）。
 
 **多租户（规划摘要，见 `PRD_TENANT.md`）：**
 
@@ -176,7 +176,7 @@ CREATE TABLE `wx_mp_menu` (
 
 ### 4.4 官网
 
-- `https://api.ecotea.cn/h5/index.html` 或根域 `https://ecotea.cn/`（Nginx 反代 api，见 `DEPLOY_NGINX_SSL.md`）  
+- `https://api.ecotea.cn/h5/index.html` 或根域 `https://ecotea.cn/`（Nginx 反代 api，见 [`d-deploy/DEPLOY_NGINX_SSL.md`](../d-deploy/DEPLOY_NGINX_SSL.md)）  
 - 同域、不新开业务域名证书以外：根域另需 `ecotea.cn` 证书（公安备案）；介绍 + 入口链到回收/联系 H5 + 备案页脚（`site-footer.js`）  
 - 静态页：`static/h5/index.html` + `assets/css/site-home.css`；文案不出现 EcoTea；首页**不**放在售价目入口  
 

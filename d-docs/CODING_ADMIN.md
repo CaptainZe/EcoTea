@@ -2,7 +2,7 @@
 
 > **模块**：`server-admin`（`tea-admin`）  
 > **用途**：约束 AI 在本项目中的**统一编码边界与约定**；非业务需求说明。  
-> **业务细节**：见 `docs/business/*.md`（按领域拆分，另行维护）。
+> **业务细节**：见 `d-docs/business/*.md`（按领域拆分，另行维护）。
 
 ---
 
@@ -59,7 +59,7 @@ EcoTea/
 
 ### 3.1 Redis 业务缓存（Admin 职责）
 
-> 规范细节与 api 对齐见 `CODING_API.md` §8；key / 进度见 `docs/TODO_REDIS_CACHE.md`。
+> 规范细节与 api 对齐见 `CODING_API.md` §8；key / 进度见 `d-docs/TODO_REDIS_CACHE.md`。
 
 - Admin **写库成功后必须 DEL** 对应业务缓存 key（主数据立刻生效）；后台分页列表 **直查库**，不强制读缓存。
 - 新主数据写接口上线前：确认是否已有/需新增 Redis key，常量是否写入 `RedisConstant`（与 api 码值一致）。
@@ -140,7 +140,7 @@ business/
 |------|------|------|
 | `controller.file` | **通用** | 文件上传 API，见 §7 |
 | `controller.sys` / `service.sys` / … | 配置类业务 | 应用通知、密钥配置、日序号等 |
-| `controller.tea` / `service.tea` / … | 领域业务 | 茶叶相关；规则见 `docs/business/tea*.md`（待建） |
+| `controller.tea` / `service.tea` / … | 领域业务 | 茶叶相关；规则见 `d-docs/business/tea*.md`（待建） |
 | `service.base` | **通用** | OSS、外部 HTTP、飞书等，供多领域调用 |
 
 新增领域：增加 `{domain}` 子包（如 `controller.order`），**禁止**把领域逻辑塞进 `sys` 或 `file`。
@@ -175,11 +175,11 @@ templates/business/
 
 ### 6.5 租户与数据范围（规划约定）
 
-> 产品定调见 `docs/PRD_TENANT.md`；DDL 见 `db/SQL_TENANT.sql`（**仅组织表**）。
+> 产品定调见 `d-prd/PRD_TENANT.md`；DDL 见 `d-db/SQL_TENANT.sql`（**仅组织表**）。
 
-- **已落地 B1**：店铺租户 `/business/platform/tenant/*`；权限 `business:platform:tenant:index|edit`；菜单 `db/tmp/20261010_platform_tenant_menu.sql`。
-- **已落地 B2**：Admin 数据范围 `/business/platform/adminScope/*`；按 `sys_user` 配置平台(`0`)或多店；权限 `business:platform:adminScope:index|edit`；菜单 `db/tmp/20261010_platform_admin_scope_menu.sql`。
-- **已落地 C**：员工 `/business/platform/employee/*`（账号、挂店、perm、配额、店长模板）；密码算法同 Admin `ShiroUtil`/`EncryptUtil`；权限 `business:platform:employee:index|edit`；菜单 `db/tmp/20261010_platform_employee_menu.sql`。
+- **已落地 B1**：店铺租户 `/business/platform/tenant/*`；权限 `business:platform:tenant:index|edit`；菜单 `d-db/tmp/20261010_platform_tenant_menu.sql`。
+- **已落地 B2**：Admin 数据范围 `/business/platform/adminScope/*`；按 `sys_user` 配置平台(`0`)或多店；权限 `business:platform:adminScope:index|edit`；菜单 `d-db/tmp/20261010_platform_admin_scope_menu.sql`。
+- **已落地 C**：员工 `/business/platform/employee/*`（账号、挂店、perm、配额、店长模板）；密码算法同 Admin `ShiroUtil`/`EncryptUtil`；权限 `business:platform:employee:index|edit`；菜单 `d-db/tmp/20261010_platform_employee_menu.sql`。
 - **已落地 D（api）**：`server-api` `/employee/login|logout|session|tenants|select-tenant`；租户包与员工包分离；见 `CODING_API.md` §13。
 - 下一步：小程序 E；**库存表与库存代码暂不改**。
 - 店铺租户扁平；业务键手填 **`tenant.tenant_id`**；开店 **省/市必填**；`contact_name`/`contact_mobile` 为档案字段。
@@ -208,7 +208,7 @@ templates/business/
 **开始前**
 
 - [ ] 确认需求属于业务还是框架；业务 → 仅改 `business` + `templates/business`
-- [ ] 查是否有对应 `docs/business/*.md`；有则以其为准，不在此文档臆造规则
+- [ ] 查是否有对应 `d-docs/business/*.md`；有则以其为准，不在此文档臆造规则
 
 **编码时**
 
@@ -221,7 +221,7 @@ templates/business/
 
 **完成后**
 
-- [ ] 业务规则变更是否需同步更新对应 `docs/business/*.md`（由人维护）
+- [ ] 业务规则变更是否需同步更新对应 `d-docs/business/*.md`（由人维护）
 - [ ] 新增缓存 key 是否已写入两端 `RedisConstant` 与 `TODO_REDIS_CACHE.md`
 
 ---
@@ -231,10 +231,11 @@ templates/business/
 | 文档 | 内容 |
 |------|------|
 | **CODING_ADMIN.md**（本文） | 项目结构、技术栈、TIMO/business 边界、编码规范 |
-| `docs/CODING_API.md` | api 分层、Redis/缓存约定、员工会话 |
-| `docs/TODO_REDIS_CACHE.md` | 业务 Redis key 与接入进度 |
-| `docs/PRD_TENANT.md` | 多租户与三端规划；`db/SQL_TENANT.sql` |
-| `docs/business/*.md` | 各业务域需求与流程（如 tea 报价、SKU 等） |
+| `d-docs/CODING_API.md` | api 分层、Redis/缓存约定、员工会话 |
+| `d-docs/TODO_REDIS_CACHE.md` | 业务 Redis key 与接入进度 |
+| `d-prd/PRD_TENANT.md` | 多租户与三端规划；`d-db/SQL_TENANT.sql` |
+| `d-ui/UI_SPEC_WX_MINI_INNER.md` | 内部小程序 UI 规范 |
+| `d-docs/business/*.md` | 各业务域需求与流程（如 tea 报价、SKU 等） |
 
 ---
 
