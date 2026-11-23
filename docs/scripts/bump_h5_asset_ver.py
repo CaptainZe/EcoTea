@@ -2,8 +2,8 @@
 """批量更新 H5 静态资源 ?v= 版本号（微信缓存刷新用）。
 
 用法（在仓库根目录）：
-  python scripts/bump_h5_asset_ver.py
-  python scripts/bump_h5_asset_ver.py 20260320
+  python docs/scripts/bump_h5_asset_ver.py
+  python docs/scripts/bump_h5_asset_ver.py 20260320
 
 不传参数时使用当天日期 YYYYMMDD。
 只改 server-api/.../static/h5/**/*.html 中 /h5/assets/ 的 css/js/图片引用。
@@ -15,7 +15,8 @@ import re
 import sys
 from datetime import date
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+# docs/scripts/ → 仓库根
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 H5_ROOT = ROOT / "server-api" / "src" / "main" / "resources" / "static" / "h5"
 
 # 已有 ?v= 或尚无版本号的资源 URL

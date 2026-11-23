@@ -357,6 +357,6 @@ systemctl status <APP> --no-pager
 
 - `DEPLOY_NGINX_SSL.md`：`api.ecotea.cn` / `admin.ecotea.cn` HTTPS  
 - `DEPLOY_MYSQL.md` / `DEPLOY_REDIS.md`：依赖中间件  
-- [`d-prd/PRD_WX_MP.md`](../d-prd/PRD_WX_MP.md)：微信订阅号需求；回调 `https://api.ecotea.cn/wx/mp/callback`  
-- [`d-docs/CODING_API.md`](../d-docs/CODING_API.md)：server-api 编码规范  
+- [`docs/prd/PRD_WX_MP.md`](../prd/PRD_WX_MP.md)：微信订阅号需求；回调 `https://api.ecotea.cn/wx/mp/callback`  
+- [`docs/dev/CODING_API.md`](../dev/CODING_API.md)：server-api 编码规范  
 

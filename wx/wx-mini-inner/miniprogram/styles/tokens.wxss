@@ -1,4 +1,4 @@
-/* 内部小程序设计令牌。约定见 d-ui/UI_SPEC_WX_MINI_INNER.md §2。 */
+/* 内部小程序设计令牌。约定见 docs/ui/UI_SPEC_WX_MINI_INNER.md §2。 */
 page {
   --color-brand: #0f766e;
   --color-brand-soft: #e6f4f2;
