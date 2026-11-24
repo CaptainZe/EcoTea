@@ -184,7 +184,7 @@ templates/business/
 - 下一步：小程序 E；**库存表与库存代码暂不改**。
 - 店铺租户扁平；业务键手填 **`tenant.tenant_id`**；开店 **省/市必填**；`contact_name`/`contact_mobile` 为档案字段。
 - Admin：`sys_user` + 菜单 + **`admin_tenant_scope`**（一人多店；`0`=平台）。
-- 店员走 **`employee`** + perm 枚举（`SALE`/`RECYCLE`/`STOCK`/`FINANCE`/`SHOP`）；受 `employee_quota` 限制；**禁止**店员进 `sys_user`。
+- 店员走 **`employee`** + perm 枚举（`SALE`/`RECYCLE`/`INFO`/`STOCK`/`FINANCE`/`SHOP`）；受 `employee_quota` 限制；**禁止**店员进 `sys_user`。
 - 共享目录不加租户；报价/销售/回收业务单见 `PRD_WX_MINI.md`（另立 DDL）；库存暂不改。
 - **缓存：** 店铺/员工写路径须按 §3.1 与 `TODO_REDIS_CACHE.md` 组织域失效；勿只改库不失效。
 

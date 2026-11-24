@@ -16,7 +16,10 @@
     "pages/recycle/list",
     "pages/recycle/filter",
     "pages/recycle/detail",
-    "pages/recycle/quote"
+    "pages/recycle/quote",
+    "pages/info/list",
+    "pages/info/filter",
+    "pages/info/detail"
   ],
   "window": {
     "navigationBarTextStyle": "black",

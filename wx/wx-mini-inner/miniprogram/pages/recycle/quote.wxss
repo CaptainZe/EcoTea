@@ -741,6 +741,11 @@
   width: 100%;
   display: block;
   background: var(--rec-bg);
+  margin-bottom: 16rpx;
+}
+
+.preview-img:last-child {
+  margin-bottom: 0;
 }
 
 .preview-actions {

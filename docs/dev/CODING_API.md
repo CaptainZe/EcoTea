@@ -166,7 +166,7 @@ com.ecotea.api
 | `domain/mapper/service/controller/employee` | 员工、挂店、perm、登录会话 |
 | `vo/tenant` | 轻量出参（如 `TenantOptionVO`） |
 | `vo/employee` / `req/employee` | 登录会话 VO / 入参 |
-| `common/enums/tenant` / `employee` | 状态与 perm 码（`SALE`/`RECYCLE`/`STOCK`/`FINANCE`/`SHOP`，与 Admin 对齐，各自维护） |
+| `common/enums/tenant` / `employee` | 状态与 perm 码（`SALE`/`RECYCLE`/`INFO`/`STOCK`/`FINANCE`/`SHOP`，与 Admin 对齐，各自维护） |
 
 ### 13.2 员工鉴权
 

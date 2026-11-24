@@ -37,6 +37,19 @@ const ALL_GROUPS: GroupDef[] = [
       { key: 'recycle-order', title: '回收单', icon: '/assets/workbench/recycle-order.png' },
     ],
   },
+  {
+    perm: 'INFO',
+    title: '信息管理',
+    accent: COLOR_BRAND,
+    entries: [
+      {
+        key: 'tea-info',
+        title: '茶品信息',
+        icon: '/assets/workbench/info-catalog.png',
+        url: '/pages/info/list',
+      },
+    ],
+  },
   // STOCK / FINANCE：暂缓，不展示
   {
     perm: 'SHOP',

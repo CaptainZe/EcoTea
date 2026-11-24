@@ -51,12 +51,24 @@
   font-weight: 650;
 }
 
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
 .title {
+  flex: 1;
+  min-width: 0;
   font-size: 34rpx;
   font-weight: 700;
   color: var(--sale-ink);
   line-height: 1.4;
-  margin-bottom: 16rpx;
+}
+
+.title-row .copy-link {
+  margin-top: 6rpx;
 }
 
 .price-row {

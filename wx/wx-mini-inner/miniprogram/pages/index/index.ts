@@ -5,6 +5,7 @@ Page({
     tenantName: '',
     showSale: false,
     showRecycle: false,
+    showInfo: false,
   },
 
   onShow() {
@@ -14,6 +15,7 @@ Page({
       tenantName: (tenant && tenant.tenantName) || '',
       showSale: perms.indexOf('SALE') >= 0,
       showRecycle: perms.indexOf('RECYCLE') >= 0,
+      showInfo: perms.indexOf('INFO') >= 0,
     })
   },
 
@@ -23,5 +25,9 @@ Page({
 
   onRecyclePrice() {
     wx.navigateTo({ url: '/pages/recycle/list' })
+  },
+
+  onTeaInfo() {
+    wx.navigateTo({ url: '/pages/info/list' })
   },
 })

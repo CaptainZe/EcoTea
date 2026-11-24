@@ -1,0 +1,13 @@
+/* 茶品信息：壳主色，不用 sale/recycle 强调色换肤 */
+@import './tokens.wxss';
+
+page {
+  --info-bg: var(--color-bg-page);
+  --info-card: var(--color-bg-card);
+  --info-line: var(--color-border);
+  --info-ink: var(--color-text-primary);
+  --info-muted: var(--color-text-secondary);
+  --info-accent: var(--color-brand);
+  --info-accent-soft: var(--color-brand-soft);
+  --info-price: var(--color-price);
+}

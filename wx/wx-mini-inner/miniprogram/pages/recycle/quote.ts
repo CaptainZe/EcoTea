@@ -141,7 +141,8 @@ Page({
     genLoading: false,
     saveLoading: false,
     previewOpen: false,
-    previewPath: '',
+    previewPaths: [] as string[],
+    previewHint: '可保存到相册后发给客户',
     swapOpen: false,
     swapLoading: false,
     swapHint: '',
@@ -434,13 +435,18 @@ Page({
     this.setData({ genLoading: true })
     wx.showLoading({ title: '正在生成…', mask: true })
     try {
-      const path = await renderRecycleQuoteImageFile(
+      const paths = await renderRecycleQuoteImageFile(
         'quoteCanvas',
         this as unknown as WechatMiniprogram.Page.TrivialInstance
       )
+      const n = paths.length
       this.setData({
         previewOpen: true,
-        previewPath: path,
+        previewPaths: paths,
+        previewHint:
+          n > 1
+            ? '共 ' + n + ' 张，可一并保存到相册后发给客户'
+            : '可保存到相册后发给客户',
       })
     } catch (e) {
       console.warn('[recycle-quote] gen image fail', e)
@@ -459,13 +465,18 @@ Page({
   },
 
   async onSavePreview() {
-    const path = this.data.previewPath
-    if (!path) return
+    const paths = this.data.previewPaths as string[]
+    if (!paths || !paths.length) return
     if (this.data.saveLoading) return
     this.setData({ saveLoading: true })
     try {
-      await saveLocalImageToAlbum(path)
-      wx.showToast({ title: '已保存相册', icon: 'success' })
+      for (const path of paths) {
+        await saveLocalImageToAlbum(path)
+      }
+      wx.showToast({
+        title: paths.length > 1 ? '已保存 ' + paths.length + ' 张' : '已保存相册',
+        icon: 'success',
+      })
     } catch (e) {
       wx.showToast({
         title: (e && (e as Error).message) || '保存失败',

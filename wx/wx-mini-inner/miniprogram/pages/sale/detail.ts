@@ -143,6 +143,21 @@ Page({
     wx.previewImage({ urls, current })
   },
 
+  onCopyTitle() {
+    const item = this.data.item
+    if (!item) return
+    // 与列表标题一致：title 已是「品牌 · 名称」
+    const text = String(item.title || item.name || '').trim()
+    if (!text) {
+      wx.showToast({ title: '无可复制内容', icon: 'none' })
+      return
+    }
+    wx.setClipboardData({
+      data: text,
+      success: () => wx.showToast({ title: '已复制', icon: 'success' }),
+    })
+  },
+
   onCopySkuCode() {
     const code = this.data.item && this.data.item.skuCode
     if (!code) {

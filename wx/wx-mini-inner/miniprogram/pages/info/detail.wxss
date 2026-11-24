@@ -1,0 +1,264 @@
+@import '../../styles/info-theme.wxss';
+
+.page {
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: var(--info-bg);
+  min-height: 100vh;
+}
+
+.swiper-wrap {
+  position: relative;
+  background: var(--info-bg);
+}
+
+.swiper {
+  width: 100%;
+  height: 560rpx;
+  background: var(--info-bg);
+}
+
+.slide {
+  width: 100%;
+  height: 560rpx;
+  background: var(--info-bg);
+}
+
+.panel {
+  margin: 16rpx 24rpx 0;
+  background: var(--info-card);
+  border-radius: 16rpx;
+  padding: 28rpx;
+  border: 1rpx solid rgba(216, 221, 214, 0.7);
+}
+
+.brand {
+  display: inline-block;
+  font-size: 22rpx;
+  color: var(--info-accent);
+  background: var(--info-accent-soft);
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  margin-bottom: 12rpx;
+  font-weight: 650;
+}
+
+.title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--info-ink);
+  line-height: 1.4;
+}
+
+.title-row .copy-link {
+  margin-top: 6rpx;
+}
+
+.row-official {
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  color: var(--info-muted);
+  line-height: 1.4;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-bottom: 12rpx;
+}
+
+.price-label {
+  font-size: 24rpx;
+  color: var(--info-muted);
+  flex-shrink: 0;
+}
+
+.price {
+  color: var(--info-price);
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.discount {
+  color: var(--info-price);
+  font-size: 24rpx;
+  font-weight: 650;
+  background: var(--info-accent-soft);
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+}
+
+.extra {
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  color: var(--info-muted);
+  line-height: 1.4;
+}
+
+.stock-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 26rpx;
+}
+
+.stock {
+  color: var(--info-accent);
+  font-weight: 650;
+}
+
+.stock.scarce {
+  color: var(--info-scarce);
+}
+
+.dmg {
+  color: var(--info-price);
+  font-size: 22rpx;
+}
+
+.fields .field {
+  display: flex;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+  border-bottom: 1rpx solid var(--info-line);
+}
+
+.fields .field:last-child {
+  border-bottom: none;
+}
+
+.label {
+  width: 140rpx;
+  color: var(--info-muted);
+  flex-shrink: 0;
+}
+
+.value {
+  color: var(--info-ink);
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+}
+
+.value-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.copy-link {
+  flex-shrink: 0;
+  color: var(--info-accent);
+  font-size: 26rpx;
+  font-weight: 650;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 650;
+  margin-bottom: 12rpx;
+  color: var(--info-ink);
+}
+
+.wh {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 14rpx 0;
+  font-size: 26rpx;
+  border-bottom: 1rpx solid var(--info-line);
+}
+
+.wh:last-child {
+  border-bottom: none;
+}
+
+.wh-name {
+  color: var(--info-ink);
+  flex-shrink: 0;
+}
+
+.wh-qty-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.wh-qty {
+  color: var(--info-accent);
+  font-weight: 650;
+}
+
+.bar-space {
+  height: 24rpx;
+}
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: var(--info-card);
+  box-shadow: 0 -4rpx 24rpx rgba(28, 36, 28, 0.06);
+  box-sizing: border-box;
+}
+
+.btn {
+  margin: 0;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  padding: 0 8rpx;
+}
+
+.btn.ghost {
+  flex: 0.85;
+  background: var(--info-card) !important;
+  color: var(--info-accent) !important;
+  border: 2rpx solid var(--info-accent) !important;
+}
+
+.btn.primary {
+  flex: 1;
+  background: var(--info-accent) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 650;
+}
+
+.btn.primary.is-in {
+  background: var(--info-accent-soft) !important;
+  color: var(--info-accent) !important;
+  border: 2rpx solid var(--info-accent) !important;
+}
+
+.loading-tip,
+.empty {
+  padding: 160rpx 40rpx;
+  text-align: center;
+  color: var(--info-muted);
+  font-size: 28rpx;
+}
+

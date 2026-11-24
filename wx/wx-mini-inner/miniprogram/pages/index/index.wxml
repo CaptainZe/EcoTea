@@ -4,7 +4,7 @@
     <text class="name">{{tenantName || '未选择'}}</text>
   </view>
 
-  <view class="quick" wx:if="{{showSale || showRecycle}}">
+  <view class="quick" wx:if="{{showSale || showRecycle || showInfo}}">
     <view class="section-title">快捷入口</view>
     <view class="entry" wx:if="{{showSale}}" bindtap="onSalePrice">
       <image class="entry-icon" src="/assets/workbench/sale-price.png" mode="aspectFit" />
@@ -13,6 +13,10 @@
     <view class="entry recycle" wx:if="{{showRecycle}}" bindtap="onRecyclePrice">
       <image class="entry-icon" src="/assets/workbench/recycle-price.png" mode="aspectFit" />
       <text class="entry-title">回收价目</text>
+    </view>
+    <view class="entry" wx:if="{{showInfo}}" bindtap="onTeaInfo">
+      <image class="entry-icon" src="/assets/workbench/info-catalog.png" mode="aspectFit" />
+      <text class="entry-title">茶品信息</text>
     </view>
   </view>
 

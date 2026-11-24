@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 public enum EmployeePermCode {
     SALE("SALE", "销售"),
     RECYCLE("RECYCLE", "回收"),
+    INFO("INFO", "信息管理"),
     STOCK("STOCK", "库存"),
     FINANCE("FINANCE", "财务"),
     SHOP("SHOP", "店铺管理"),

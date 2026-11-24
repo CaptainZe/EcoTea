@@ -23,7 +23,10 @@
 
   <view class="panel">
     <view class="brand" wx:if="{{view.brandName}}">{{view.brandName}}</view>
-    <view class="title">{{view.name || view.title}}</view>
+    <view class="title-row">
+      <view class="title">{{view.name || view.title}}</view>
+      <text class="copy-link" catchtap="onCopyTitle">复制</text>
+    </view>
     <view class="price-row">
       <text class="price">{{view.recyclePlain}}</text>
       <text class="official" wx:if="{{view.officialPlain}}">{{view.officialPlain}}</text>

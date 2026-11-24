@@ -211,9 +211,11 @@
         <text class="preview-title">回收报价单图片</text>
         <text class="sheet-x" bindtap="onClosePreview">×</text>
       </view>
-      <text class="preview-hint">可保存到相册后发给客户</text>
+      <text class="preview-hint">{{previewHint}}</text>
       <scroll-view scroll-y class="preview-body">
-        <image class="preview-img" src="{{previewPath}}" mode="widthFix" show-menu-by-longpress />
+        <block wx:for="{{previewPaths}}" wx:key="*this">
+          <image class="preview-img" src="{{item}}" mode="widthFix" show-menu-by-longpress />
+        </block>
       </scroll-view>
       <view class="preview-actions">
         <view class="pbtn ghost" bindtap="onClosePreview">关闭</view>

@@ -29,6 +29,10 @@ const TEXT = COLOR_TEXT_PRIMARY
 const MUTED = COLOR_TEXT_SECONDARY
 const ACCENT_SOFT = COLOR_BRAND_SOFT
 const LABEL_W = 88
+/** 单页最多 SKU 数，避免离屏 canvas 高度超限 */
+const PAGE_SIZE = 8
+const HEAD_H = 128
+const CONTINUE_FOOT_H = 100
 
 function loadImage(canvas: WechatMiniprogram.Canvas, src: string): Promise<WechatMiniprogram.Image> {
   return new Promise((resolve, reject) => {
@@ -86,6 +90,14 @@ function dateStr(): string {
   return now.getFullYear() + '-' + p(now.getMonth() + 1) + '-' + p(now.getDate())
 }
 
+function chunkItems<T>(items: T[], size: number): T[][] {
+  const pages: T[][] = []
+  for (let i = 0; i < items.length; i += size) {
+    pages.push(items.slice(i, i + size))
+  }
+  return pages
+}
+
 type LayoutCard = {
   item: SaleQuoteItem
   titleLines: string[]
@@ -94,55 +106,22 @@ type LayoutCard = {
   height: number
 }
 
-/**
- * 绘制销售报价长图并导出临时路径（青绿底 + 白卡片，含报单人）。
- */
-export async function renderQuoteImageFile(
-  canvasId: string,
-  component: WechatMiniprogram.Component.TrivialInstance | WechatMiniprogram.Page.TrivialInstance
-): Promise<string> {
-  const items = getItems()
-  if (!items.length) {
-    throw new Error('报价单为空')
-  }
+type OrderTotals = {
+  kindCount: number
+  pcs: number
+  disc: number
+  sub: number
+  pay: number
+}
 
-  const canvasNode = await new Promise<WechatMiniprogram.Canvas>((resolve, reject) => {
-    component
-      .createSelectorQuery()
-      .select('#' + canvasId)
-      .fields({ node: true, size: true })
-      .exec((res) => {
-        if (res && res[0] && res[0].node) {
-          resolve(res[0].node as WechatMiniprogram.Canvas)
-        } else {
-          reject(new Error('canvas 未就绪'))
-        }
-      })
-  })
-
-  const ctx = canvasNode.getContext('2d') as unknown as CanvasRenderingContext2D
-  const dpr = wx.getSystemInfoSync().pixelRatio || 2
-  const reporter = getReporterName()
-
-  const covers: Array<WechatMiniprogram.Image | null> = []
-  for (const it of items) {
-    if (it.coverImage) {
-      try {
-        covers.push(await loadImage(canvasNode, it.coverImage))
-      } catch (e) {
-        covers.push(null)
-      }
-    } else {
-      covers.push(null)
-    }
-  }
-
-  ctx.font = '28px sans-serif'
-  const contentW = W - PAD * 2
-  // 无序号圆点后，封面靠左，文案区更宽
-  const coverS = 112
-  const textAreaW = contentW - coverS - 36
-  const cards: LayoutCard[] = items.map((item, idx) => {
+function buildCards(
+  ctx: CanvasRenderingContext2D,
+  items: SaleQuoteItem[],
+  covers: Array<WechatMiniprogram.Image | null>,
+  textAreaW: number,
+  coverS: number
+): LayoutCard[] {
+  return items.map((item, idx) => {
     const titleLines = wrapText(ctx, displayTitle(item), textAreaW)
     const rows: Array<{ k: string; v: string; emphasize?: boolean }> = []
     if (item.gradeName) rows.push({ k: '等级', v: item.gradeName })
@@ -160,35 +139,69 @@ export async function renderQuoteImageFile(
     const height = Math.max(coverS + 40, bodyH + 36)
     return { item, titleLines, rows, cover: covers[idx], height }
   })
+}
 
-  let pcs = 0
-  items.forEach((it) => {
-    pcs += it.qty || 1
+function exportCanvas(
+  canvasNode: WechatMiniprogram.Canvas,
+  dpr: number,
+  H: number
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    wx.canvasToTempFilePath({
+      canvas: canvasNode,
+      x: 0,
+      y: 0,
+      width: W,
+      height: H,
+      destWidth: W * dpr,
+      destHeight: H * dpr,
+      fileType: 'png',
+      success: (res) => resolve(res.tempFilePath),
+      fail: (err) => reject(new Error((err && err.errMsg) || '导出失败')),
+    })
   })
-  const disc = getOrderDiscount()
-  const sub = subtotalAmount()
-  const pay = payableAmount()
+}
 
-  const headH = 128
-  const footH = disc > 0 ? 268 : 220
+function renderOnePage(
+  canvasNode: WechatMiniprogram.Canvas,
+  ctx: CanvasRenderingContext2D,
+  dpr: number,
+  pageItems: SaleQuoteItem[],
+  pageCovers: Array<WechatMiniprogram.Image | null>,
+  pageIndex: number,
+  pageCount: number,
+  reporter: string,
+  totals: OrderTotals
+): Promise<string> {
+  // 上一页可能残留 dpr scale，量字前先复位
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.font = '28px sans-serif'
+  const contentW = W - PAD * 2
+  const coverS = 112
+  const textAreaW = contentW - coverS - 36
+  const cards = buildCards(ctx, pageItems, pageCovers, textAreaW, coverS)
+  const isLast = pageIndex === pageCount - 1
+  const footH = isLast ? (totals.disc > 0 ? 268 : 220) : CONTINUE_FOOT_H
+
   let listH = 0
   cards.forEach((c) => {
     listH += c.height + 16
   })
-  const H = headH + listH + footH + PAD
+  const H = HEAD_H + listH + footH + PAD
 
   canvasNode.width = W * dpr
   canvasNode.height = H * dpr
   ctx.scale(dpr, dpr)
 
-  // 整图青绿底
   ctx.fillStyle = SHEET_BG
   ctx.fillRect(0, 0, W, H)
 
-  // 头区：标题 + 报单人/日期同一行
+  const titleBase = '销售报价单'
+  const title =
+    pageCount > 1 ? titleBase + ' (' + (pageIndex + 1) + '/' + pageCount + ')' : titleBase
   ctx.fillStyle = '#ffffff'
   ctx.font = 'bold 42px sans-serif'
-  ctx.fillText('销售报价单', PAD, 56)
+  ctx.fillText(title, PAD, 56)
   ctx.fillStyle = 'rgba(255,255,255,0.9)'
   ctx.font = '24px sans-serif'
   const ds = dateStr()
@@ -199,14 +212,13 @@ export async function renderQuoteImageFile(
   }
   ctx.fillText(ds, W - PAD - ctx.measureText(ds).width, metaY)
 
-  let y = headH
+  let y = HEAD_H
   cards.forEach((card) => {
     const cardH = card.height
     ctx.fillStyle = CARD_BG
     roundRect(ctx, PAD, y, contentW, cardH, 14)
     ctx.fill()
 
-    // 左侧细色条（替代序号）
     ctx.fillStyle = SHEET_BG
     roundRect(ctx, PAD, y + 14, 8, cardH - 28, 4)
     ctx.fill()
@@ -259,53 +271,131 @@ export async function renderQuoteImageFile(
     y += cardH + 16
   })
 
-  // 底部合计：浅青绿底 + 更宽松行距
   const footBoxH = footH - 20
   ctx.fillStyle = ACCENT_SOFT
   roundRect(ctx, PAD, y, contentW, footBoxH, 14)
   ctx.fill()
-  let fy = y + 48
-  ctx.fillStyle = MUTED
-  ctx.font = '26px sans-serif'
-  ctx.fillText('共 ' + items.length + ' 种，合计 ' + pcs + ' 件', PAD + 28, fy)
-  fy += 46
-  if (disc > 0) {
+
+  if (!isLast) {
     ctx.fillStyle = MUTED
     ctx.font = '26px sans-serif'
-    ctx.fillText('小计', PAD + 28, fy)
-    const subS = '¥' + plainAmount(sub)
-    ctx.fillText(subS, W - PAD - 28 - ctx.measureText(subS).width, fy)
-    fy += 42
+    const tip = '续下页'
+    ctx.fillText(tip, (W - ctx.measureText(tip).width) / 2, y + footBoxH / 2 + 10)
+  } else {
+    let fy = y + 48
+    ctx.fillStyle = MUTED
+    ctx.font = '26px sans-serif'
+    ctx.fillText('共 ' + totals.kindCount + ' 种，合计 ' + totals.pcs + ' 件', PAD + 28, fy)
+    fy += 46
+    if (totals.disc > 0) {
+      ctx.fillStyle = MUTED
+      ctx.font = '26px sans-serif'
+      ctx.fillText('小计', PAD + 28, fy)
+      const subS = '¥' + plainAmount(totals.sub)
+      ctx.fillText(subS, W - PAD - 28 - ctx.measureText(subS).width, fy)
+      fy += 42
+      ctx.fillStyle = PRICE
+      ctx.fillText('优惠', PAD + 28, fy)
+      const ds2 = '−¥' + plainAmount(totals.disc)
+      ctx.fillText(ds2, W - PAD - 28 - ctx.measureText(ds2).width, fy)
+      fy += 48
+    }
+    ctx.fillStyle = TEXT
+    ctx.font = 'bold 30px sans-serif'
+    ctx.fillText(totals.disc > 0 ? '应付' : '合计', PAD + 28, fy)
     ctx.fillStyle = PRICE
-    ctx.fillText('优惠', PAD + 28, fy)
-    const ds2 = '−¥' + plainAmount(disc)
-    ctx.fillText(ds2, W - PAD - 28 - ctx.measureText(ds2).width, fy)
-    fy += 48
+    ctx.font = 'bold 36px sans-serif'
+    const payS = '¥' + plainAmount(totals.pay)
+    ctx.fillText(payS, W - PAD - 28 - ctx.measureText(payS).width, fy)
+    fy += 44
+    ctx.fillStyle = MUTED
+    ctx.font = '22px sans-serif'
+    ctx.fillText('内部销售参考报价 · 以沟通确认为准', PAD + 28, fy)
   }
-  ctx.fillStyle = TEXT
-  ctx.font = 'bold 30px sans-serif'
-  ctx.fillText(disc > 0 ? '应付' : '合计', PAD + 28, fy)
-  ctx.fillStyle = PRICE
-  ctx.font = 'bold 36px sans-serif'
-  const payS = '¥' + plainAmount(pay)
-  ctx.fillText(payS, W - PAD - 28 - ctx.measureText(payS).width, fy)
-  fy += 44
-  ctx.fillStyle = MUTED
-  ctx.font = '22px sans-serif'
-  ctx.fillText('内部销售参考报价 · 以沟通确认为准', PAD + 28, fy)
 
-  return new Promise((resolve, reject) => {
-    wx.canvasToTempFilePath({
-      canvas: canvasNode,
-      x: 0,
-      y: 0,
-      width: W,
-      height: H,
-      destWidth: W * dpr,
-      destHeight: H * dpr,
-      fileType: 'png',
-      success: (res) => resolve(res.tempFilePath),
-      fail: (err) => reject(new Error((err && err.errMsg) || '导出失败')),
-    })
+  return exportCanvas(canvasNode, dpr, H)
+}
+
+/**
+ * 绘制销售报价长图并导出临时路径（青绿底 + 白卡片，含报单人）。
+ * 超过 PAGE_SIZE 时分页多张：多页标题带 (当前/总页)；非末页「续下页」；末页整单合计。
+ */
+export async function renderQuoteImageFile(
+  canvasId: string,
+  component: WechatMiniprogram.Component.TrivialInstance | WechatMiniprogram.Page.TrivialInstance
+): Promise<string[]> {
+  const items = getItems()
+  if (!items.length) {
+    throw new Error('报价单为空')
+  }
+
+  const canvasNode = await new Promise<WechatMiniprogram.Canvas>((resolve, reject) => {
+    component
+      .createSelectorQuery()
+      .select('#' + canvasId)
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (res && res[0] && res[0].node) {
+          resolve(res[0].node as WechatMiniprogram.Canvas)
+        } else {
+          reject(new Error('canvas 未就绪'))
+        }
+      })
   })
+
+  const ctx = canvasNode.getContext('2d') as unknown as CanvasRenderingContext2D
+  const dpr = wx.getSystemInfoSync().pixelRatio || 2
+  const reporter = getReporterName()
+
+  const covers: Array<WechatMiniprogram.Image | null> = []
+  for (const it of items) {
+    if (it.coverImage) {
+      try {
+        covers.push(await loadImage(canvasNode, it.coverImage))
+      } catch (e) {
+        covers.push(null)
+      }
+    } else {
+      covers.push(null)
+    }
+  }
+
+  let pcs = 0
+  items.forEach((it) => {
+    pcs += it.qty || 1
+  })
+  const totals: OrderTotals = {
+    kindCount: items.length,
+    pcs,
+    disc: getOrderDiscount(),
+    sub: subtotalAmount(),
+    pay: payableAmount(),
+  }
+
+  const pages = chunkItems(items, PAGE_SIZE)
+  const pageCount = pages.length
+  const paths: string[] = []
+
+  for (let pi = 0; pi < pageCount; pi++) {
+    if (pageCount > 1) {
+      wx.showLoading({ title: '正在生成 ' + (pi + 1) + '/' + pageCount + '…', mask: true })
+    }
+    const pageItems = pages[pi]
+    const coverStart = pi * PAGE_SIZE
+    const pageCovers = covers.slice(coverStart, coverStart + pageItems.length)
+    const path = await renderOnePage(
+      canvasNode,
+      ctx,
+      dpr,
+      pageItems,
+      pageCovers,
+      pi,
+      pageCount,
+      reporter,
+      totals
+    )
+    paths.push(path)
+  }
+
+  return paths
 }
