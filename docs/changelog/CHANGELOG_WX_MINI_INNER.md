@@ -1,6 +1,7 @@
 # 内部小程序版本记录
 
-工程：`wx/wx-mini-inner`。提审与 Git 无关，走微信开发者工具上传。
+工程：`wx/wx-mini-inner`。提审与 Git 无关，走微信开发者工具上传。  
+工程约定见 [`docs/coding/CODING_MINI.md`](../coding/CODING_MINI.md)。
 
 ## 发布 checklist
 

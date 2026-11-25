@@ -6,6 +6,7 @@
 > 对外获客仍走 **订阅号 + H5**（见 `PRD_WX_MP.md`）。  
 > 多租户 / 三端边界见 **`PRD_TENANT.md`**（扁平店铺租户；本小程序为店内作业主入口）。  
 > UI 规范见 **[`docs/ui/UI_SPEC_WX_MINI_INNER.md`](../ui/UI_SPEC_WX_MINI_INNER.md)**（新模块 / 新组件须先更新 UI 规范再开发）。  
+> 工程约定见 **[`docs/coding/CODING_MINI.md`](../coding/CODING_MINI.md)**。  
 > **本期不做服务号；全链路不做线上收款付款。**  
 > 本文只描述产品能力与页面；报价单 / 销售单 / 回收单需**新建业务表**（DDL 另立，不在组织脚本 `SQL_TENANT.sql`）。
 

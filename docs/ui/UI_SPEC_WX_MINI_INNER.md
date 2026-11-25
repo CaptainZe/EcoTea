@@ -3,7 +3,8 @@
 > 文档路径：`docs/ui/UI_SPEC_WX_MINI_INNER.md`  
 > 适用范围：仓库 **`wx/wx-mini-inner/`**（EcoTea 内部作业小程序）  
 > 产品说明见：`docs/prd/PRD_WX_MINI.md`  
-> **本文只约定视觉与交互基线；不替代 PRD。**  
+> 工程约定见：`docs/coding/CODING_MINI.md`  
+> **本文只约定视觉与交互基线；不替代 PRD / CODING。**  
 > 其它小程序（若有）各自独立一份 `docs/ui/UI_SPEC_*.md`，不混用本规范。
 
 ---

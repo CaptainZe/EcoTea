@@ -87,7 +87,7 @@ com.ecotea.api
 
 ## 8. Redis、锁与业务缓存
 
-> 明细 key / 接入进度见 `docs/dev/TODO_REDIS_CACHE.md`。本文只定**必须遵守**的约定。
+> 明细 key / 已接能力见 [`CACHE.md`](CACHE.md)。本文只定**必须遵守**的约定。
 
 ### 8.1 基础设施
 
@@ -112,7 +112,7 @@ com.ecotea.api
 2. key 模板、value 形态、TTL。  
 3. 写端（通常 admin）成功后的失效方式（DEL / 踢会话）。  
 
-**不优先缓存：** Admin/API 后台分页 CRUD；高频写入的业务单据列表/详情（报价单、销售单、回收单等默认直查库；短 TTL 仅在有压测证据时再议，见 `TODO_REDIS_CACHE.md`）。
+**不优先缓存：** Admin/API 后台分页 CRUD；高频写入的业务单据列表/详情（报价单、销售单、回收单等默认直查库；短 TTL 仅在有压测证据时再议，见 `CACHE.md`）。
 
 ### 8.4 组织域（租户 / 员工）
 

@@ -53,16 +53,16 @@
 
 - 更新 `docs/db/SQL_CHAI_DOMAIN.sql`：`chai_spu`、`chai_sku` 增加 `unified_price`。
 
-### 增量（临时，发版用）
+### 增量（发版用）
 
-- `docs/db/tmp/YYYYMMDD_chai_unified_price.sql`（发版时再落文件）
+- 贴入 `docs/changelog/CHANGELOG_ADMIN.md` 对应版本节（可执行 SQL）；**不**落 `docs/db/tmp/`。
 
 ## 分步实现（按序，待做）
 
 ### U1 DDL
 
 - [ ] 全量改 `docs/db/SQL_CHAI_DOMAIN.sql`
-- [ ] 写临时增量 SQL（目标库手工执行）
+- [ ] 增量 SQL 写入 CHANGELOG 本版（目标库手工执行）
 
 ### U2 实体
 

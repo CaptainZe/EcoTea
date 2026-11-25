@@ -35,9 +35,9 @@
 
 - 更新 `docs/db/SQL_CHAI_DOMAIN.sql` 为**最新完整**表结构 + 索引。
 
-### 增量（临时，发版用）
+### 增量（发版用）
 
-- `docs/db/tmp/20260929_chai_search_keywords.sql`
+- 已随 **1.3.1** 上线；要点见 `CHANGELOG_ADMIN`（历史曾用 tmp 文件，现约定增量只进 CHANGELOG）。
 
 说明：
 
@@ -49,7 +49,7 @@
 ### S1 DDL
 
 - [x] 全量改 `docs/db/SQL_CHAI_DOMAIN.sql`
-- [x] 写临时增量 SQL：`docs/db/tmp/20260929_chai_search_keywords.sql`（目标库需手工执行）
+- [x] 增量已执行（历史 tmp；后续版本改走 CHANGELOG）
 
 ### S2 实体
 

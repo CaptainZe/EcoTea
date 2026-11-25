@@ -2,7 +2,7 @@
 
 > 文档名：`PRD_TENANT.md`  
 > 状态：**规划定稿；Admin B1/B2/C + API D 已落地** — 产品与模型约定；DDL 见 [`docs/db/SQL_TENANT.sql`](../db/SQL_TENANT.sql)（**仅组织表**）。  
-> 配套：`PRD_WX_MINI.md`（小程序）、`PRD_WX_MP.md`（订阅号 H5）、[`docs/dev/CODING_ADMIN.md`](../dev/CODING_ADMIN.md) / [`docs/dev/CODING_API.md`](../dev/CODING_API.md)（编码边界）；小程序 UI 见 [`docs/ui/UI_SPEC_WX_MINI_INNER.md`](../ui/UI_SPEC_WX_MINI_INNER.md)。
+> 配套：`PRD_WX_MINI.md`（小程序）、`PRD_WX_MP.md`（订阅号 H5）、[`docs/coding/CODING_ADMIN.md`](../coding/CODING_ADMIN.md) / [`docs/coding/CODING_API.md`](../coding/CODING_API.md)（编码边界）；小程序 UI 见 [`docs/ui/UI_SPEC_WX_MINI_INNER.md`](../ui/UI_SPEC_WX_MINI_INNER.md)。
 
 ---
 
@@ -221,5 +221,5 @@ MySQL 中 `UNIQUE INDEX` 与 `UNIQUE KEY` **等价**；本项目与现有 `chai_
 | [`docs/db/SQL_TENANT.sql`](../db/SQL_TENANT.sql) | 仅 5 张组织表 |
 | `PRD_WX_MINI.md` | 小程序产品 |
 | `PRD_WX_MP.md` | 订阅号 + H5 |
-| [`../dev/CODING_ADMIN.md`](../dev/CODING_ADMIN.md) / [`../dev/CODING_API.md`](../dev/CODING_API.md) | 编码边界 |
+| [`../coding/CODING_ADMIN.md`](../coding/CODING_ADMIN.md) / [`../coding/CODING_API.md`](../coding/CODING_API.md) / [`../coding/CODING_MINI.md`](../coding/CODING_MINI.md) | 编码边界 |
 | [`../ui/UI_SPEC_WX_MINI_INNER.md`](../ui/UI_SPEC_WX_MINI_INNER.md) | 内部小程序 UI |

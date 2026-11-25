@@ -5,7 +5,7 @@
 > 与 `server-admin` **仅共享** MySQL / Redis；不抽共用业务 jar。  
 > **不做** `wx_user` 表（本期统计依赖微信公众平台后台）。
 
-相关：[`docs/deploy/DEPLOY_API.md`](../deploy/DEPLOY_API.md)、[`docs/deploy/DEPLOY_NGINX_SSL.md`](../deploy/DEPLOY_NGINX_SSL.md)、[`docs/dev/CODING_API.md`](../dev/CODING_API.md)、`PRD_TENANT.md`、[`docs/dev/TODO_REDIS_CACHE.md`](../dev/TODO_REDIS_CACHE.md)（业务缓存暂缓）。
+相关：[`docs/deploy/DEPLOY_API.md`](../deploy/DEPLOY_API.md)、[`docs/deploy/DEPLOY_NGINX_SSL.md`](../deploy/DEPLOY_NGINX_SSL.md)、[`docs/coding/CODING_API.md`](../coding/CODING_API.md)、`PRD_TENANT.md`、[`docs/coding/CACHE.md`](../coding/CACHE.md)。
 
 **多租户（规划摘要，见 `PRD_TENANT.md`）：**
 
@@ -230,7 +230,7 @@ admin「发布菜单」：admin 服务端（或受控请求）调用 api，由 a
 - H5 登录 / 会员价  
 - 对外暴露回收价、成本  
 - 抽 admin/api 共用业务 jar  
-- 业务 Redis 缓存（见 `TODO_REDIS_CACHE.md`，另排期）  
+- 业务 Redis 缓存（见 `docs/coding/CACHE.md`）  
 - 另开营销独立域名/新站点（根域 `ecotea.cn` 仅作官网入口与公安备案，内容仍为 api H5）  
 - 欢迎语 HTML 富文本推送到微信  
 
