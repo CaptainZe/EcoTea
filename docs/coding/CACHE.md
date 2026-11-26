@@ -24,6 +24,7 @@ ecotea_dict_{name}
 ecotea_chai_brand_online
 ecotea_chai_expiration_online
 ecotea_chai_warehouse_online
+ecotea_chai_barcode_spu_{barcode}   # 条码→SPU id 列表 JSON；有值 DAY；空列表 5 分钟
 ecotea_wx_global_config_{type}
 
 # 员工会话 — 已接
@@ -45,6 +46,7 @@ ecotea_tenant_online              # 可选，未接
 | `chai_brand_online` | `ChaiBrandService.listOnlineOrdered`（H5 常用置顶） | save / 删除 / 拼音回填 |
 | `chai_expiration_online` | `ChaiExpirationService` | save / 删除 |
 | `chai_warehouse_online` | `ChaiWarehouseQueryService` | save / 删除 |
+| `chai_barcode_spu_{barcode}` | `ChaiSpuBarcodeQueryService.resolveSpuIds`（扫码分步第 1 步） | 条码 add / delete |
 | `wx_global_config_{type}` | `WxGlobalConfigService.getByType` | save / delete 按 type |
 | `tenant_{tenantId}` | `TenantService.getByBizTenantId` | `TenantService.save` |
 | 踢员工会话 | — | 改密码/状态/挂店/perm → `EmployeeSessionCacheService` |
@@ -59,10 +61,11 @@ ecotea_tenant_online              # 可选，未接
 ## 可选后续
 
 - `tenant_online`（启用店列表）  
-- 列表页短 TTL：仅在有压测证据时局部加；扫码精确查不适合列表缓存  
+- 列表页短 TTL：仅在有压测证据时局部加；扫码只缓存「码→spuIds」，不缓存价目整页  
 
 ## 验收要点
 
 1. admin 改字典/品牌/保质期/仓库/文案/店名 → 读端立刻新（写后 DEL）。  
 2. admin 改员工 perm 或停用 → 小程序旧 token 失效。  
-3. miss 行为与直查库一致；DEL 后下次请求重新 SET。
+3. miss 行为与直查库一致；DEL 后下次请求重新 SET。  
+4. admin 增删 SPU 条码 → `chai_barcode_spu_{barcode}` 失效，扫码立刻反映。

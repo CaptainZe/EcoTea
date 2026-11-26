@@ -606,6 +606,7 @@
     params.set("size", "50");
     params.set("spuId", String(row.spuId));
     params.set("includeWh", "1");
+    params.set("includeHidden", "1");
     var fetchOpts = ctrl ? { signal: ctrl.signal } : {};
 
     fetch("/chai/sku/sale/list?" + params.toString(), fetchOpts)

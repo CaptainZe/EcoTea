@@ -64,6 +64,9 @@ Page({
     officialPriceMin: null as number | null,
     officialPriceMax: null as number | null,
     nonSale: null as number | null,
+    hideExternal: null as number | null,
+    coreFlag: null as number | null,
+    tastingFlag: null as number | null,
     filterActive: false,
     filterSummary: '',
   },
@@ -140,7 +143,10 @@ Page({
     priceMax: number | null,
     officialPriceMin: number | null,
     officialPriceMax: number | null,
-    nonSale: number | null
+    nonSale: number | null,
+    hideExternal: number | null,
+    coreFlag: number | null,
+    tastingFlag: number | null
   ) {
     const active =
       brandIds.length > 0 ||
@@ -149,7 +155,10 @@ Page({
       priceMax != null ||
       officialPriceMin != null ||
       officialPriceMax != null ||
-      nonSale != null
+      nonSale != null ||
+      hideExternal != null ||
+      coreFlag != null ||
+      tastingFlag != null
     const parts: string[] = []
     if (brandIds.length) parts.push('品牌' + brandIds.length)
     if (types.length) parts.push('茶类' + types.length)
@@ -157,6 +166,12 @@ Page({
     if (nonSale === 1) parts.push('非卖品')
     if (nonSale === 0) parts.push('非非卖品')
     if (officialPriceMin != null || officialPriceMax != null) parts.push('官方价')
+    if (hideExternal === 1) parts.push('对外隐藏')
+    if (hideExternal === 0) parts.push('非对外隐藏')
+    if (coreFlag === 1) parts.push('核心')
+    if (coreFlag === 0) parts.push('非核心')
+    if (tastingFlag === 1) parts.push('品鉴')
+    if (tastingFlag === 0) parts.push('非品鉴')
     return {
       filterActive: active,
       filterSummary: parts.length ? '筛选：' + parts.join(' · ') : '',
@@ -193,6 +208,9 @@ Page({
       officialPriceMin: null,
       officialPriceMax: null,
       nonSale: null,
+      hideExternal: null,
+      coreFlag: null,
+      tastingFlag: null,
       filterActive: false,
       filterSummary: '',
       recycleIndex: 0,
@@ -316,6 +334,9 @@ Page({
           officialPriceMin: self.data.officialPriceMin,
           officialPriceMax: self.data.officialPriceMax,
           nonSale: self.data.nonSale,
+          hideExternal: self.data.hideExternal,
+          coreFlag: self.data.coreFlag,
+          tastingFlag: self.data.tastingFlag,
         })
       },
     })
@@ -331,7 +352,10 @@ Page({
       data.priceMax,
       data.officialPriceMin,
       data.officialPriceMax,
-      data.nonSale
+      data.nonSale,
+      data.hideExternal,
+      data.coreFlag,
+      data.tastingFlag
     )
     this.setData({
       brandIds,
@@ -341,6 +365,9 @@ Page({
       officialPriceMin: data.officialPriceMin,
       officialPriceMax: data.officialPriceMax,
       nonSale: data.nonSale,
+      hideExternal: data.hideExternal,
+      coreFlag: data.coreFlag,
+      tastingFlag: data.tastingFlag,
       filterActive: flags.filterActive,
       filterSummary: flags.filterSummary,
       barcode: '',
@@ -377,7 +404,11 @@ Page({
       nonSale: this.data.nonSale,
       year: this.data.year,
       prodBatch: this.data.prodBatch,
+      hideExternal: this.data.hideExternal,
+      coreFlag: this.data.coreFlag,
+      tastingFlag: this.data.tastingFlag,
       includeWh: 1,
+      includeHidden: 1,
       page,
       size: PAGE_SIZE,
     })

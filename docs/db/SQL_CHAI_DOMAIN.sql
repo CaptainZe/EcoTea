@@ -65,7 +65,7 @@ CREATE TABLE `chai_sku`  (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商品名称',
   `keywords` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '搜索关键词（空格分隔，运营可编）',
   `search_text` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '检索文本（品牌名+商品名+关键词，系统生成）',
-  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '条形码（EAN-13；一SPU一码，SKU继承）',
+  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '【废弃】旧单列条码；业务读写切至 chai_spu_barcode',
   `brand` bigint(20) NOT NULL COMMENT '品牌',
   `expiration` bigint(20) NOT NULL COMMENT '保质期',
   `type` int(11) NOT NULL COMMENT '茶类',
@@ -81,6 +81,10 @@ CREATE TABLE `chai_sku`  (
   `recycle_price` decimal(12, 2) NOT NULL COMMENT '回收价',
   `recycle_price_reduce_per` int(11) NOT NULL COMMENT '回收价压价百分比',
   `recycle_price_reduce_no_bag` decimal(12, 2) NOT NULL COMMENT '回收价扣减（无提袋）',
+  `hide_external` tinyint(2) NOT NULL DEFAULT 0 COMMENT '对外隐藏：0否 1是（同步自SPU）',
+  `core_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '核心产品：0否 1是（同步自SPU）',
+  `tasting_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '品鉴款：0否 1是（同步自SPU）',
+  `pack_spu_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '整装SPU ID；品鉴款可空（同步自SPU）',
   `status` int(11) NOT NULL DEFAULT 0 COMMENT '状态',
   `deleted` tinyint(2) NOT NULL DEFAULT 0 COMMENT '0有效 1已删除',
   `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最后操作人',
@@ -92,7 +96,9 @@ CREATE TABLE `chai_sku`  (
   INDEX `idx_spu_id`(`spu_id`) USING BTREE,
   INDEX `idx_brand`(`brand`) USING BTREE,
   INDEX `idx_type`(`type`) USING BTREE,
-  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE
+  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE,
+  INDEX `idx_hide_external`(`hide_external`) USING BTREE,
+  INDEX `idx_pack_spu_id`(`pack_spu_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 224 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SKU表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -106,7 +112,7 @@ CREATE TABLE `chai_spu`  (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '商品名称',
   `keywords` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '搜索关键词（空格分隔，运营可编）',
   `search_text` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '检索文本（品牌名+商品名+关键词，系统生成）',
-  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '条形码（EAN-13；一SPU一码，SKU继承）',
+  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '【废弃】旧单列条码；业务读写切至 chai_spu_barcode',
   `brand` bigint(20) NOT NULL COMMENT '品牌',
   `expiration` bigint(20) NOT NULL COMMENT '保质期',
   `type` int(11) NOT NULL COMMENT '茶类',
@@ -118,6 +124,10 @@ CREATE TABLE `chai_spu`  (
   `real_image_urls` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '实物图片列表',
   `non_sale` tinyint(2) NOT NULL DEFAULT 0 COMMENT '是否非卖品：0否 1是',
   `official_price` decimal(12, 2) NULL DEFAULT NULL COMMENT '官方价(元)；非卖品为 NULL',
+  `hide_external` tinyint(2) NOT NULL DEFAULT 0 COMMENT '对外隐藏：0否 1是',
+  `core_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '核心产品：0否 1是',
+  `tasting_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '品鉴款：0否 1是',
+  `pack_spu_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '整装SPU ID；品鉴款可空',
   `status` int(11) NOT NULL DEFAULT 0 COMMENT '状态',
   `deleted` tinyint(2) NOT NULL DEFAULT 0 COMMENT '0有效 1已删除',
   `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最后操作人',
@@ -127,8 +137,27 @@ CREATE TABLE `chai_spu`  (
   UNIQUE INDEX `unique_key`(`spu_code`) USING BTREE,
   INDEX `idx_brand`(`brand`) USING BTREE,
   INDEX `idx_type`(`type`) USING BTREE,
-  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE
+  INDEX `idx_deleted_status`(`deleted`, `status`) USING BTREE,
+  INDEX `idx_hide_external`(`hide_external`) USING BTREE,
+  INDEX `idx_pack_spu_id`(`pack_spu_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 46 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SPU表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for chai_spu_barcode
+-- ----------------------------
+DROP TABLE IF EXISTS `chai_spu_barcode`;
+CREATE TABLE `chai_spu_barcode`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `spu_id` bigint(20) UNSIGNED NOT NULL COMMENT 'SPU ID',
+  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '条形码（EAN-13；一SPU可多码）',
+  `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最后操作人',
+  `update_time` bigint(20) NOT NULL COMMENT '更新时间',
+  `create_time` bigint(20) NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_spu_barcode`(`spu_id`, `barcode`) USING BTREE,
+  INDEX `idx_barcode`(`barcode`) USING BTREE,
+  INDEX `idx_spu_id`(`spu_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SPU条码（一SPU多码；barcode 不做全局唯一）' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for chai_staff

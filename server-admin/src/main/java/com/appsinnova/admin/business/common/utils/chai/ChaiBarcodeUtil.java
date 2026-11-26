@@ -80,6 +80,11 @@ public final class ChaiBarcodeUtil {
         }
     }
 
+    /** 是否本系统生成的 29 开头码（每 SPU 最多一条）。 */
+    public static boolean isSystem29(String code13) {
+        return code13 != null && code13.startsWith(INTERNAL_PREFIX);
+    }
+
     /**
      * 13 位是否通过 ZXing EAN-13 校验（由 {@link EAN13Writer} 内部调用标准 checksum）。
      */

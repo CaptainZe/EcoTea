@@ -1,9 +1,12 @@
 package com.appsinnova.admin.business.controller.tools;
 
 import com.appsinnova.admin.business.service.chai.ChaiBrandService;
+import com.appsinnova.admin.business.service.chai.ChaiSpuBarcodeService;
 import com.appsinnova.admin.business.service.chai.ChaiSpuService;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
 import com.appsinnova.admin.common.vo.ResultVo;
+import com.appsinnova.admin.component.shiro.ShiroUtil;
+import com.appsinnova.admin.system.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.stereotype.Controller;
@@ -26,6 +29,7 @@ public class ChaiToolsController {
 
     private final ChaiBrandService chaiBrandService;
     private final ChaiSpuService chaiSpuService;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
 
     @GetMapping("/index")
     @RequiresPermissions("business:tools:chai:index")
@@ -34,6 +38,7 @@ public class ChaiToolsController {
         Map<String, Long> searchTextMissing = chaiSpuService.countMissingSearchText();
         model.addAttribute("spuMissingSearchText", searchTextMissing.getOrDefault("spu", 0L));
         model.addAttribute("skuMissingSearchText", searchTextMissing.getOrDefault("sku", 0L));
+        model.addAttribute("barcodePendingMigrate", chaiSpuBarcodeService.countPendingLegacyMigration());
         return "/business/tools/chai/index";
     }
 
@@ -71,6 +76,24 @@ public class ChaiToolsController {
                 mode,
                 result.get("spuTotal"), result.get("spuUpdated"), result.get("spuSkipped"),
                 result.get("skuTotal"), result.get("skuUpdated"), result.get("skuSkipped"));
+        return ResultVoUtil.success(msg, result);
+    }
+
+    /**
+     * 旧列 barcode → chai_spu_barcode（幂等）。不写回旧列。
+     */
+    @PostMapping("/barcode/migrate")
+    @RequiresPermissions("business:tools:chai:index")
+    @ResponseBody
+    public ResultVo<?> migrateBarcode() {
+        User user = ShiroUtil.getSubject();
+        String operator = user != null ? user.getNickname() : "migrate";
+        Map<String, Integer> result = chaiSpuBarcodeService.migrateFromLegacy(operator);
+        String msg = String.format(
+                "迁移完成：扫描 %d，SPU 组 %d，插入 %d，已存在跳过 %d，非法跳过 %d，第二系统码跳过 %d",
+                result.get("scanned"), result.get("spuGroups"), result.get("inserted"),
+                result.get("skippedExist"), result.get("skippedInvalid"),
+                result.get("skippedSecond29"));
         return ResultVoUtil.success(msg, result);
     }
 }

@@ -35,6 +35,9 @@ export interface RecycleSkuItem {
     qtyDamagedNoBag?: number
   }>
   sameSpuCount?: number
+  hideExternal?: number
+  coreFlag?: number
+  tastingFlag?: number
   coverImage?: string
   imageUrls?: string[]
 }
@@ -63,6 +66,9 @@ export interface RecycleListQuery {
   nonSale?: number | null
   year?: number | null
   prodBatch?: number | null
+  hideExternal?: number | null
+  coreFlag?: number | null
+  tastingFlag?: number | null
   page?: number
   size?: number
 }
@@ -108,6 +114,15 @@ export function fetchRecycleList(params: RecycleListQuery): Promise<ApiResult<Re
   }
   if (params.prodBatch != null) {
     data.prodBatch = params.prodBatch
+  }
+  if (params.hideExternal != null) {
+    data.hideExternal = params.hideExternal
+  }
+  if (params.coreFlag != null) {
+    data.coreFlag = params.coreFlag
+  }
+  if (params.tastingFlag != null) {
+    data.tastingFlag = params.tastingFlag
   }
   return request<RecycleSkuPage>({
     url: '/chai/sku/recycle/list',

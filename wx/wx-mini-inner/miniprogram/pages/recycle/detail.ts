@@ -2,6 +2,7 @@ import { fetchRecycleDetail, RecycleSkuItem } from '../../services/recycle-api'
 import { add as addQuote, has as hasQuote } from '../../services/recycle-quote'
 import { saveImagesToAlbum } from '../../utils/album'
 import { assertRecycleAccess } from '../../utils/recycle-guard'
+import { buildMarkTags, MarkTag } from '../../utils/mark-tags'
 import {
   buildWhStockRows,
   formatOfficialPlain,
@@ -21,11 +22,13 @@ type DetailView = RecycleSkuItem & {
   stockScarce: boolean
   stockExtras: string[]
   whRows: WhStockRow[]
+  markTags: MarkTag[]
   hasAttrs: boolean
 }
 
 function toDetailView(item: RecycleSkuItem): DetailView {
   const stock = formatStockLabel(item)
+  const markTags = buildMarkTags(item)
   return {
     ...item,
     recyclePlain: formatRecyclePlain(item),
@@ -36,7 +39,9 @@ function toDetailView(item: RecycleSkuItem): DetailView {
     stockScarce: stock.scarce,
     stockExtras: stockExtras(item),
     whRows: buildWhStockRows(item.warehouseStocks),
+    markTags,
     hasAttrs: !!(
+      markTags.length ||
       item.gradeName ||
       item.specShow ||
       item.prodBatchShow ||

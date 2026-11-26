@@ -7,6 +7,7 @@ import {
   formatSalePlain,
   recycleExtraLine,
 } from '../../utils/info-list-format'
+import { buildMarkTags, MarkTag } from '../../utils/mark-tags'
 
 type DetailView = InfoSkuItem & {
   officialPlain: string
@@ -15,10 +16,12 @@ type DetailView = InfoSkuItem & {
   recyclePlain: string
   recycleDiscountShow: string
   extraLine: string
+  markTags: MarkTag[]
   hasAttrs: boolean
 }
 
 function toDetailView(item: InfoSkuItem): DetailView {
+  const markTags = buildMarkTags(item)
   return {
     ...item,
     officialPlain: formatOfficialPlain(item),
@@ -27,7 +30,9 @@ function toDetailView(item: InfoSkuItem): DetailView {
     recyclePlain: formatRecyclePlain(item),
     recycleDiscountShow: item.recycleDiscountShow || '',
     extraLine: recycleExtraLine(item),
+    markTags,
     hasAttrs: !!(
+      markTags.length ||
       item.gradeName ||
       item.specShow ||
       item.prodBatchShow ||

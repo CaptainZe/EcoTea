@@ -25,6 +25,12 @@ public class ChaiSkuInfoItemVO implements Serializable {
     private String specShow;
     private String prodBatchShow;
     private String expirationName;
+    /** 对外隐藏：0否 1是 */
+    private Integer hideExternal;
+    /** 核心产品：0否 1是 */
+    private Integer coreFlag;
+    /** 品鉴款：0否 1是 */
+    private Integer tastingFlag;
 
     private BigDecimal officialPrice;
     /** 如：非卖品 / 1000元 */

@@ -33,7 +33,8 @@ public class ChaiSkuRecycleController {
      * officialPriceMin / officialPriceMax：官方价区间；
      * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）；
      * year：SKU 年份精确匹配；
-     * prodBatch：生产批次精确匹配（如 100 上半年 / 200 下半年）。
+     * prodBatch：生产批次精确匹配（如 100 上半年 / 200 下半年）；
+     * hideExternal / coreFlag / tastingFlag：1 是 / 0 否 / 不传不限。
      * 返回回收价/破损价/无袋扣减与库存数量；列表不含分仓明细。
      */
     @GetMapping("/list")
@@ -50,11 +51,15 @@ public class ChaiSkuRecycleController {
             @RequestParam(required = false) Integer nonSale,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer prodBatch,
+            @RequestParam(required = false) Integer hideExternal,
+            @RequestParam(required = false) Integer coreFlag,
+            @RequestParam(required = false) Integer tastingFlag,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         return ApiResult.ok(chaiSkuRecycleQueryService.pageRecycleList(
                 keyword, barcode, spuId, parseLongIds(brandIds), parseIntIds(types),
                 recyclePriceMin, recyclePriceMax, officialPriceMin, officialPriceMax, nonSale, year, prodBatch,
+                hideExternal, coreFlag, tastingFlag,
                 page, size));
     }
 

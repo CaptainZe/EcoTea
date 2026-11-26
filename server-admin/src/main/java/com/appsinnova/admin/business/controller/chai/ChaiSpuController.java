@@ -13,9 +13,11 @@ import com.appsinnova.admin.business.common.utils.chai.ChaiSpecUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiExpiration;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
+import com.appsinnova.admin.business.domain.chai.ChaiSpuBarcode;
 import com.appsinnova.admin.business.service.chai.ChaiBrandService;
 import com.appsinnova.admin.business.service.chai.ChaiExpirationService;
 import com.appsinnova.admin.business.service.chai.ChaiSkuService;
+import com.appsinnova.admin.business.service.chai.ChaiSpuBarcodeService;
 import com.appsinnova.admin.business.service.chai.ChaiSpuService;
 import com.appsinnova.admin.common.utils.DictUtils;
 import com.appsinnova.admin.common.utils.ResultVoUtil;
@@ -39,6 +41,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,7 @@ import java.util.Map;
 public class ChaiSpuController {
 
     private final ChaiSpuService chaiSpuService;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
     private final ChaiBrandService chaiBrandService;
     private final ChaiExpirationService chaiExpirationService;
     private final ChaiSkuService chaiSkuService;
@@ -88,6 +92,10 @@ public class ChaiSpuController {
             editItem.setGrade(0);
             editItem.setNonSale(0);
             editItem.setOfficialPrice(BigDecimal.ONE);
+            editItem.setHideExternal(0);
+            editItem.setCoreFlag(0);
+            editItem.setTastingFlag(0);
+            editItem.setPackSpuId(null);
         } else {
             ChaiSpecUtil.fillSpecFields(editItem);
             if (YesOrNo.isYes(editItem.getDeleted())) {
@@ -99,13 +107,7 @@ public class ChaiSpuController {
         if (editItem.getId() == null || chaiSkuService.countBySpuId(editItem.getId()) == 0) {
             editItem.setStatus(ChaiStatus.OFFLINE.getCode());
         }
-        model.addAttribute("editItem", editItem);
-        model.addAttribute("hasSku", editItem.getId() != null && chaiSkuService.countBySpuId(editItem.getId()) > 0);
-        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
-        model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
-        model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
-        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
-        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
+        fillEditModel(editItem, model, editItem.getId() != null && chaiSkuService.countBySpuId(editItem.getId()) > 0);
         return "/business/chai/spu/edit";
     }
 
@@ -123,14 +125,48 @@ public class ChaiSpuController {
         }
         ChaiSpu editItem = chaiSpuService.copyForEdit(id);
         ChaiSpecUtil.fillSpecFields(editItem);
-        model.addAttribute("editItem", editItem);
-        model.addAttribute("hasSku", false);
-        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
-        model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
-        model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
-        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
-        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
+        fillEditModel(editItem, model, false);
         return "/business/chai/spu/edit";
+    }
+
+    /**
+     * 整装 SPU 弹窗选择（编辑页标记区）；未删、非品鉴；可排除当前；支持名称/编码/条码。
+     */
+    @GetMapping("/packPick")
+    @RequiresPermissions("business:chai:spu:index")
+    public String packPick(Model model, ChaiSpu queryParam,
+                           @RequestParam(value = "excludeId", required = false) Long excludeId) {
+        if (queryParam == null) {
+            queryParam = new ChaiSpu();
+        }
+        queryParam.setDeleted(0);
+        queryParam.setTastingFlag(0);
+        queryParam.setExcludeId(excludeId);
+        Page<ChaiSpu> page = chaiSpuService.getPageList(queryParam);
+        Map<Long, String> brandNameMap = buildBrandNameMap();
+        Map<Long, String> expirationNameMap = buildExpirationNameMap();
+        page.forEach(item -> {
+            fillShowFields(item, brandNameMap, expirationNameMap);
+            ChaiPriceUtil.fillSpuListShow(item);
+        });
+        model.addAttribute("list", page.getContent());
+        model.addAttribute("page", page);
+        model.addAttribute("excludeId", excludeId);
+        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
+        return "/business/chai/spu/packPick";
+    }
+
+    /**
+     * 整装 SPU 远程选项（兼容）；排除自己与品鉴款。
+     */
+    @GetMapping("/packOptions")
+    @RequiresPermissions("business:chai:spu:index")
+    @ResponseBody
+    public ResultVo<?> packOptions(@RequestParam(value = "q", required = false) String q,
+                                   @RequestParam(value = "excludeId", required = false) Long excludeId,
+                                   @RequestParam(value = "limit", required = false, defaultValue = "20") int limit) {
+        List<Map<String, Object>> list = chaiSpuService.listPackOptions(q, excludeId, limit);
+        return ResultVoUtil.success(list != null ? list : new ArrayList<>());
     }
 
     /**
@@ -210,7 +246,12 @@ public class ChaiSpuController {
         }
         spu.setSpecShow(ChaiSpecUtil.toShow(spu.getSpec()));
         ChaiPriceUtil.fillSpuListShow(spu);
+        List<ChaiSpuBarcode> barcodeList = chaiSpuBarcodeService.listBySpuId(id);
+        String previewCode = pickPreviewBarcode(barcodeList);
         model.addAttribute("editItem", spu);
+        model.addAttribute("barcodeList", barcodeList);
+        model.addAttribute("previewCode", previewCode);
+        model.addAttribute("legacyBarcode", StringUtils.isNotBlank(spu.getBarcode()) ? spu.getBarcode().trim() : "");
         model.addAttribute("gradeName", DictUtils.keyValue("CHAI_GRADE",
                 spu.getGrade() != null ? String.valueOf(spu.getGrade()) : null));
         model.addAttribute("prodBatchName", DictUtils.keyValue("CHAI_PROD_BATCH",
@@ -218,36 +259,51 @@ public class ChaiSpuController {
         return "/business/chai/spu/barcode";
     }
 
-    @PostMapping("/barcode/save")
+    /** 新增一条条码（多码） */
+    @PostMapping("/barcode/add")
     @RequiresPermissions("business:chai:spu:edit")
     @ResponseBody
-    public ResultVo<?> saveBarcode(@RequestParam("id") Long id,
-                                   @RequestParam(value = "barcode", required = false) String barcode) {
+    public ResultVo<?> addBarcode(@RequestParam("id") Long id,
+                                  @RequestParam(value = "barcode", required = false) String barcode) {
         User user = ShiroUtil.getSubject();
         try {
-            chaiSpuService.saveBarcode(id, barcode, user.getNickname());
-            return ResultVoUtil.SAVE_SUCCESS;
+            ChaiSpuBarcode row = chaiSpuBarcodeService.add(id, barcode, user.getNickname());
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", row.getId());
+            data.put("barcode", row.getBarcode());
+            return ResultVoUtil.success("添加成功", data);
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
         }
     }
 
-    /** 按 spuId 生成系统码 EAN-13（仅返回，不落库） */
-    @GetMapping("/barcode/generate/{id}")
+    /** 删除一条条码 */
+    @PostMapping("/barcode/delete")
+    @RequiresPermissions("business:chai:spu:edit")
+    @ResponseBody
+    public ResultVo<?> deleteBarcode(@RequestParam("id") Long id,
+                                     @RequestParam("barcodeId") Long barcodeId) {
+        try {
+            chaiSpuBarcodeService.delete(id, barcodeId);
+            return ResultVoUtil.success("已删除");
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    /**
+     * 生成 29 系统码并落库；已有 29* 则返回已有记录。
+     */
+    @PostMapping("/barcode/generate/{id}")
     @RequiresPermissions("business:chai:spu:edit")
     @ResponseBody
     public ResultVo<?> generateBarcode(@PathVariable("id") Long id) {
-        ChaiSpu spu = chaiSpuService.getById(id);
-        if (spu == null) {
-            return ResultVoUtil.error("SPU不存在");
-        }
-        if (YesOrNo.isYes(spu.getDeleted())) {
-            return ResultVoUtil.error("已删除的SPU不能生成条码");
-        }
+        User user = ShiroUtil.getSubject();
         try {
-            String code = ChaiBarcodeUtil.generateInternal(id);
+            ChaiSpuBarcode row = chaiSpuBarcodeService.generateAndAdd(id, user.getNickname());
             Map<String, Object> data = new HashMap<>();
-            data.put("barcode", code);
+            data.put("id", row.getId());
+            data.put("barcode", row.getBarcode());
             return ResultVoUtil.success("生成成功", data);
         } catch (IllegalArgumentException ex) {
             return ResultVoUtil.error(ex.getMessage());
@@ -387,7 +443,12 @@ public class ChaiSpuController {
 
         User user = ShiroUtil.getSubject();
         saveItem.setOperator(user.getNickname());
-        ChaiSpu saved = chaiSpuService.save(saveItem);
+        ChaiSpu saved;
+        try {
+            saved = chaiSpuService.save(saveItem);
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
         // SPU 状态变更时级联全部 SKU
         if (saved.getId() != null && saved.getStatus() != null && !noSku) {
             chaiSkuService.syncStatusFromSpu(saved.getId(), saved.getStatus(), user.getNickname());
@@ -438,6 +499,44 @@ public class ChaiSpuController {
     }
 
     /**
+     * 列表「操作」批量改标记位；field=hideExternal|coreFlag|tastingFlag，value=0|1。
+     * 取消品鉴时服务端清空 pack_spu_id 并同步 SKU。
+     */
+    @RequestMapping("/marks/{field}/{value}")
+    @RequiresPermissions("business:chai:spu:edit")
+    @ResponseBody
+    public ResultVo<?> batchMarks(
+            @PathVariable("field") String field,
+            @PathVariable("value") Integer value,
+            @RequestParam(value = "ids", required = false) List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return ResultVoUtil.error("请选择一条记录");
+        }
+        if (value == null || (value != 0 && value != 1)) {
+            return ResultVoUtil.error("标记值无效");
+        }
+        Integer hideExternal = null;
+        Integer coreFlag = null;
+        Integer tastingFlag = null;
+        if ("hideExternal".equals(field)) {
+            hideExternal = value;
+        } else if ("coreFlag".equals(field)) {
+            coreFlag = value;
+        } else if ("tastingFlag".equals(field)) {
+            tastingFlag = value;
+        } else {
+            return ResultVoUtil.error("标记类型无效");
+        }
+        User user = ShiroUtil.getSubject();
+        try {
+            chaiSpuService.batchUpdateMarks(ids, hideExternal, coreFlag, tastingFlag, user.getNickname());
+            return ResultVoUtil.success("操作成功");
+        } catch (IllegalArgumentException ex) {
+            return ResultVoUtil.error(ex.getMessage());
+        }
+    }
+
+    /**
      * SPU 上下架：无 SKU 不可上架；成功后级联全部 SKU 状态
      */
     @RequestMapping("/status/{param}")
@@ -472,6 +571,36 @@ public class ChaiSpuController {
             chaiSkuService.syncStatusFromSpu(id, status, user.getNickname());
         }
         return ResultVoUtil.success("操作成功");
+    }
+
+    private void fillEditModel(ChaiSpu editItem, Model model, boolean hasSku) {
+        if (editItem.getHideExternal() == null) {
+            editItem.setHideExternal(0);
+        }
+        if (editItem.getCoreFlag() == null) {
+            editItem.setCoreFlag(0);
+        }
+        if (editItem.getTastingFlag() == null) {
+            editItem.setTastingFlag(0);
+        }
+        if (!YesOrNo.isYes(editItem.getTastingFlag())) {
+            editItem.setPackSpuId(null);
+        }
+        String packSpuLabel = "";
+        if (editItem.getPackSpuId() != null) {
+            ChaiSpu pack = chaiSpuService.getById(editItem.getPackSpuId());
+            if (pack != null) {
+                packSpuLabel = chaiSpuService.formatPackLabel(pack);
+            }
+        }
+        model.addAttribute("editItem", editItem);
+        model.addAttribute("hasSku", hasSku);
+        model.addAttribute("packSpuLabel", packSpuLabel);
+        model.addAttribute("brandList", chaiBrandService.listOnlineOrdered());
+        model.addAttribute("expirationList", chaiExpirationService.listOnlineOrdered());
+        model.addAttribute("yearOptions", ChaiFormHelper.buildYearOptions());
+        model.addAttribute("maxKeywordCount", ChaiSearchTextUtil.MAX_KEYWORD_COUNT);
+        model.addAttribute("maxKeywordLength", ChaiSearchTextUtil.MAX_KEYWORD_LENGTH);
     }
 
     private void fillShowFields(ChaiSpu item, Map<Long, String> brandNameMap, Map<Long, String> expirationNameMap) {
@@ -516,5 +645,18 @@ public class ChaiSpuController {
             map.put(item.getId(), item.getName());
         }
         return map;
+    }
+
+    /** 预览优先唯一 29 系统码，否则取第一条。 */
+    private static String pickPreviewBarcode(List<ChaiSpuBarcode> list) {
+        if (list == null || list.isEmpty()) {
+            return "";
+        }
+        for (ChaiSpuBarcode row : list) {
+            if (ChaiBarcodeUtil.isSystem29(row.getBarcode())) {
+                return row.getBarcode();
+            }
+        }
+        return list.get(0).getBarcode();
     }
 }

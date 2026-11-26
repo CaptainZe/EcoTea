@@ -26,6 +26,9 @@ export interface InfoSkuItem {
   recyclePriceReduceNoBag?: number
   recyclePriceReduceNoBagShow?: string
   sameSpuCount?: number
+  hideExternal?: number
+  coreFlag?: number
+  tastingFlag?: number
   coverImage?: string
   imageUrls?: string[]
 }
@@ -56,6 +59,9 @@ export interface InfoListQuery {
   nonSale?: number | null
   year?: number | null
   prodBatch?: number | null
+  hideExternal?: number | null
+  coreFlag?: number | null
+  tastingFlag?: number | null
   page?: number
   size?: number
 }
@@ -107,6 +113,15 @@ export function fetchInfoList(params: InfoListQuery): Promise<ApiResult<InfoSkuP
   }
   if (params.prodBatch != null) {
     data.prodBatch = params.prodBatch
+  }
+  if (params.hideExternal != null) {
+    data.hideExternal = params.hideExternal
+  }
+  if (params.coreFlag != null) {
+    data.coreFlag = params.coreFlag
+  }
+  if (params.tastingFlag != null) {
+    data.tastingFlag = params.tastingFlag
   }
   return request<InfoSkuPage>({
     url: '/chai/sku/info/list',

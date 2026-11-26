@@ -22,6 +22,63 @@
 
 ## 版本日志
 
+### 1.5.0
+
+**版本内容**
+
+- SPU 支持多条码：表 `chai_spu_barcode`（一 SPU 多码；不做 barcode 全局唯一；同 SPU 同码唯一）  
+- 维护页多码 CRUD；扫码分步查（码→SPU→SKU）；api 缓存 `ecotea_chai_barcode_spu_{barcode}`，admin 写后 DEL  
+- 旧列停写、保留作迁移源；Tools 幂等迁入；工具箱统计/批量打印/SPU 码类型筛选读新表  
+- 细则：[`docs/prd/features/BARCODE.md`](../prd/features/BARCODE.md)  
+- SPU **标记区**：对外隐藏 / 核心产品 / 品鉴款（默认 0）；品鉴可挂整装 `pack_spu_id`；同步 SKU；编辑页「标记」区；列表标签 +「操作」批量改标记  
+- 对外 `sale`/公众号默认过滤 `hide_external`；内部价目 `includeHidden=1`；小程序/回收不过滤  
+- 细则与冒烟用例：[`docs/prd/features/SPU_MARK.md`](../prd/features/SPU_MARK.md)
+
+**本版增量 SQL**（目标库执行）
+
+```sql
+-- 条码多码表
+CREATE TABLE IF NOT EXISTS `chai_spu_barcode` (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `spu_id` bigint(20) UNSIGNED NOT NULL COMMENT 'SPU ID',
+  `barcode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '条形码（EAN-13；一SPU可多码）',
+  `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '最后操作人',
+  `update_time` bigint(20) NOT NULL COMMENT '更新时间',
+  `create_time` bigint(20) NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_spu_barcode`(`spu_id`, `barcode`) USING BTREE,
+  INDEX `idx_barcode`(`barcode`) USING BTREE,
+  INDEX `idx_spu_id`(`spu_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '茶叶-SPU条码（一SPU多码；barcode 不做全局唯一）' ROW_FORMAT = Dynamic;
+
+-- SPU 标记区
+ALTER TABLE `chai_spu`
+  ADD COLUMN `hide_external` tinyint(2) NOT NULL DEFAULT 0 COMMENT '对外隐藏：0否 1是' AFTER `official_price`,
+  ADD COLUMN `core_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '核心产品：0否 1是' AFTER `hide_external`,
+  ADD COLUMN `tasting_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '品鉴款：0否 1是' AFTER `core_flag`,
+  ADD COLUMN `pack_spu_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '整装SPU ID；品鉴款可空' AFTER `tasting_flag`,
+  ADD INDEX `idx_hide_external`(`hide_external`),
+  ADD INDEX `idx_pack_spu_id`(`pack_spu_id`);
+
+ALTER TABLE `chai_sku`
+  ADD COLUMN `hide_external` tinyint(2) NOT NULL DEFAULT 0 COMMENT '对外隐藏：0否 1是（同步自SPU）' AFTER `recycle_price_reduce_no_bag`,
+  ADD COLUMN `core_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '核心产品：0否 1是（同步自SPU）' AFTER `hide_external`,
+  ADD COLUMN `tasting_flag` tinyint(2) NOT NULL DEFAULT 0 COMMENT '品鉴款：0否 1是（同步自SPU）' AFTER `core_flag`,
+  ADD COLUMN `pack_spu_id` bigint(20) UNSIGNED NULL DEFAULT NULL COMMENT '整装SPU ID；品鉴款可空（同步自SPU）' AFTER `tasting_flag`,
+  ADD INDEX `idx_hide_external`(`hide_external`),
+  ADD INDEX `idx_pack_spu_id`(`pack_spu_id`);
+```
+
+**发布 checklist**
+
+- [ ] 已执行上方 `CREATE TABLE chai_spu_barcode`  
+- [ ] 已执行上方 `chai_spu` / `chai_sku` 标记字段 `ALTER`  
+- [ ] 全量 `docs/db/SQL_CHAI_DOMAIN.sql` 已含本表/本字段（新环境可用）  
+- [ ] 部署 admin / api 后，茶业数据工具执行「SPU 条码迁入多码表」  
+- [ ] 冒烟：按 [`BARCODE.md`](../prd/features/BARCODE.md)、[`SPU_MARK.md`](../prd/features/SPU_MARK.md) §测试用例
+
+---
+
 ### 1.3.1
 
 **版本内容**

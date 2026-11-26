@@ -31,6 +31,9 @@ export interface SaleSkuItem {
     qtyDamagedNoBag?: number
   }>
   sameSpuSaleCount?: number
+  hideExternal?: number
+  coreFlag?: number
+  tastingFlag?: number
   coverImage?: string
   imageUrls?: string[]
 }
@@ -61,7 +64,11 @@ export interface SaleListQuery {
   nonSale?: number | null
   year?: number | null
   prodBatch?: number | null
+  hideExternal?: number | null
+  coreFlag?: number | null
+  tastingFlag?: number | null
   includeWh?: number
+  includeHidden?: number
   page?: number
   size?: number
 }
@@ -71,6 +78,8 @@ export function fetchSaleList(params: SaleListQuery): Promise<ApiResult<SaleSkuP
     page: params.page || 1,
     size: params.size || 20,
     includeWh: params.includeWh != null ? params.includeWh : 1,
+    // 内部小程序不过滤对外隐藏
+    includeHidden: params.includeHidden != null ? params.includeHidden : 1,
   }
   if (params.barcode) {
     data.barcode = params.barcode
@@ -115,6 +124,15 @@ export function fetchSaleList(params: SaleListQuery): Promise<ApiResult<SaleSkuP
   if (params.prodBatch != null) {
     data.prodBatch = params.prodBatch
   }
+  if (params.hideExternal != null) {
+    data.hideExternal = params.hideExternal
+  }
+  if (params.coreFlag != null) {
+    data.coreFlag = params.coreFlag
+  }
+  if (params.tastingFlag != null) {
+    data.tastingFlag = params.tastingFlag
+  }
   return request<SaleSkuPage>({
     url: '/chai/sku/sale/list',
     method: 'GET',
@@ -128,6 +146,6 @@ export function fetchSaleDetail(id: number): Promise<ApiResult<SaleSkuItem>> {
     url: '/chai/sku/sale/detail',
     method: 'GET',
     auth: true,
-    data: { id },
+    data: { id, includeHidden: 1 },
   })
 }

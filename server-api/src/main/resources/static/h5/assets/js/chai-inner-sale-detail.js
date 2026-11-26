@@ -484,7 +484,7 @@
       showUnavailable("缺少商品编号");
       return;
     }
-    fetch("/chai/sku/sale/detail?id=" + encodeURIComponent(id))
+    fetch("/chai/sku/sale/detail?id=" + encodeURIComponent(id) + "&includeHidden=1")
       .then(function (res) {
         return res.json();
       })

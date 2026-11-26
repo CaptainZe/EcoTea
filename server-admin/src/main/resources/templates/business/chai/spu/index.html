@@ -3,6 +3,31 @@
       xmlns:mo="https://gitee.com/aun/Timo">
 <head th:replace="/common/template :: header(~{::title},~{::link},~{::style})">
     <title>茶叶SPU</title>
+    <style>
+        .spu-mark-tag {
+            display: inline-block;
+            margin: 0 4px 2px 0;
+            padding: 0 6px;
+            font-size: 12px;
+            line-height: 20px;
+            border-radius: 2px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .spu-mark-hide { color: #9A3412; background: #FFEDD5; }
+        .spu-mark-core { color: #1D4ED8; background: #DBEAFE; }
+        .spu-mark-taste { color: #047857; background: #D1FAE5; }
+        .spu-mark-empty { color: #9CA3AF; }
+        .screen-btn-group .btn-group .layui-nav-child {
+            min-width: 168px;
+            left: auto;
+            right: 0;
+        }
+        .screen-btn-group .btn-group .layui-nav-child a {
+            white-space: nowrap;
+            padding: 0 16px;
+        }
+    </style>
 </head>
 <body class="timo-layout-page">
 <div class="layui-card">
@@ -74,6 +99,27 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">对外隐藏</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="hideExternal" mo:dict="YES_OR_NO"
+                                mo-selected="${param.hideExternal}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">核心产品</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="coreFlag" mo:dict="YES_OR_NO"
+                                mo-selected="${param.coreFlag}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">品鉴款</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="tastingFlag" mo:dict="YES_OR_NO"
+                                mo-selected="${param.tastingFlag}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">是否删除</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="deleted">
@@ -136,6 +182,18 @@
                                th:href="@{/business/chai/spu/delete}">删除</a></dd>
                         <dd><a class="ajax-status" data-msg="恢复后为下架状态，是否确认"
                                th:href="@{/business/chai/spu/restore}">恢复</a></dd>
+                        <dd><a class="ajax-status" data-msg="将所选SPU设为对外隐藏（含下属SKU）"
+                               th:href="@{/business/chai/spu/marks/hideExternal/1}">设为对外隐藏</a></dd>
+                        <dd><a class="ajax-status" data-msg="取消所选SPU的对外隐藏（含下属SKU）"
+                               th:href="@{/business/chai/spu/marks/hideExternal/0}">取消对外隐藏</a></dd>
+                        <dd><a class="ajax-status" data-msg="将所选SPU设为核心产品（含下属SKU）"
+                               th:href="@{/business/chai/spu/marks/coreFlag/1}">设为核心产品</a></dd>
+                        <dd><a class="ajax-status" data-msg="取消所选SPU的核心产品（含下属SKU）"
+                               th:href="@{/business/chai/spu/marks/coreFlag/0}">取消核心产品</a></dd>
+                        <dd><a class="ajax-status" data-msg="将所选SPU设为品鉴款（含下属SKU；整装SPU请到编辑页单独设置）"
+                               th:href="@{/business/chai/spu/marks/tastingFlag/1}">设为品鉴款</a></dd>
+                        <dd><a class="ajax-status" data-msg="取消品鉴款将同时清空整装SPU（含下属SKU）"
+                               th:href="@{/business/chai/spu/marks/tastingFlag/0}">取消品鉴款</a></dd>
                     </dl>
                 </div>
             </div>
@@ -152,6 +210,7 @@
                     <th width="260">操作</th>
                     <th width="80" class="sortable" data-field="status">状态</th>
                     <th width="80">SKU数</th>
+                    <th width="140">标记</th>
                     <th width="90" class="sortable" data-field="starLevel">星级</th>
                     <th width="100" class="sortable" data-field="brand">品牌</th>
                     <th width="200">商品名称</th>
@@ -195,6 +254,16 @@
                     <td th:text="${#dicts.keyValue('CHAI_STATUS', item.status)}"
                         th:style="${item.status == 1} ? 'color: #16A34A; font-weight: 600;' : 'color: #9CA3AF; font-weight: 600;'"></td>
                     <td th:text="${item.skuCount != null ? item.skuCount : 0}"></td>
+                    <td>
+                        <th:block th:with="hasHide=${item.hideExternal != null and item.hideExternal == 1},
+                                           hasCore=${item.coreFlag != null and item.coreFlag == 1},
+                                           hasTaste=${item.tastingFlag != null and item.tastingFlag == 1}">
+                            <span th:if="${hasHide}" class="spu-mark-tag spu-mark-hide">对外隐藏</span>
+                            <span th:if="${hasCore}" class="spu-mark-tag spu-mark-core">核心</span>
+                            <span th:if="${hasTaste}" class="spu-mark-tag spu-mark-taste">品鉴</span>
+                            <span th:if="${!hasHide and !hasCore and !hasTaste}" class="spu-mark-empty">-</span>
+                        </th:block>
+                    </td>
                     <td th:text="${#dicts.keyValue('STAR_LEVEL', item.starLevel)}"></td>
                     <td th:text="${item.brandName}"></td>
                     <td>

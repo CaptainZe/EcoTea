@@ -132,6 +132,40 @@
   border-bottom: none;
 }
 
+.mark-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  align-items: center;
+}
+
+.mark-tag {
+  display: inline-block;
+  padding: 0 12rpx;
+  font-size: 22rpx;
+  line-height: 36rpx;
+  border-radius: 4rpx;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.mark-hide {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.mark-core {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.mark-taste {
+  color: #047857;
+  background: #d1fae5;
+}
+
 .label {
   width: 140rpx;
   color: var(--sale-muted);

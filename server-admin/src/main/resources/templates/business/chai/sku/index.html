@@ -74,6 +74,27 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">对外隐藏</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="hideExternal" mo:dict="YES_OR_NO"
+                                mo-selected="${param.hideExternal}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">核心产品</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="coreFlag" mo:dict="YES_OR_NO"
+                                mo-selected="${param.coreFlag}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">品鉴款</label>
+                    <div class="layui-input-block timo-search-status" style="width: 120px;">
+                        <select class="timo-search-select layui-input" name="tastingFlag" mo:dict="YES_OR_NO"
+                                mo-selected="${param.tastingFlag}"></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
                     <label class="layui-form-label">是否删除</label>
                     <div class="layui-input-block timo-search-status" style="width: 120px;">
                         <select class="timo-search-select layui-input" name="deleted">

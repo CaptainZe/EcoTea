@@ -40,6 +40,16 @@
   </view>
 
   <view class="panel fields" wx:if="{{view.hasAttrs}}">
+    <view class="field" wx:if="{{view.markTags.length}}">
+      <text class="label">标记</text>
+      <view class="mark-wrap">
+        <text
+          class="mark-tag mark-{{item.kind}}"
+          wx:for="{{view.markTags}}"
+          wx:key="key"
+        >{{item.text}}</text>
+      </view>
+    </view>
     <view class="field" wx:if="{{view.gradeName}}">
       <text class="label">等级</text>
       <text class="value">{{view.gradeName}}</text>

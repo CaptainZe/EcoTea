@@ -34,7 +34,9 @@ public class ChaiSkuSaleController {
      * priceMin / priceMax：售价区间；officialPriceMin / officialPriceMax：官方价区间；
      * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）；
      * year：SKU 年份精确匹配；
-     * prodBatch：生产批次精确匹配（如 100 上半年 / 200 下半年）。
+     * prodBatch：生产批次精确匹配（如 100 上半年 / 200 下半年）；
+     * includeHidden：1 时含对外隐藏（内部价目/小程序）；默认 0 / 不传则过滤 hide_external。
+     * hideExternal / coreFlag / tastingFlag：1 是 / 0 否 / 不传不限。
      */
     @GetMapping("/list")
     public ApiResult<ChaiSkuSalePageVO> list(
@@ -53,23 +55,32 @@ public class ChaiSkuSaleController {
             @RequestParam(required = false) Integer nonSale,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer prodBatch,
+            @RequestParam(required = false) Integer hideExternal,
+            @RequestParam(required = false) Integer coreFlag,
+            @RequestParam(required = false) Integer tastingFlag,
+            @RequestParam(required = false) Integer includeHidden,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         boolean withWhNames = includeWh != null && includeWh != 0;
         boolean recycleRecentFlag = recycleRecent != null && recycleRecent != 0;
+        boolean filterHideExternal = includeHidden == null || includeHidden == 0;
         return ApiResult.ok(chaiSkuSaleQueryService.pageSaleList(
                 keyword, barcode, spuId, whId, withWhNames, recycleRecentFlag,
                 parseLongIds(brandIds), parseIntIds(types),
                 priceMin, priceMax, officialPriceMin, officialPriceMax, nonSale, year, prodBatch,
-                page, size));
+                hideExternal, coreFlag, tastingFlag, page, size, filterHideExternal));
     }
 
     /**
      * 有货上架 SKU 详情（含分仓有货明细 warehouseStocks）。
+     * includeHidden=1：内部价目可看对外隐藏；默认过滤。
      */
     @GetMapping("/detail")
-    public ApiResult<ChaiSkuSaleItemVO> detail(@RequestParam Long id) {
-        ChaiSkuSaleItemVO vo = chaiSkuSaleQueryService.getSaleDetail(id);
+    public ApiResult<ChaiSkuSaleItemVO> detail(
+            @RequestParam Long id,
+            @RequestParam(required = false) Integer includeHidden) {
+        boolean filterHideExternal = includeHidden == null || includeHidden == 0;
+        ChaiSkuSaleItemVO vo = chaiSkuSaleQueryService.getSaleDetail(id, filterHideExternal);
         if (vo == null) {
             return ApiResult.fail("商品不存在或暂不可售");
         }

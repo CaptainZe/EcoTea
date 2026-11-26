@@ -32,7 +32,8 @@ public class ChaiSkuInfoController {
      * priceMin / priceMax：售价区间；recyclePriceMin / recyclePriceMax：回收价区间；
      * officialPriceMin / officialPriceMax：官方价区间；
      * nonSale：1 只看非卖品 / 0 不看非卖品 / 不传不限（只看非卖品时忽略官方价区间）；
-     * year / prodBatch：精确匹配。
+     * year / prodBatch：精确匹配；
+     * hideExternal / coreFlag / tastingFlag：1 是 / 0 否 / 不传不限。
      * 不含库存与分仓。
      */
     @GetMapping("/list")
@@ -51,12 +52,16 @@ public class ChaiSkuInfoController {
             @RequestParam(required = false) Integer nonSale,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer prodBatch,
+            @RequestParam(required = false) Integer hideExternal,
+            @RequestParam(required = false) Integer coreFlag,
+            @RequestParam(required = false) Integer tastingFlag,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long size) {
         return ApiResult.ok(chaiSkuInfoQueryService.pageInfoList(
                 keyword, barcode, spuId, parseLongIds(brandIds), parseIntIds(types),
                 priceMin, priceMax, recyclePriceMin, recyclePriceMax,
                 officialPriceMin, officialPriceMax, nonSale, year, prodBatch,
+                hideExternal, coreFlag, tastingFlag,
                 page, size));
     }
 

@@ -2,6 +2,7 @@ import { getCurrentTenant } from '../../services/auth-api'
 import { fetchSaleDetail, SaleSkuItem } from '../../services/sale-api'
 import { add as addQuote, has as hasQuote } from '../../services/sale-quote'
 import { saveImagesToAlbum } from '../../utils/album'
+import { buildMarkTags, MarkTag } from '../../utils/mark-tags'
 import {
   buildWhStockRows,
   formatOfficialPlain,
@@ -19,11 +20,13 @@ type DetailView = SaleSkuItem & {
   stockScarce: boolean
   stockExtras: string[]
   whRows: WhStockRow[]
+  markTags: MarkTag[]
   hasAttrs: boolean
 }
 
 function toDetailView(item: SaleSkuItem): DetailView {
   const stock = formatStockLabel(item)
+  const markTags = buildMarkTags(item)
   return {
     ...item,
     salePlain: formatSalePlain(item),
@@ -33,7 +36,9 @@ function toDetailView(item: SaleSkuItem): DetailView {
     stockScarce: stock.scarce,
     stockExtras: stockExtras(item),
     whRows: buildWhStockRows(item.warehouseStocks),
+    markTags,
     hasAttrs: !!(
+      markTags.length ||
       item.gradeName ||
       item.specShow ||
       item.prodBatchShow ||

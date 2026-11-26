@@ -29,6 +29,11 @@ public interface RedisConstant {
     String CHAI_EXPIRATION_ONLINE_KEY = KEY_PRE + "chai_expiration_online";
     /** 上架仓库有序列表 */
     String CHAI_WAREHOUSE_ONLINE_KEY = KEY_PRE + "chai_warehouse_online";
+    /**
+     * 条码 → SPU id 列表：{@code ecotea_chai_barcode_spu_{barcode}}，
+     * 用法 {@code String.format(CHAI_BARCODE_SPU_KEY, barcode)}；value 为 JSON 数组。
+     */
+    String CHAI_BARCODE_SPU_KEY = KEY_PRE + "chai_barcode_spu_%s";
     /** key 模板：{@code ecotea_wx_global_config_{type}}，用法 {@code String.format(WX_GLOBAL_CONFIG_KEY, type)} */
     String WX_GLOBAL_CONFIG_KEY = KEY_PRE + "wx_global_config_%s";
 

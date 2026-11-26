@@ -1,5 +1,6 @@
 package com.appsinnova.admin.business.service.chai;
 
+import com.appsinnova.admin.business.common.enums.base.YesOrNo;
 import com.appsinnova.admin.business.common.enums.chai.ChaiBarcodeKind;
 import com.appsinnova.admin.business.common.enums.chai.ChaiStatus;
 import com.appsinnova.admin.business.common.utils.chai.ChaiBarcodeUtil;
@@ -8,7 +9,9 @@ import com.appsinnova.admin.business.common.utils.chai.ChaiPriceUtil;
 import com.appsinnova.admin.business.common.utils.chai.ChaiSearchTextUtil;
 import com.appsinnova.admin.business.domain.chai.ChaiBrand;
 import com.appsinnova.admin.business.domain.chai.ChaiSpu;
+import com.appsinnova.admin.business.domain.chai.ChaiSpuBarcode;
 import com.appsinnova.admin.business.repository.chai.ChaiBrandRepository;
+import com.appsinnova.admin.business.repository.chai.ChaiSpuBarcodeRepository;
 import com.appsinnova.admin.business.repository.chai.ChaiSpuRepository;
 import com.appsinnova.admin.common.data.PageSort;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +30,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -40,9 +45,11 @@ public class ChaiSpuService {
     public static final int MAX_LABEL_PRINT = 300;
 
     private final ChaiSpuRepository chaiSpuRepository;
+    private final ChaiSpuBarcodeRepository chaiSpuBarcodeRepository;
     private final ChaiSkuService chaiSkuService;
     private final ChaiStockService chaiStockService;
     private final ChaiBrandRepository chaiBrandRepository;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
 
     public ChaiSpu getById(Long id) {
         return chaiSpuRepository.findById(id).orElse(null);
@@ -71,6 +78,10 @@ public class ChaiSpuService {
         copy.setRealImageUrls(source.getRealImageUrls());
         copy.setNonSale(source.getNonSale() != null ? source.getNonSale() : 0);
         copy.setOfficialPrice(ChaiPriceUtil.isNonSale(copy.getNonSale()) ? null : source.getOfficialPrice());
+        copy.setHideExternal(source.getHideExternal() != null ? source.getHideExternal() : 0);
+        copy.setCoreFlag(source.getCoreFlag() != null ? source.getCoreFlag() : 0);
+        copy.setTastingFlag(source.getTastingFlag() != null ? source.getTastingFlag() : 0);
+        copy.setPackSpuId(YesOrNo.isYes(copy.getTastingFlag()) ? source.getPackSpuId() : null);
         copy.setStatus(ChaiStatus.OFFLINE.getCode());
         copy.setDeleted(0);
         return copy;
@@ -99,22 +110,34 @@ public class ChaiSpuService {
     }
 
     /**
-     * 未删 SPU 条码分类计数：internal=29…（系统码），national=69…，empty=空串。
+     * 未删 SPU 条码分类（读新表）：internal=有 29…；national=有 69…（可与系统码并存）；empty=新表无任何码。
      */
     public Map<String, Long> countBarcodeKinds() {
         Map<String, Long> map = new LinkedHashMap<>();
-        map.put("internal", chaiSpuRepository.countByDeletedAndBarcodeStartingWith(
-                0, ChaiBarcodeUtil.INTERNAL_PREFIX));
-        map.put("national", chaiSpuRepository.countByDeletedAndBarcodeStartingWith(0, "69"));
-        map.put("empty", chaiSpuRepository.countByDeletedAndBarcode(0, ""));
+        map.put("internal", chaiSpuBarcodeRepository.countDistinctSpuIdByBarcodeLike(
+                ChaiBarcodeUtil.INTERNAL_PREFIX + "%"));
+        map.put("national", chaiSpuBarcodeRepository.countDistinctSpuIdByBarcodeLike("69%"));
+        long totalActive = chaiSpuRepository.countByDeleted(0);
+        long withAny = chaiSpuBarcodeRepository.findDistinctSpuIds().size();
+        // empty：未删且新表无码；粗算 = 未删总数 − 有码且未删（有码含已删 SPU 时略偏，再精确过滤）
+        Set<Long> activeWithCode = new HashSet<>();
+        if (withAny > 0) {
+            List<Long> ids = chaiSpuBarcodeRepository.findDistinctSpuIds();
+            for (ChaiSpu spu : chaiSpuRepository.findByIdIn(ids)) {
+                if (spu.getDeleted() == null || spu.getDeleted() == 0) {
+                    activeWithCode.add(spu.getId());
+                }
+            }
+        }
+        map.put("empty", Math.max(0L, totalActive - activeWithCode.size()));
         return map;
     }
 
     /**
-     * 系统码按品牌统计（仅有系统码的品牌）。每项：brandId / brandName / count。
+     * 系统码按品牌统计（新表 29*；仅未删 SPU）。每项：brandId / brandName / count。
      */
     public List<Map<String, Object>> countInternalBarcodeByBrand() {
-        List<Object[]> rows = chaiSpuRepository.countGroupByBrandAndBarcodeLike(
+        List<Object[]> rows = chaiSpuBarcodeRepository.countGroupByBrandAndBarcodeLike(
                 0, ChaiBarcodeUtil.INTERNAL_PREFIX + "%");
         Map<Long, String> brandNames = loadBrandNameMap();
         List<Map<String, Object>> list = new ArrayList<>();
@@ -138,34 +161,49 @@ public class ChaiSpuService {
     }
 
     /**
-     * 批量打印用：未删且 barcode 以 29 开头；可选品牌过滤；按品牌名→品名→id 排序。
+     * 批量打印用：未删 SPU 且新表有 29*；可选品牌过滤；按品牌名→品名→id 排序。
+     * 将打印码写入实体 {@code barcode} 字段供模板使用（不落库）。
      * 超过 {@link #MAX_LABEL_PRINT} 抛错。
      */
     public List<ChaiSpu> listInternalBarcodeForPrint(List<Long> brandIds) {
-        String like = ChaiBarcodeUtil.INTERNAL_PREFIX + "%";
         final List<Long> filterBrands = brandIds == null ? null : brandIds;
-        List<ChaiSpu> list = chaiSpuRepository.findAll((Root<ChaiSpu> root, CriteriaQuery<?> query,
-                                                        CriteriaBuilder cb) -> {
-            List<Predicate> preList = new ArrayList<>();
-            preList.add(cb.equal(root.get("deleted").as(Integer.class), 0));
-            preList.add(cb.like(root.get("barcode").as(String.class), like));
-            if (filterBrands != null && !filterBrands.isEmpty()) {
-                preList.add(root.get("brand").in(filterBrands));
+        List<ChaiSpuBarcode> rows = chaiSpuBarcodeRepository.findByBarcodeStartingWith(
+                ChaiBarcodeUtil.INTERNAL_PREFIX);
+        Map<Long, String> codeBySpu = new LinkedHashMap<>();
+        for (ChaiSpuBarcode row : rows) {
+            if (row.getSpuId() == null || !StringUtils.hasText(row.getBarcode())) {
+                continue;
             }
-            return cb.and(preList.toArray(new Predicate[0]));
-        });
+            codeBySpu.putIfAbsent(row.getSpuId(), row.getBarcode());
+        }
+        if (codeBySpu.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<ChaiSpu> list = chaiSpuRepository.findByIdIn(new ArrayList<>(codeBySpu.keySet()));
+        List<ChaiSpu> result = new ArrayList<>();
+        for (ChaiSpu spu : list) {
+            if (spu.getDeleted() != null && spu.getDeleted() == 1) {
+                continue;
+            }
+            if (filterBrands != null && !filterBrands.isEmpty()
+                    && (spu.getBrand() == null || !filterBrands.contains(spu.getBrand()))) {
+                continue;
+            }
+            spu.setBarcode(codeBySpu.get(spu.getId()));
+            result.add(spu);
+        }
         Map<Long, String> brandNames = loadBrandNameMap();
-        list.sort(Comparator
+        result.sort(Comparator
                 .comparing((ChaiSpu s) -> brandNames.getOrDefault(s.getBrand(), ""),
                         String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(s -> s.getName() == null ? "" : s.getName(), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(s -> s.getId() == null ? 0L : s.getId()));
-        if (list.size() > MAX_LABEL_PRINT) {
+        if (result.size() > MAX_LABEL_PRINT) {
             throw new IllegalArgumentException(
-                    "一次最多打印 " + MAX_LABEL_PRINT + " 张，当前 " + list.size()
+                    "一次最多打印 " + MAX_LABEL_PRINT + " 张，当前 " + result.size()
                             + " 张，请缩小品牌范围");
         }
-        return list;
+        return result;
     }
 
     private Map<Long, String> loadBrandNameMap() {
@@ -218,6 +256,10 @@ public class ChaiSpuService {
         String oldKeywords = null;
         Long oldBrand = null;
         String oldBarcode = null;
+        Integer oldHideExternal = null;
+        Integer oldCoreFlag = null;
+        Integer oldTastingFlag = null;
+        Long oldPackSpuId = null;
         if (entity.getId() == null) {
             entity.setSpuCode("");
             entity.setCreateTime(System.currentTimeMillis());
@@ -227,10 +269,8 @@ public class ChaiSpuService {
             if (entity.getNonSale() == null) {
                 entity.setNonSale(0);
             }
-            // 新建无条码；由独立维护页生成/录入
-            if (entity.getBarcode() == null) {
-                entity.setBarcode("");
-            }
+            // 停写旧列：新建占位空串；条码走 chai_spu_barcode
+            entity.setBarcode("");
             isCreate = true;
         } else {
             ChaiSpu old = getById(entity.getId());
@@ -238,7 +278,11 @@ public class ChaiSpuService {
                 oldKeywords = old.getKeywords();
                 oldBrand = old.getBrand();
                 oldBarcode = old.getBarcode();
-                // 主表单不维护条码：始终保留库中已有值
+                oldHideExternal = old.getHideExternal();
+                oldCoreFlag = old.getCoreFlag();
+                oldTastingFlag = old.getTastingFlag();
+                oldPackSpuId = old.getPackSpuId();
+                // 停写旧列：主表单不改 barcode，保留迁移源
                 entity.setBarcode(oldBarcode != null ? oldBarcode : "");
             }
         }
@@ -251,6 +295,7 @@ public class ChaiSpuService {
                 throw new IllegalArgumentException("官方价必填且须大于0");
             }
         }
+        normalizeAndValidateMarks(entity);
         String keywords = ChaiSearchTextUtil.normalizeKeywords(entity.getKeywords());
         entity.setKeywords(keywords);
         String brandName = resolveBrandName(entity.getBrand());
@@ -259,6 +304,8 @@ public class ChaiSpuService {
         entity = chaiSpuRepository.save(entity);
         if (isCreate) {
             entity.setSpuCode(ChaiCodeUtil.spuCode(entity.getId()));
+            // 新建后 id 已有，再验整装不能指自己
+            normalizeAndValidateMarks(entity);
             entity = chaiSpuRepository.save(entity);
         } else {
             boolean keywordsChanged = !Objects.equals(
@@ -268,33 +315,153 @@ public class ChaiSpuService {
                 chaiSkuService.syncKeywordsFromSpu(entity, brandName, entity.getOperator());
             }
         }
+        boolean marksChanged = isCreate
+                || !Objects.equals(nzFlag(oldHideExternal), entity.getHideExternal())
+                || !Objects.equals(nzFlag(oldCoreFlag), entity.getCoreFlag())
+                || !Objects.equals(nzFlag(oldTastingFlag), entity.getTastingFlag())
+                || !Objects.equals(oldPackSpuId, entity.getPackSpuId());
+        if (marksChanged) {
+            chaiSkuService.syncMarksFromSpu(entity, entity.getOperator());
+        }
         return entity;
     }
 
     /**
-     * 独立维护条形码：更新 barcode，并同步全部 SKU。
+     * 规范化标记默认值并校验：取消品鉴清空整装；整装不可指自己；目标须存在未删。
+     */
+    public void normalizeAndValidateMarks(ChaiSpu entity) {
+        if (entity == null) {
+            return;
+        }
+        entity.setHideExternal(YesOrNo.isYes(entity.getHideExternal()) ? 1 : 0);
+        entity.setCoreFlag(YesOrNo.isYes(entity.getCoreFlag()) ? 1 : 0);
+        entity.setTastingFlag(YesOrNo.isYes(entity.getTastingFlag()) ? 1 : 0);
+        if (!YesOrNo.isYes(entity.getTastingFlag())) {
+            entity.setPackSpuId(null);
+            return;
+        }
+        Long packId = entity.getPackSpuId();
+        if (packId == null) {
+            return;
+        }
+        if (entity.getId() != null && packId.equals(entity.getId())) {
+            throw new IllegalArgumentException("整装SPU不能选择自己");
+        }
+        ChaiSpu pack = getById(packId);
+        if (pack == null || (pack.getDeleted() != null && pack.getDeleted() == 1)) {
+            throw new IllegalArgumentException("整装SPU不存在或已删除");
+        }
+    }
+
+    private static int nzFlag(Integer v) {
+        return v != null ? v : 0;
+    }
+
+    /**
+     * 编辑页选整装：未删、非品鉴款、可排除当前 SPU；按名称/编码/search_text 模糊，最多 limit 条。
+     */
+    public List<Map<String, Object>> listPackOptions(String keyword, Long excludeId, int limit) {
+        int lim = limit <= 0 ? 20 : Math.min(limit, 50);
+        String kw = StringUtils.hasText(keyword) ? keyword.trim() : "";
+        PageRequest page = PageRequest.of(0, lim, Sort.by(Sort.Direction.DESC, "updateTime"));
+        Page<ChaiSpu> result = chaiSpuRepository.findAll((Root<ChaiSpu> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+            List<Predicate> list = new ArrayList<>();
+            list.add(cb.equal(root.get("deleted").as(Integer.class), 0));
+            list.add(cb.or(
+                    cb.isNull(root.get("tastingFlag")),
+                    cb.equal(root.get("tastingFlag").as(Integer.class), 0)));
+            if (excludeId != null) {
+                list.add(cb.notEqual(root.get("id").as(Long.class), excludeId));
+            }
+            if (StringUtils.hasText(kw)) {
+                String like = "%" + kw + "%";
+                list.add(cb.or(
+                        cb.like(root.get("name").as(String.class), like),
+                        cb.like(root.get("spuCode").as(String.class), like),
+                        cb.like(root.get("searchText").as(String.class), like)));
+            }
+            return cb.and(list.toArray(new Predicate[0]));
+        }, page);
+        Map<Long, String> brandNames = loadBrandNameMap();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (ChaiSpu spu : result.getContent()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", spu.getId());
+            row.put("spuCode", spu.getSpuCode());
+            row.put("name", spu.getName());
+            row.put("brandName", brandNames.getOrDefault(spu.getBrand(), ""));
+            row.put("label", formatPackLabel(spu, brandNames.getOrDefault(spu.getBrand(), "")));
+            out.add(row);
+        }
+        return out;
+    }
+
+    /** 整装选择展示文案 */
+    public String formatPackLabel(ChaiSpu spu) {
+        if (spu == null) {
+            return "";
+        }
+        return formatPackLabel(spu, resolveBrandName(spu.getBrand()));
+    }
+
+    private static String formatPackLabel(ChaiSpu spu, String brandName) {
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.hasText(brandName)) {
+            sb.append(brandName).append(' ');
+        }
+        if (StringUtils.hasText(spu.getName())) {
+            sb.append(spu.getName());
+        }
+        if (StringUtils.hasText(spu.getSpuCode())) {
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append('(').append(spu.getSpuCode()).append(')');
+        }
+        return sb.length() > 0 ? sb.toString() : String.valueOf(spu.getId());
+    }
+
+    /**
+     * 批量只改标记位（列表「操作」）；取消品鉴时清空 pack_spu_id；同步全部 SKU。
      */
     @Transactional
-    public ChaiSpu saveBarcode(Long id, String barcode, String operator) {
-        if (id == null) {
-            throw new IllegalArgumentException("SPU不能为空");
+    public void batchUpdateMarks(List<Long> idList, Integer hideExternal, Integer coreFlag,
+                                 Integer tastingFlag, String operator) {
+        if (idList == null || idList.isEmpty()) {
+            throw new IllegalArgumentException("请先选择SPU");
         }
-        ChaiSpu spu = getById(id);
-        if (spu == null) {
-            throw new IllegalArgumentException("SPU不存在");
+        if (hideExternal == null && coreFlag == null && tastingFlag == null) {
+            throw new IllegalArgumentException("未指定要修改的标记");
         }
-        if (spu.getDeleted() != null && spu.getDeleted() == 1) {
-            throw new IllegalArgumentException("已删除的SPU不能维护条码，请先恢复");
+        long now = System.currentTimeMillis();
+        for (Long id : idList) {
+            if (id == null) {
+                continue;
+            }
+            ChaiSpu spu = getById(id);
+            if (spu == null) {
+                continue;
+            }
+            if (spu.getDeleted() != null && spu.getDeleted() == 1) {
+                throw new IllegalArgumentException("SPU「" + spu.getName() + "」已删除，请先恢复");
+            }
+            if (hideExternal != null) {
+                spu.setHideExternal(hideExternal);
+            }
+            if (coreFlag != null) {
+                spu.setCoreFlag(coreFlag);
+            }
+            if (tastingFlag != null) {
+                spu.setTastingFlag(tastingFlag);
+            }
+            normalizeAndValidateMarks(spu);
+            if (StringUtils.hasText(operator)) {
+                spu.setOperator(operator);
+            }
+            spu.setUpdateTime(now);
+            spu = chaiSpuRepository.save(spu);
+            chaiSkuService.syncMarksFromSpu(spu, operator);
         }
-        String code = ChaiBarcodeUtil.normalizeForSave(barcode);
-        spu.setBarcode(code);
-        if (StringUtils.hasText(operator)) {
-            spu.setOperator(operator);
-        }
-        spu.setUpdateTime(System.currentTimeMillis());
-        spu = chaiSpuRepository.save(spu);
-        chaiSkuService.syncBarcodeFromSpu(spu, operator);
-        return spu;
     }
 
     /**
@@ -465,18 +632,34 @@ public class ChaiSpuService {
             preList.add(cb.equal(root.get("spuCode").as(String.class), param.getSpuCode().trim()));
         }
         if (StringUtils.hasText(param.getBarcode())) {
-            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
+            List<Long> spuIds = chaiSpuBarcodeService.resolveSpuIds(param.getBarcode().trim());
+            if (spuIds.isEmpty()) {
+                preList.add(cb.disjunction());
+            } else {
+                preList.add(root.get("id").in(spuIds));
+            }
         } else {
             ChaiBarcodeKind kind = ChaiBarcodeKind.fromCode(param.getBarcodeKind());
             if (kind == ChaiBarcodeKind.EMPTY) {
-                preList.add(cb.or(
-                        cb.isNull(root.get("barcode")),
-                        cb.equal(root.get("barcode").as(String.class), "")));
+                List<Long> withCode = chaiSpuBarcodeService.listSpuIdsHavingAnyBarcode();
+                if (!withCode.isEmpty()) {
+                    preList.add(cb.not(root.get("id").in(withCode)));
+                }
             } else if (kind == ChaiBarcodeKind.NATIONAL) {
-                preList.add(cb.like(root.get("barcode").as(String.class), "69%"));
+                List<Long> ids = chaiSpuBarcodeService.listSpuIdsByBarcodePrefix("69");
+                if (ids.isEmpty()) {
+                    preList.add(cb.disjunction());
+                } else {
+                    preList.add(root.get("id").in(ids));
+                }
             } else if (kind == ChaiBarcodeKind.SYSTEM) {
-                preList.add(cb.like(root.get("barcode").as(String.class),
-                        ChaiBarcodeUtil.INTERNAL_PREFIX + "%"));
+                List<Long> ids = chaiSpuBarcodeService.listSpuIdsByBarcodePrefix(
+                        ChaiBarcodeUtil.INTERNAL_PREFIX);
+                if (ids.isEmpty()) {
+                    preList.add(cb.disjunction());
+                } else {
+                    preList.add(root.get("id").in(ids));
+                }
             }
         }
         if (StringUtils.hasText(param.getName())) {
@@ -505,6 +688,18 @@ public class ChaiSpuService {
         }
         if (param.getNonSale() != null) {
             preList.add(cb.equal(root.get("nonSale").as(Integer.class), param.getNonSale()));
+        }
+        if (param.getHideExternal() != null) {
+            preList.add(cb.equal(root.get("hideExternal").as(Integer.class), param.getHideExternal()));
+        }
+        if (param.getCoreFlag() != null) {
+            preList.add(cb.equal(root.get("coreFlag").as(Integer.class), param.getCoreFlag()));
+        }
+        if (param.getTastingFlag() != null) {
+            preList.add(cb.equal(root.get("tastingFlag").as(Integer.class), param.getTastingFlag()));
+        }
+        if (param.getExcludeId() != null) {
+            preList.add(cb.notEqual(root.get("id").as(Long.class), param.getExcludeId()));
         }
         if (param.getDeleted() != null) {
             preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));

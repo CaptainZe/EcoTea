@@ -17,6 +17,9 @@ export type InfoFilterResult = {
   officialPriceMin: number | null
   officialPriceMax: number | null
   nonSale: number | null
+  hideExternal: number | null
+  coreFlag: number | null
+  tastingFlag: number | null
 }
 
 type TagType = DictOption & { on: boolean }
@@ -66,6 +69,9 @@ Page({
     officialMin: '',
     officialMax: '',
     nonSale: null as number | null,
+    hideExternal: null as number | null,
+    coreFlag: null as number | null,
+    tastingFlag: null as number | null,
   },
 
   _channel: null as WechatMiniprogram.EventChannel | null,
@@ -80,6 +86,9 @@ Page({
         const brandNames = (payload && payload.brandNames) || []
         const types = (payload && payload.types) || []
         const nonSale = payload ? payload.nonSale : null
+        const hideExternal = payload ? payload.hideExternal : null
+        const coreFlag = payload ? payload.coreFlag : null
+        const tastingFlag = payload ? payload.tastingFlag : null
         brandIds.forEach((id, i) => {
           if (brandNames[i]) this._nameMap[id] = brandNames[i]
         })
@@ -99,6 +108,9 @@ Page({
           officialMax:
             payload && payload.officialPriceMax != null ? String(payload.officialPriceMax) : '',
           nonSale: nonSale == null ? null : nonSale,
+          hideExternal: hideExternal == null ? null : hideExternal,
+          coreFlag: coreFlag == null ? null : coreFlag,
+          tastingFlag: tastingFlag == null ? null : tastingFlag,
         })
         this.refreshTypeTags(types)
         this.refreshCommonTags(brandIds)
@@ -266,6 +278,18 @@ Page({
     this.setData(patch)
   },
 
+  onMarkFlag(e: WechatMiniprogram.TouchEvent) {
+    const field = String(e.currentTarget.dataset.field || '')
+    if (field !== 'hideExternal' && field !== 'coreFlag' && field !== 'tastingFlag') {
+      return
+    }
+    const v = e.currentTarget.dataset.v
+    let val: number | null = null
+    if (v === '1' || v === 1) val = 1
+    else if (v === '0' || v === 0) val = 0
+    this.setData({ [field]: val })
+  },
+
   onReset() {
     this.setData({
       brandIds: [],
@@ -279,6 +303,9 @@ Page({
       officialMin: '',
       officialMax: '',
       nonSale: null,
+      hideExternal: null,
+      coreFlag: null,
+      tastingFlag: null,
     })
     this.refreshTypeTags([])
     this.refreshCommonTags([])
@@ -306,6 +333,9 @@ Page({
       officialPriceMin: official.min,
       officialPriceMax: official.max,
       nonSale,
+      hideExternal: this.data.hideExternal,
+      coreFlag: this.data.coreFlag,
+      tastingFlag: this.data.tastingFlag,
     }
     if (this._channel) {
       this._channel.emit('acceptFilter', result)

@@ -25,6 +25,10 @@ public interface ChaiSkuRepository extends JpaRepository<ChaiSku, Long>, JpaSpec
 
     long countBySpuIdAndDeleted(Long spuId, Integer deleted);
 
+    /** 过渡期迁移：旧列有值的 SKU */
+    @Query("select s from ChaiSku s where s.barcode is not null and s.barcode <> ''")
+    List<ChaiSku> findAllWithLegacyBarcode();
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update ChaiSku s set s.status = :status, s.operator = :operator, s.updateTime = :updateTime "
             + "where s.spuId = :spuId and s.deleted = 0")

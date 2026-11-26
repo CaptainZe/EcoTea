@@ -39,6 +39,7 @@ public class ChaiSkuService {
     private final ChaiSkuRepository chaiSkuRepository;
     private final ChaiStockService chaiStockService;
     private final ChaiBrandRepository chaiBrandRepository;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
 
     public ChaiSku getById(Long id) {
         return chaiSkuRepository.findById(id).orElse(null);
@@ -159,7 +160,8 @@ public class ChaiSkuService {
 
     /**
      * 将 SPU 共享字段写入 SKU（不改 year/prodBatch/编码/销回收价/上下架）。
-     * keywords / search_text / barcode 与品牌、茶类一样继承自 SPU。
+     * keywords / search_text 与品牌、茶类一样继承自 SPU。
+     * 条码已迁 {@code chai_spu_barcode}：不再从 SPU 继承旧列；仅新建时占位空串。
      */
     public void applySharedFromSpu(ChaiSpu spu, ChaiSku sku) {
         if (spu == null || sku == null) {
@@ -174,7 +176,9 @@ public class ChaiSkuService {
         sku.setSpec(spu.getSpec());
         sku.setShowImageUrls(spu.getShowImageUrls());
         sku.setRealImageUrls(spu.getRealImageUrls());
-        sku.setBarcode(spu.getBarcode() != null ? spu.getBarcode() : "");
+        if (sku.getBarcode() == null) {
+            sku.setBarcode("");
+        }
         int nonSale = spu.getNonSale() != null ? spu.getNonSale() : 0;
         sku.setNonSale(nonSale);
         if (ChaiPriceUtil.isNonSale(nonSale)) {
@@ -182,7 +186,43 @@ public class ChaiSkuService {
         } else {
             sku.setOfficialPrice(spu.getOfficialPrice() != null ? spu.getOfficialPrice() : BigDecimal.ONE);
         }
+        applyMarksFromSpu(spu, sku);
         applyKeywordsFromSpu(spu, sku, resolveBrandName(spu.getBrand()));
+    }
+
+    /** 标记字段从 SPU 写入 SKU（含 pack_spu_id）。 */
+    public void applyMarksFromSpu(ChaiSpu spu, ChaiSku sku) {
+        if (spu == null || sku == null) {
+            return;
+        }
+        sku.setHideExternal(spu.getHideExternal() != null ? spu.getHideExternal() : 0);
+        sku.setCoreFlag(spu.getCoreFlag() != null ? spu.getCoreFlag() : 0);
+        sku.setTastingFlag(spu.getTastingFlag() != null ? spu.getTastingFlag() : 0);
+        sku.setPackSpuId(spu.getPackSpuId());
+    }
+
+    /**
+     * 将该 SPU 下全部 SKU（含已删）的标记与 SPU 对齐。
+     */
+    @Transactional
+    public int syncMarksFromSpu(ChaiSpu spu, String operator) {
+        if (spu == null || spu.getId() == null) {
+            return 0;
+        }
+        List<ChaiSku> list = listBySpuId(spu.getId(), null);
+        if (list.isEmpty()) {
+            return 0;
+        }
+        long now = System.currentTimeMillis();
+        for (ChaiSku sku : list) {
+            applyMarksFromSpu(spu, sku);
+            if (StringUtils.hasText(operator)) {
+                sku.setOperator(operator);
+            }
+            sku.setUpdateTime(now);
+            chaiSkuRepository.save(sku);
+        }
+        return list.size();
     }
 
     /**
@@ -213,31 +253,6 @@ public class ChaiSkuService {
         long now = System.currentTimeMillis();
         for (ChaiSku sku : list) {
             applyKeywordsFromSpu(spu, sku, bn);
-            if (StringUtils.hasText(operator)) {
-                sku.setOperator(operator);
-            }
-            sku.setUpdateTime(now);
-            chaiSkuRepository.save(sku);
-        }
-        return list.size();
-    }
-
-    /**
-     * 将该 SPU 下全部 SKU（含已删）的 barcode 与 SPU 对齐。
-     */
-    @Transactional
-    public int syncBarcodeFromSpu(ChaiSpu spu, String operator) {
-        if (spu == null || spu.getId() == null) {
-            return 0;
-        }
-        List<ChaiSku> list = listBySpuId(spu.getId(), null);
-        if (list.isEmpty()) {
-            return 0;
-        }
-        String barcode = spu.getBarcode() != null ? spu.getBarcode() : "";
-        long now = System.currentTimeMillis();
-        for (ChaiSku sku : list) {
-            sku.setBarcode(barcode);
             if (StringUtils.hasText(operator)) {
                 sku.setOperator(operator);
             }
@@ -458,6 +473,10 @@ public class ChaiSkuService {
                 }
                 item.setSkuCode(old.getSkuCode());
                 item.setCreateTime(old.getCreateTime());
+                // 停写旧列：批量保存不改 barcode，保留迁移源
+                item.setBarcode(old.getBarcode() != null ? old.getBarcode() : "");
+            } else {
+                item.setBarcode("");
             }
             item.setSpec(ChaiSpecUtil.buildSpecJson(
                     item.getTotalNetWeight(), item.getUnitWeight(),
@@ -469,6 +488,7 @@ public class ChaiSkuService {
                 item.setRealImageUrls("[]");
             }
             item.setStatus(spu.getStatus() != null ? spu.getStatus() : 0);
+            applyMarksFromSpu(spu, item);
             applyKeywordsFromSpu(spu, item, resolveBrandName(spu.getBrand()));
             save(item);
         }
@@ -570,7 +590,12 @@ public class ChaiSkuService {
             preList.add(cb.equal(root.get("skuCode").as(String.class), param.getSkuCode().trim()));
         }
         if (StringUtils.hasText(param.getBarcode())) {
-            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
+            List<Long> spuIds = chaiSpuBarcodeService.resolveSpuIds(param.getBarcode().trim());
+            if (spuIds.isEmpty()) {
+                preList.add(cb.disjunction());
+            } else {
+                preList.add(root.get("spuId").in(spuIds));
+            }
         }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));
@@ -601,6 +626,15 @@ public class ChaiSkuService {
         }
         if (param.getNonSale() != null) {
             preList.add(cb.equal(root.get("nonSale").as(Integer.class), param.getNonSale()));
+        }
+        if (param.getHideExternal() != null) {
+            preList.add(cb.equal(root.get("hideExternal").as(Integer.class), param.getHideExternal()));
+        }
+        if (param.getCoreFlag() != null) {
+            preList.add(cb.equal(root.get("coreFlag").as(Integer.class), param.getCoreFlag()));
+        }
+        if (param.getTastingFlag() != null) {
+            preList.add(cb.equal(root.get("tastingFlag").as(Integer.class), param.getTastingFlag()));
         }
         if (param.getDeleted() != null) {
             preList.add(cb.equal(root.get("deleted").as(Integer.class), param.getDeleted()));

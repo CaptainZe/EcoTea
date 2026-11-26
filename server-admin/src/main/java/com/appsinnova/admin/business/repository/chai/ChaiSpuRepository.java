@@ -58,6 +58,13 @@ public interface ChaiSpuRepository extends JpaRepository<ChaiSpu, Long>, JpaSpec
 
     long countByDeletedAndBarcode(Integer deleted, String barcode);
 
+    /** 过渡期：旧单列条码精确匹配 */
+    List<ChaiSpu> findByBarcodeAndDeleted(String barcode, Integer deleted);
+
+    /** 过渡期迁移：旧列有值的 SPU */
+    @Query("select s from ChaiSpu s where s.barcode is not null and s.barcode <> ''")
+    List<ChaiSpu> findAllWithLegacyBarcode();
+
     /** 系统码按品牌统计：Object[]{ brandId, count } */
     @Query("select s.brand, count(s) from ChaiSpu s "
             + "where s.deleted = :deleted and s.barcode like :prefix "

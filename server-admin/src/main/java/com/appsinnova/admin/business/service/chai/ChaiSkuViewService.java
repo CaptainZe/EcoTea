@@ -44,6 +44,7 @@ public class ChaiSkuViewService {
     private final ChaiStockRepository chaiStockRepository;
     private final ChaiBrandService chaiBrandService;
     private final ChaiSpuService chaiSpuService;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
 
     public Page<ChaiSku> getPageList(ChaiSku param, ChaiSkuViewType viewType) {
         if (param == null) {
@@ -119,7 +120,12 @@ public class ChaiSkuViewService {
             preList.add(cb.equal(root.get("skuCode").as(String.class), param.getSkuCode().trim()));
         }
         if (StringUtils.hasText(param.getBarcode())) {
-            preList.add(cb.equal(root.get("barcode").as(String.class), param.getBarcode().trim()));
+            List<Long> spuIds = chaiSpuBarcodeService.resolveSpuIds(param.getBarcode().trim());
+            if (spuIds.isEmpty()) {
+                preList.add(cb.disjunction());
+            } else {
+                preList.add(root.get("spuId").in(spuIds));
+            }
         }
         if (StringUtils.hasText(param.getName())) {
             preList.add(cb.like(root.get("name").as(String.class), "%" + param.getName().trim() + "%"));

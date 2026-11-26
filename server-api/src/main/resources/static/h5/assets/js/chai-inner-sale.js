@@ -978,6 +978,7 @@
     params.set("page", String(state.page));
     params.set("size", String(state.size));
     params.set("includeWh", "1");
+    params.set("includeHidden", "1");
     if (state.barcode) {
       params.set("barcode", state.barcode);
     } else {

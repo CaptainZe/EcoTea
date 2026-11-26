@@ -72,6 +72,20 @@
             <button type="button" class="layui-btn" id="btnFillSearchEmpty">仅回填空值</button>
             <button type="button" class="layui-btn layui-btn-danger" id="btnFillSearchAll">全量重算</button>
         </div>
+
+        <div class="tool-card">
+            <h3>SPU 条码迁入多码表</h3>
+            <div class="tool-desc">
+                将旧列 <code>chai_spu.barcode</code> / <code>chai_sku.barcode</code> 有值记录写入
+                <code>chai_spu_barcode</code>（幂等，可重复执行）。不写回旧列；同 SPU 同码已存在则跳过；
+                每 SPU 最多保留一条 29 系统码。
+            </div>
+            <div class="tool-stat">
+                粗估待迁入（旧列有值且新表尚无同码）：
+                <strong th:text="${barcodePendingMigrate}">0</strong> 条
+            </div>
+            <button type="button" class="layui-btn layui-btn-normal" id="btnMigrateBarcode">执行迁移</button>
+        </div>
     </div>
 </div>
 <script th:replace="/common/template :: script"></script>
@@ -79,6 +93,7 @@
     /*<![CDATA[*/
     var fillUrl = /*[[@{/business/tools/chai/brand/fillNameLetters}]]*/ '';
     var fillSearchTextUrl = /*[[@{/business/tools/chai/searchText/fill}]]*/ '';
+    var migrateBarcodeUrl = /*[[@{/business/tools/chai/barcode/migrate}]]*/ '';
     /*]]>*/
     layui.use(['layer'], function () {
         var layer = layui.layer;
@@ -115,6 +130,26 @@
         });
         $('#btnFillSearchAll').on('click', function () {
             runFill(fillSearchTextUrl, true, '将按品牌名+商品名+关键词全量重算所有 SPU / SKU 的 search_text，是否继续？');
+        });
+        $('#btnMigrateBarcode').on('click', function () {
+            layer.confirm('将旧列有值条码迁入 chai_spu_barcode（幂等）。是否继续？',
+                {icon: 3, title: '确认执行'}, function (index) {
+                    layer.close(index);
+                    var loading = layer.load(2);
+                    $.post(migrateBarcodeUrl, {}, function (res) {
+                        layer.close(loading);
+                        if (res.code === 200) {
+                            layer.msg(res.msg || '完成', {time: 4000}, function () {
+                                location.reload();
+                            });
+                        } else {
+                            layer.msg(res.msg || '执行失败');
+                        }
+                    }).fail(function () {
+                        layer.close(loading);
+                        layer.msg('请求失败');
+                    });
+                });
         });
     });
 </script>

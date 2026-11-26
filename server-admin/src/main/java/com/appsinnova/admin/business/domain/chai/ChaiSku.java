@@ -29,7 +29,7 @@ public class ChaiSku implements Serializable {
     private String keywords;
     /** 检索文本（品牌名+商品名+关键词，系统生成） */
     private String searchText;
-    /** 条形码（继承自 SPU） */
+    /** 【废弃】旧单列条码；业务读写切至 chai_spu_barcode */
     private String barcode;
     private Long brand;
     private Long expiration;
@@ -48,6 +48,14 @@ public class ChaiSku implements Serializable {
     private BigDecimal recyclePrice;
     private Integer recyclePriceReducePer;
     private BigDecimal recyclePriceReduceNoBag;
+    /** 对外隐藏：0否 1是（同步自 SPU） */
+    private Integer hideExternal;
+    /** 核心产品：0否 1是（同步自 SPU） */
+    private Integer coreFlag;
+    /** 品鉴款：0否 1是（同步自 SPU） */
+    private Integer tastingFlag;
+    /** 整装 SPU ID；品鉴款可空（同步自 SPU） */
+    private Long packSpuId;
     private Integer status;
     /** 0有效 1已删除；不与 status（上下架）混用 */
     private Integer deleted;

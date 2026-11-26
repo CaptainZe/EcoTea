@@ -36,6 +36,7 @@ public class ChaiStockService {
     private final ChaiStockWhRepository chaiStockWhRepository;
     private final ChaiSkuRepository chaiSkuRepository;
     private final ChaiWarehouseService chaiWarehouseService;
+    private final ChaiSpuBarcodeService chaiSpuBarcodeService;
 
     public ChaiStock getById(Long id) {
         return chaiStockRepository.findById(id).orElse(null);
@@ -483,7 +484,12 @@ public class ChaiStockService {
             preList.add(cb.equal(skuRoot.get("skuCode").as(String.class), param.getSkuCode().trim()));
         }
         if (StringUtils.hasText(param.getBarcode())) {
-            preList.add(cb.equal(skuRoot.get("barcode").as(String.class), param.getBarcode().trim()));
+            List<Long> spuIds = chaiSpuBarcodeService.resolveSpuIds(param.getBarcode().trim());
+            if (spuIds.isEmpty()) {
+                preList.add(cb.disjunction());
+            } else {
+                preList.add(skuRoot.get("spuId").in(spuIds));
+            }
         }
         if (param.getBrand() != null) {
             preList.add(cb.equal(skuRoot.get("brand").as(Long.class), param.getBrand()));

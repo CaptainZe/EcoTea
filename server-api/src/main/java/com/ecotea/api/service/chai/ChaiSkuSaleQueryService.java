@@ -57,25 +57,54 @@ public class ChaiSkuSaleQueryService {
     private final ChaiStockMapper chaiStockMapper;
     private final ChaiStockWhMapper chaiStockWhMapper;
     private final ChaiWarehouseQueryService chaiWarehouseQueryService;
+    private final ChaiSpuBarcodeQueryService chaiSpuBarcodeQueryService;
 
     /**
-     * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收。
+     * 兼容关键词回复等旧调用：全仓有货、不分仓字段、非新回收；过滤对外隐藏。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, long page, long size) {
         return pageSaleList(keyword, null, spuId, null, false, false,
                 Collections.emptyList(), Collections.emptyList(),
-                null, null, null, null, null, null, null, page, size);
+                null, null, null, null, null, null, null, null, null, null, page, size, true);
     }
 
     /**
-     * 兼容仅仓/新回收筛选的旧调用。
+     * 兼容仅仓/新回收筛选的旧调用；过滤对外隐藏。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
                                           long page, long size) {
         return pageSaleList(keyword, null, spuId, whId, includeWh, recycleRecent,
                 Collections.emptyList(), Collections.emptyList(),
-                null, null, null, null, null, null, null, page, size);
+                null, null, null, null, null, null, null, null, null, null, page, size, true);
+    }
+
+    /**
+     * 上架、未删除、有货 SKU 分页（默认过滤对外隐藏，供对外 H5 / 公众号）。
+     */
+    public ChaiSkuSalePageVO pageSaleList(String keyword, String barcode, Long spuId, Long whId,
+                                          boolean includeWh, boolean recycleRecent,
+                                          List<Long> brandIds, List<Integer> types,
+                                          BigDecimal priceMin, BigDecimal priceMax,
+                                          BigDecimal officialPriceMin, BigDecimal officialPriceMax,
+                                          Integer nonSale, Integer year, Integer prodBatch,
+                                          long page, long size) {
+        return pageSaleList(keyword, barcode, spuId, whId, includeWh, recycleRecent,
+                brandIds, types, priceMin, priceMax, officialPriceMin, officialPriceMax,
+                nonSale, year, prodBatch, null, null, null, page, size, true);
+    }
+
+    /** 兼容带 filterHideExternal、无标记筛的调用。 */
+    public ChaiSkuSalePageVO pageSaleList(String keyword, String barcode, Long spuId, Long whId,
+                                          boolean includeWh, boolean recycleRecent,
+                                          List<Long> brandIds, List<Integer> types,
+                                          BigDecimal priceMin, BigDecimal priceMax,
+                                          BigDecimal officialPriceMin, BigDecimal officialPriceMax,
+                                          Integer nonSale, Integer year, Integer prodBatch,
+                                          long page, long size, boolean filterHideExternal) {
+        return pageSaleList(keyword, barcode, spuId, whId, includeWh, recycleRecent,
+                brandIds, types, priceMin, priceMax, officialPriceMin, officialPriceMax,
+                nonSale, year, prodBatch, null, null, null, page, size, filterHideExternal);
     }
 
     /**
@@ -88,7 +117,9 @@ public class ChaiSkuSaleQueryService {
      * officialPriceMin / officialPriceMax：官方价区间；
      * nonSale：1 只看非卖品 / 0 不看非卖品 / null 不限（只看非卖品时忽略官方价区间）；
      * year：SKU 年份精确匹配（null 不限）；
-     * prodBatch：生产批次精确匹配（null 不限）。
+     * prodBatch：生产批次精确匹配（null 不限）；
+     * hideExternal / coreFlag / tastingFlag：1 是 / 0 否 / null 不限；
+     * filterHideExternal：true 时排除 hide_external=1（对外入口）；内部价目/小程序传 false。
      */
     public ChaiSkuSalePageVO pageSaleList(String keyword, String barcode, Long spuId, Long whId,
                                           boolean includeWh, boolean recycleRecent,
@@ -96,7 +127,8 @@ public class ChaiSkuSaleQueryService {
                                           BigDecimal priceMin, BigDecimal priceMax,
                                           BigDecimal officialPriceMin, BigDecimal officialPriceMax,
                                           Integer nonSale, Integer year, Integer prodBatch,
-                                          long page, long size) {
+                                          Integer hideExternal, Integer coreFlag, Integer tastingFlag,
+                                          long page, long size, boolean filterHideExternal) {
         if (page < 1) {
             page = 1;
         }
@@ -131,6 +163,7 @@ public class ChaiSkuSaleQueryService {
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
                 .inSql(ChaiSku::getId, stockInSql);
+        applyHideExternalFilter(wrapper, filterHideExternal);
 
         if (recycleRecent) {
             wrapper.inSql(ChaiSku::getId, recycleRecentSkuSql(recycleCutoffMs));
@@ -143,7 +176,19 @@ public class ChaiSkuSaleQueryService {
         }
 
         if (StringUtils.hasText(code)) {
-            wrapper.eq(ChaiSku::getBarcode, code);
+            List<Long> barcodeSpuIds = chaiSpuBarcodeQueryService.resolveSpuIds(code);
+            if (barcodeSpuIds.isEmpty()) {
+                ChaiSkuSalePageVO empty = new ChaiSkuSalePageVO();
+                empty.setTotal(0L);
+                empty.setPage(page);
+                empty.setSize(size);
+                empty.setMatchType("barcode");
+                empty.setKeyword(kw);
+                empty.setBarcode(code);
+                empty.setList(Collections.emptyList());
+                return empty;
+            }
+            wrapper.in(ChaiSku::getSpuId, barcodeSpuIds);
             matchType = "barcode";
         } else if (!brandIdList.isEmpty()) {
             wrapper.in(ChaiSku::getBrand, brandIdList);
@@ -196,6 +241,9 @@ public class ChaiSkuSaleQueryService {
         if (prodBatch != null) {
             wrapper.eq(ChaiSku::getProdBatch, prodBatch);
         }
+        applyMarkFlagFilter(wrapper, ChaiSku::getHideExternal, hideExternal);
+        applyMarkFlagFilter(wrapper, ChaiSku::getCoreFlag, coreFlag);
+        applyMarkFlagFilter(wrapper, ChaiSku::getTastingFlag, tastingFlag);
 
         if (recycleRecent) {
             // 越新回收的越靠前
@@ -213,7 +261,7 @@ public class ChaiSkuSaleQueryService {
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
         Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(
-                records, whId, recycleRecent, recycleCutoffMs);
+                records, whId, recycleRecent, recycleCutoffMs, filterHideExternal);
         Map<Long, List<String>> whShortNamesMap = includeWh
                 ? loadWhShortNamesBySkuId(records, stockMap)
                 : Collections.emptyMap();
@@ -239,11 +287,34 @@ public class ChaiSkuSaleQueryService {
         result.setRecycleRecent(recycleRecent);
         result.setList(list);
 
-        log.info("chai sku sale list, keyword={}, barcode={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, year={}, prodBatch={}, matchType={}, page={}, size={}, total={}",
+        log.info("chai sku sale list, keyword={}, barcode={}, spuId={}, whId={}, includeWh={}, recycleRecent={}, brandIds={}, types={}, priceMin={}, priceMax={}, officialPriceMin={}, officialPriceMax={}, nonSale={}, year={}, prodBatch={}, hideExternal={}, coreFlag={}, tastingFlag={}, filterHideExternal={}, matchType={}, page={}, size={}, total={}",
                 kw, code, spuId, whId, includeWh, recycleRecent, brandIdList, typeList,
                 min, max, officialMin, officialMax, nonSale, year, prodBatch,
+                hideExternal, coreFlag, tastingFlag, filterHideExternal,
                 matchType, page, size, mpPage.getTotal());
         return result;
+    }
+
+    /** 对外入口排除 hide_external=1；null 视同可见。 */
+    private static void applyHideExternalFilter(LambdaQueryWrapper<ChaiSku> wrapper,
+                                                boolean filterHideExternal) {
+        if (!filterHideExternal) {
+            return;
+        }
+        wrapper.and(w -> w.eq(ChaiSku::getHideExternal, YesOrNo.NO.getCode())
+                .or()
+                .isNull(ChaiSku::getHideExternal));
+    }
+
+    /** 标记筛：1=是 / 0=否（含 null）/ null=不限。 */
+    private static void applyMarkFlagFilter(LambdaQueryWrapper<ChaiSku> wrapper,
+                                            com.baomidou.mybatisplus.core.toolkit.support.SFunction<ChaiSku, ?> column,
+                                            Integer flag) {
+        if (YesOrNo.YES.getCode().equals(flag)) {
+            wrapper.eq(column, YesOrNo.YES.getCode());
+        } else if (YesOrNo.NO.getCode().equals(flag)) {
+            wrapper.and(w -> w.eq(column, YesOrNo.NO.getCode()).or().isNull(column));
+        }
     }
 
     /** min/max 互换校正；返回 [min, max]。 */
@@ -257,18 +328,28 @@ public class ChaiSkuSaleQueryService {
     }
 
     /**
-     * 有货上架 SKU 详情；不存在或不可售返回 null。始终带分仓有货明细。
+     * 有货上架 SKU 详情；不存在或不可售返回 null。始终带分仓有货明细。默认过滤对外隐藏。
      */
     public ChaiSkuSaleItemVO getSaleDetail(Long id) {
+        return getSaleDetail(id, true);
+    }
+
+    /**
+     * 有货上架 SKU 详情。
+     *
+     * @param filterHideExternal true 时 hide_external=1 视为不可售（对外）；内部价目传 false
+     */
+    public ChaiSkuSaleItemVO getSaleDetail(Long id, boolean filterHideExternal) {
         if (id == null) {
             return null;
         }
-        ChaiSku sku = chaiSkuMapper.selectOne(new LambdaQueryWrapper<ChaiSku>()
+        LambdaQueryWrapper<ChaiSku> wrapper = new LambdaQueryWrapper<ChaiSku>()
                 .eq(ChaiSku::getId, id)
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
-                .inSql(ChaiSku::getId, STOCK_IN_SQL)
-                .last("LIMIT 1"));
+                .inSql(ChaiSku::getId, STOCK_IN_SQL);
+        applyHideExternalFilter(wrapper, filterHideExternal);
+        ChaiSku sku = chaiSkuMapper.selectOne(wrapper.last("LIMIT 1"));
         if (sku == null) {
             return null;
         }
@@ -276,7 +357,8 @@ public class ChaiSkuSaleQueryService {
         Map<Long, String> brandNameMap = loadBrandNameMap(records);
         Map<Long, String> expirationNameMap = loadExpirationNameMap(records);
         Map<Long, ChaiStock> stockMap = loadStockMap(records);
-        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(records, null, false, 0L);
+        Map<Long, Integer> sameSpuCountMap = loadSameSpuSaleCountMap(
+                records, null, false, 0L, filterHideExternal);
         ChaiSkuSaleItemVO vo = toSaleVo(sku, brandNameMap, expirationNameMap, stockMap, sameSpuCountMap);
         Map<Long, List<ChaiSkuSaleWhStockVO>> whStockMap = loadWarehouseStocksBySkuId(records, stockMap);
         vo.setWarehouseStocks(whStockMap.getOrDefault(sku.getId(), Collections.emptyList()));
@@ -364,10 +446,11 @@ public class ChaiSkuSaleQueryService {
     }
 
     /**
-     * 各 spuId 下「上架+未删+有货」SKU 数量；有 whId / 新回收时与列表同一口径。
+     * 各 spuId 下「上架+未删+有货」SKU 数量；有 whId / 新回收 / 对外隐藏时与列表同一口径。
      */
     private Map<Long, Integer> loadSameSpuSaleCountMap(List<ChaiSku> records, Long whId,
-                                                       boolean recycleRecent, long recycleCutoffMs) {
+                                                       boolean recycleRecent, long recycleCutoffMs,
+                                                       boolean filterHideExternal) {
         Set<Long> spuIds = records.stream()
                 .map(ChaiSku::getSpuId)
                 .filter(Objects::nonNull)
@@ -381,6 +464,7 @@ public class ChaiSkuSaleQueryService {
                 .eq(ChaiSku::getStatus, ChaiStatus.ONLINE.getCode())
                 .eq(ChaiSku::getDeleted, YesOrNo.NO.getCode())
                 .inSql(ChaiSku::getId, stockInSql(whId));
+        applyHideExternalFilter(sameWrapper, filterHideExternal);
         if (recycleRecent) {
             sameWrapper.inSql(ChaiSku::getId, recycleRecentSkuSql(recycleCutoffMs));
         }
@@ -520,6 +604,9 @@ public class ChaiSkuSaleQueryService {
         if (sku.getExpiration() != null) {
             vo.setExpirationName(expirationNameMap.get(sku.getExpiration()));
         }
+        vo.setHideExternal(sku.getHideExternal() != null ? sku.getHideExternal() : 0);
+        vo.setCoreFlag(sku.getCoreFlag() != null ? sku.getCoreFlag() : 0);
+        vo.setTastingFlag(sku.getTastingFlag() != null ? sku.getTastingFlag() : 0);
         vo.setOfficialPrice(sku.getOfficialPrice());
         vo.setSalePrice(sku.getSalePrice());
         vo.setOfficialPriceShow(ChaiPriceUtil.formatOfficialPrice(sku.getNonSale(), sku.getOfficialPrice()));

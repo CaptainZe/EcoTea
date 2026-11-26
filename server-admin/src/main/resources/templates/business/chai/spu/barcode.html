@@ -5,7 +5,7 @@
     <title>维护条形码</title>
     <style>
         .bc-form .layui-form-label { width: 100px; }
-        .bc-form .layui-input-block { margin-left: 130px; max-width: 520px; }
+        .bc-form .layui-input-block { margin-left: 130px; max-width: 560px; }
         .bc-form .field-tip { color: #6B7280; font-size: 12px; line-height: 1.6; margin-top: 6px; }
         .bc-spu-card {
             background: #F8FAFC;
@@ -57,6 +57,16 @@
             font-weight: 600;
             color: #111827;
         }
+        .bc-legacy-tip {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: #FFFBEB;
+            border: 1px solid #FDE68A;
+            border-radius: 6px;
+            color: #92400E;
+            font-size: 12px;
+            line-height: 1.5;
+        }
         .bc-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .bc-input-row .layui-input { flex: 1; min-width: 200px; max-width: 320px; letter-spacing: 1px; font-family: Consolas, Monaco, monospace; }
         .bc-panel {
@@ -68,6 +78,54 @@
         }
         .bc-panel-left { flex: 1; min-width: 280px; }
         .bc-panel-right { flex: 0 0 auto; }
+
+        .bc-list {
+            list-style: none;
+            margin: 0 0 12px;
+            padding: 0;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .bc-list-empty {
+            padding: 14px 12px;
+            color: #9CA3AF;
+            font-size: 13px;
+            text-align: center;
+        }
+        .bc-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #F3F4F6;
+            cursor: pointer;
+        }
+        .bc-list-item:last-child { border-bottom: none; }
+        .bc-list-item:hover { background: #F8FAFC; }
+        .bc-list-item.is-active {
+            background: #EFF6FF;
+            box-shadow: inset 3px 0 0 #3B82F6;
+        }
+        .bc-list-code {
+            flex: 1;
+            font-family: Consolas, Monaco, monospace;
+            letter-spacing: 1px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .bc-list-tag {
+            flex-shrink: 0;
+            font-size: 11px;
+            padding: 1px 8px;
+            border-radius: 999px;
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+        .bc-list-tag.is-sys { background: #DBEAFE; color: #1D4ED8; }
+        .bc-list-tag.is-gb { background: #DCFCE7; color: #166534; }
 
         /* 标签预览 / 打印区：横版 80mm × 60mm（与批量打印一致） */
         .bc-label-wrap {
@@ -128,7 +186,6 @@
 
         @media print {
             @page {
-                /* 宽×高 = 横版标签；方向由纸型决定，勿依赖浏览器「横向」选项 */
                 size: 80mm 60mm;
                 margin: 0;
             }
@@ -142,7 +199,6 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            /* 只输出标签，避免整页占位撑出第 2 页 */
             body * { visibility: hidden !important; }
             .bc-print-only, .bc-print-only * { visibility: visible !important; }
             .bc-print-only {
@@ -164,21 +220,14 @@
             .bc-label {
                 width: 80mm !important;
                 height: 60mm !important;
-                /* 去掉批次后略增内边距，字号固定 mm，减少「适合页面」缩放感 */
                 padding: 2.5mm 3mm 2mm !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
                 transform: none !important;
             }
-            .bc-label-title {
-                font-size: 13px !important;
-            }
-            .bc-label-row {
-                font-size: 11px !important;
-            }
-            .bc-label-code {
-                font-size: 12px !important;
-            }
+            .bc-label-title { font-size: 13px !important; }
+            .bc-label-row { font-size: 11px !important; }
+            .bc-label-code { font-size: 12px !important; }
             .bc-label-img {
                 margin: 2.5mm auto 1mm !important;
                 width: 68mm !important;
@@ -214,32 +263,53 @@
                 <span>规格 <b th:text="${editItem.specShow != null and !#strings.isEmpty(editItem.specShow) ? editItem.specShow : '-'}">-</b></span>
                 <span>保质期 <b th:text="${editItem.expirationName != null ? editItem.expirationName : '-'}">-</b></span>
             </div>
+            <div class="bc-legacy-tip"
+                 th:if="${#lists.isEmpty(barcodeList) and legacyBarcode != null and !#strings.isEmpty(legacyBarcode)}">
+                旧单列仍有条码 <b th:text="${legacyBarcode}">-</b>，尚未迁入多码表。可在此重新添加，或等工具箱迁移。
+            </div>
         </div>
 
         <div class="bc-panel">
             <div class="bc-panel-left">
                 <div class="layui-form-item">
-                    <label class="layui-form-label">条形码</label>
+                    <label class="layui-form-label">已有条码</label>
+                    <div class="layui-input-block">
+                        <ul class="bc-list" id="bcList">
+                            <li class="bc-list-empty" th:if="${#lists.isEmpty(barcodeList)}">暂无条码，请添加国标或生成系统码</li>
+                            <li class="bc-list-item"
+                                th:each="row : ${barcodeList}"
+                                th:attr="data-id=${row.id},data-code=${row.barcode}"
+                                th:classappend="${row.barcode == previewCode} ? ' is-active' : ''">
+                                <span class="bc-list-code" th:text="${row.barcode}">-</span>
+                                <span class="bc-list-tag"
+                                      th:classappend="${#strings.startsWith(row.barcode,'29')} ? ' is-sys' : (${#strings.startsWith(row.barcode,'69')} ? ' is-gb' : '')"
+                                      th:text="${#strings.startsWith(row.barcode,'29')} ? '系统码' : (${#strings.startsWith(row.barcode,'69')} ? '国标' : '其它')">-</span>
+                                <button type="button" class="layui-btn layui-btn-xs layui-btn-danger btn-del-bc">删除</button>
+                            </li>
+                        </ul>
+                        <div class="field-tip">点击某条可选中预览/打印；每 SPU 最多一条 29 系统码；可同时保留国标 69。</div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">添加条码</label>
                     <div class="layui-input-block">
                         <div class="bc-input-row">
                             <input type="text" name="barcode" id="barcodeInput" class="layui-input"
                                    maxlength="13" autocomplete="off"
-                                   th:value="${editItem.barcode}"
                                    placeholder="扫枪填入或手填 13 位">
-                            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnGenerate">生成</button>
+                            <button type="button" class="layui-btn layui-btn-sm" id="btnAddBc">添加</button>
+                            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnGenerate">生成系统码</button>
                         </div>
                         <div class="field-tip">
-                            国标 69 码可手填/扫入；无国标时点「生成」出 29 开头系统码 EAN-13。
-                            保存后下属 SKU 自动继承。清空保存可去掉条码。
+                            国标 69 可手填/扫入；无国标时点「生成系统码」出 29 开头 EAN-13 并直接落库。
                         </div>
                     </div>
                 </div>
+
                 <div class="layui-form-item timo-finally">
-                    <button type="button" class="layui-btn" id="btnSaveBc">
-                        <i class="fa fa-check-circle"></i> 保存
-                    </button>
                     <button type="button" class="layui-btn layui-btn-warm" id="btnPrint">
-                        <i class="fa fa-print"></i> 打印标签
+                        <i class="fa fa-print"></i> 打印选中标签
                     </button>
                     <button type="button" class="layui-btn btn-secondary close-popup">
                         <i class="fa fa-times-circle"></i> 关闭
@@ -259,7 +329,7 @@
                                 th:text="${editItem.officialPriceShow == '非卖品' ? '非卖品' : ((editItem.officialPriceShow != null and editItem.officialPriceShow != '-' ? editItem.officialPriceShow + '元' : '-'))}">-</span></div>
                         <img class="bc-label-img is-empty" id="lblBarcodeImg" alt="条码" src=""/>
                         <div class="bc-label-code" id="lblBarcodeText"></div>
-                        <div class="bc-label-empty" id="lblEmpty">请先录入或生成条码</div>
+                        <div class="bc-label-empty" id="lblEmpty">请添加或选中一条条码</div>
                     </div>
                 </div>
             </div>
@@ -270,21 +340,33 @@
 <script type="text/javascript" th:src="@{/js/plugins/jquery-3.3.1.min.js}"></script>
 <script th:inline="javascript">
     /*<![CDATA[*/
-    var saveUrl = /*[[@{/business/chai/spu/barcode/save}]]*/ '';
+    var spuId = /*[[${editItem.id}]]*/ 0;
+    var addUrl = /*[[@{/business/chai/spu/barcode/add}]]*/ '';
+    var deleteUrl = /*[[@{/business/chai/spu/barcode/delete}]]*/ '';
     var generateUrl = /*[[@{/business/chai/spu/barcode/generate/{id}(id=${editItem.id})}]]*/ '';
     var imageUrlBase = /*[[@{/business/chai/spu/barcode/image}]]*/ '';
+    var selectedCode = /*[[${previewCode}]]*/ '';
     /*]]>*/
     layui.use(['layer'], function () {
         var layer = layui.layer;
         var $ = layui.$;
-        var previewTimer = null;
 
         function digitsOnly(v) {
             return (v || '').replace(/\D/g, '').substring(0, 13);
         }
 
+        function tagHtml(code) {
+            if ((code || '').indexOf('29') === 0) {
+                return '<span class="bc-list-tag is-sys">系统码</span>';
+            }
+            if ((code || '').indexOf('69') === 0) {
+                return '<span class="bc-list-tag is-gb">国标</span>';
+            }
+            return '<span class="bc-list-tag">其它</span>';
+        }
+
         function refreshPreview() {
-            var code = digitsOnly($('#barcodeInput').val());
+            var code = digitsOnly(selectedCode);
             var $img = $('#lblBarcodeImg');
             var $text = $('#lblBarcodeText');
             var $empty = $('#lblEmpty');
@@ -300,11 +382,32 @@
             }
         }
 
-        function schedulePreview() {
-            if (previewTimer) {
-                clearTimeout(previewTimer);
+        function setActiveByCode(code) {
+            selectedCode = code || '';
+            $('#bcList .bc-list-item').each(function () {
+                var c = $(this).attr('data-code') || '';
+                $(this).toggleClass('is-active', c === selectedCode);
+            });
+            refreshPreview();
+        }
+
+        function appendListItem(id, code) {
+            $('#bcList .bc-list-empty').remove();
+            var $li = $('<li class="bc-list-item"></li>')
+                .attr('data-id', id)
+                .attr('data-code', code)
+                .append($('<span class="bc-list-code"></span>').text(code))
+                .append($(tagHtml(code)))
+                .append('<button type="button" class="layui-btn layui-btn-xs layui-btn-danger btn-del-bc">删除</button>');
+            $('#bcList').append($li);
+            setActiveByCode(code);
+        }
+
+        function ensureEmptyPlaceholder() {
+            if ($('#bcList .bc-list-item').length === 0) {
+                $('#bcList').html('<li class="bc-list-empty">暂无条码，请添加国标或生成系统码</li>');
+                setActiveByCode('');
             }
-            previewTimer = setTimeout(refreshPreview, 200);
         }
 
         $('#bcForm').on('submit', function (e) {
@@ -312,33 +415,117 @@
             return false;
         });
 
+        $('#bcList').on('click', '.bc-list-item', function (e) {
+            if ($(e.target).closest('.btn-del-bc').length) {
+                return;
+            }
+            setActiveByCode($(this).attr('data-code') || '');
+        });
+
+        $('#bcList').on('click', '.btn-del-bc', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $li = $(this).closest('.bc-list-item');
+            var barcodeId = $li.attr('data-id');
+            var code = $li.attr('data-code') || '';
+            layer.confirm('确定删除条码 ' + code + '？', {icon: 3, title: '确认'}, function (idx) {
+                layer.close(idx);
+                var loading = layer.load(2);
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'POST',
+                    data: {id: spuId, barcodeId: barcodeId},
+                    success: function (res) {
+                        layer.close(loading);
+                        if (res.code == 200) {
+                            var wasSelected = (code === selectedCode);
+                            $li.remove();
+                            if (wasSelected) {
+                                var $first = $('#bcList .bc-list-item').first();
+                                if ($first.length) {
+                                    setActiveByCode($first.attr('data-code') || '');
+                                } else {
+                                    ensureEmptyPlaceholder();
+                                }
+                            } else {
+                                ensureEmptyPlaceholder();
+                            }
+                            layer.msg('已删除');
+                        } else {
+                            layer.msg(res.msg || '删除失败');
+                        }
+                    },
+                    error: function () {
+                        layer.close(loading);
+                        layer.msg('请求失败');
+                    }
+                });
+            });
+        });
+
         $('#barcodeInput').on('input', function () {
             var cleaned = digitsOnly($(this).val());
             if ($(this).val() !== cleaned) {
                 $(this).val(cleaned);
             }
-            schedulePreview();
         });
 
-        // 扫枪尾部 Enter 勿触发表单提交（会 POST 到仅支持 GET 的 barcode/{id} → 405）
         $('#barcodeInput').on('keydown', function (e) {
             if (e.key === 'Enter' || e.keyCode === 13) {
                 e.preventDefault();
-                refreshPreview();
+                $('#btnAddBc').click();
             }
+        });
+
+        $('#btnAddBc').on('click', function () {
+            var code = digitsOnly($('#barcodeInput').val());
+            if (code.length !== 13) {
+                layer.msg('请输入13位条码');
+                return;
+            }
+            var loading = layer.load(2);
+            $.ajax({
+                url: addUrl,
+                type: 'POST',
+                data: {id: spuId, barcode: code},
+                success: function (res) {
+                    layer.close(loading);
+                    if (res.code == 200 && res.data) {
+                        appendListItem(res.data.id, res.data.barcode);
+                        $('#barcodeInput').val('');
+                        layer.msg('已添加');
+                    } else {
+                        layer.msg(res.msg || '添加失败');
+                    }
+                },
+                error: function () {
+                    layer.close(loading);
+                    layer.msg('请求失败');
+                }
+            });
         });
 
         $('#btnGenerate').on('click', function () {
             var loading = layer.load(2);
             $.ajax({
                 url: generateUrl,
-                type: 'GET',
+                type: 'POST',
                 success: function (res) {
                     layer.close(loading);
                     if (res.code == 200 && res.data && res.data.barcode) {
-                        $('#barcodeInput').val(res.data.barcode);
-                        refreshPreview();
-                        layer.msg('已生成，请保存');
+                        var code = res.data.barcode;
+                        var exists = false;
+                        $('#bcList .bc-list-item').each(function () {
+                            if ($(this).attr('data-code') === code) {
+                                exists = true;
+                            }
+                        });
+                        if (!exists) {
+                            appendListItem(res.data.id, code);
+                        } else {
+                            setActiveByCode(code);
+                        }
+                        layer.msg(exists ? '已有系统码' : '已生成并保存');
                     } else {
                         layer.msg(res.msg || '生成失败');
                     }
@@ -350,40 +537,10 @@
             });
         });
 
-        $('#btnSaveBc').on('click', function () {
-            var loading = layer.load(2);
-            $.ajax({
-                url: saveUrl,
-                type: 'POST',
-                data: {
-                    id: $('input[name="id"]').val(),
-                    barcode: digitsOnly($('#barcodeInput').val())
-                },
-                success: function (res) {
-                    layer.close(loading);
-                    if (res.code == 200) {
-                        layer.msg('保存成功', {time: 800}, function () {
-                            if (window.parent && window.parent.layer) {
-                                var idx = window.parent.layer.getFrameIndex(window.name);
-                                window.parent.layer.close(idx);
-                                window.parent.location.reload();
-                            }
-                        });
-                    } else {
-                        layer.msg(res.msg || '保存失败');
-                    }
-                },
-                error: function () {
-                    layer.close(loading);
-                    layer.msg('请求失败');
-                }
-            });
-        });
-
         $('#btnPrint').on('click', function () {
-            var code = digitsOnly($('#barcodeInput').val());
+            var code = digitsOnly(selectedCode);
             if (code.length !== 13) {
-                layer.msg('请先录入或生成有效条码再打印');
+                layer.msg('请先选中一条有效条码再打印');
                 return;
             }
             refreshPreview();
@@ -392,14 +549,8 @@
             }, 120);
         });
 
-        // 打开即 focus，方便扫枪
         setTimeout(function () {
-            var $input = $('#barcodeInput');
-            $input.focus();
-            var v = $input.val();
-            if (v) {
-                $input[0].setSelectionRange(v.length, v.length);
-            }
+            $('#barcodeInput').focus();
             refreshPreview();
         }, 100);
     });

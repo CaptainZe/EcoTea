@@ -117,6 +117,56 @@
             min-height: 20px;
             max-width: 680px;
         }
+        .mark-section {
+            margin: 8px 0 18px;
+            padding: 14px 12px 6px;
+            border-top: 1px solid #E5E7EB;
+            background: #F9FAFB;
+            border-radius: 0 0 4px 4px;
+        }
+        .mark-section .mark-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0 0 12px 0;
+            padding-left: 4px;
+            letter-spacing: 0.02em;
+        }
+        .mark-section .layui-form-label {
+            width: 90px;
+        }
+        .mark-section .layui-input-block {
+            margin-left: 120px;
+        }
+        .mark-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+            min-height: 28px;
+        }
+        .mark-row .layui-form-checkbox {
+            flex: 0 0 auto;
+            margin-top: 0 !important;
+        }
+        .mark-row .mark-desc {
+            color: #6B7280;
+            font-size: 12px;
+            line-height: 22px;
+            padding-top: 2px;
+        }
+        .pack-spu-wrap {
+            max-width: 560px;
+        }
+        .pack-spu-picked {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #047857;
+            min-height: 20px;
+        }
+        .pack-spu-picked.is-empty {
+            color: #9CA3AF;
+        }
     </style>
 </head>
 <body>
@@ -300,6 +350,62 @@
             </div>
         </div>
 
+        <div class="mark-section">
+            <div class="mark-title">标记区</div>
+            <input type="hidden" name="hideExternal" id="hideExternalVal"
+                   th:value="${editItem.hideExternal != null and editItem.hideExternal == 1 ? 1 : 0}"/>
+            <input type="hidden" name="coreFlag" id="coreFlagVal"
+                   th:value="${editItem.coreFlag != null and editItem.coreFlag == 1 ? 1 : 0}"/>
+            <input type="hidden" name="tastingFlag" id="tastingFlagVal"
+                   th:value="${editItem.tastingFlag != null and editItem.tastingFlag == 1 ? 1 : 0}"/>
+            <input type="hidden" name="packSpuId" id="packSpuId"
+                   th:value="${editItem.packSpuId != null ? editItem.packSpuId : ''}"/>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">标记项</label>
+                <div class="layui-input-block">
+                    <div class="mark-row">
+                        <input type="checkbox" title="对外隐藏" lay-skin="primary" lay-filter="markHideExternal"
+                               id="chkHideExternal"
+                               th:checked="${editItem.hideExternal != null and editItem.hideExternal == 1}">
+                        <span class="mark-desc">对外在售入口查不到（内部价目 / 小程序仍可见）</span>
+                    </div>
+                    <div class="mark-row">
+                        <input type="checkbox" title="核心产品" lay-skin="primary" lay-filter="markCoreFlag"
+                               id="chkCoreFlag"
+                               th:checked="${editItem.coreFlag != null and editItem.coreFlag == 1}">
+                        <span class="mark-desc">价格透明 / 公众号文章推广等</span>
+                    </div>
+                    <div class="mark-row">
+                        <input type="checkbox" title="品鉴款" lay-skin="primary" lay-filter="markTastingFlag"
+                               id="chkTastingFlag"
+                               th:checked="${editItem.tastingFlag != null and editItem.tastingFlag == 1}">
+                        <span class="mark-desc">可挂整装 SPU；取消品鉴会清空整装</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item" id="packSpuRow"
+                 th:style="${editItem.tastingFlag != null and editItem.tastingFlag == 1} ? '' : 'display:none;'">
+                <label class="layui-form-label">整装 SPU</label>
+                <div class="layui-input-block">
+                    <div class="pack-spu-wrap">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <button type="button" class="layui-btn layui-btn-sm" id="btnPickPack">选择整装 SPU</button>
+                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" id="btnClearPack">清除</button>
+                        </div>
+                        <div class="pack-spu-picked"
+                             id="packSpuPicked"
+                             th:classappend="${packSpuLabel == null or #strings.isEmpty(packSpuLabel)} ? ' is-empty' : ''"
+                             th:text="${packSpuLabel != null and !#strings.isEmpty(packSpuLabel) ? ('已选：' + packSpuLabel) : '未指定整装（可选）'}">
+                            未指定整装（可选）
+                        </div>
+                    </div>
+                    <div class="field-tip">弹窗按名称 / 编码 / 条码筛选；不含品鉴款与当前 SPU。</div>
+                </div>
+            </div>
+        </div>
+
         <div class="layui-form-item timo-finally">
             <button type="submit" class="layui-btn" lay-submit lay-filter="submitForm">
                 <i class="fa fa-check-circle"></i> 保存
@@ -319,6 +425,9 @@
     /*<![CDATA[*/
     var maxKwCount = /*[[${maxKeywordCount}]]*/ 20;
     var maxKwLen = /*[[${maxKeywordLength}]]*/ 20;
+    var currentSpuId = /*[[${editItem != null and editItem.id != null ? editItem.id : null}]]*/ null;
+    var initialPackLabel = /*[[${packSpuLabel != null ? packSpuLabel : ''}]]*/ '';
+    var packPickUrl = /*[[@{/business/chai/spu/packPick}]]*/ '/business/chai/spu/packPick';
     /*]]>*/
     layui.use(['upload', 'form', 'layer'], function () {
         var upload = layui.upload;
@@ -332,6 +441,7 @@
         var imageList = [];
         var realImageList = [];
         var kwTokens = [];
+        var packLabelCache = initialPackLabel || '';
 
         function parseKwInitial() {
             var raw = ($('#keywordsHidden').val() || '').trim();
@@ -472,6 +582,86 @@
         });
         applyNonSaleUi(String($('select[name="nonSale"]').val()) === '1');
 
+        function syncMarkHidden(flagId, checked) {
+            $(flagId).val(checked ? '1' : '0');
+        }
+
+        function updatePackPickedUi() {
+            var id = ($('#packSpuId').val() || '').trim();
+            var $picked = $('#packSpuPicked');
+            if (id && packLabelCache) {
+                $picked.removeClass('is-empty').text('已选：' + packLabelCache);
+            } else if (id) {
+                $picked.removeClass('is-empty').text('已选：ID ' + id);
+            } else {
+                $picked.addClass('is-empty').text('未指定整装（可选）');
+            }
+        }
+
+        function clearPackSpu() {
+            $('#packSpuId').val('');
+            packLabelCache = '';
+            updatePackPickedUi();
+        }
+
+        function applyTastingUi(isTasting) {
+            syncMarkHidden('#tastingFlagVal', isTasting);
+            if (isTasting) {
+                $('#packSpuRow').show();
+            } else {
+                $('#packSpuRow').hide();
+                clearPackSpu();
+            }
+        }
+
+        form.on('checkbox(markHideExternal)', function (data) {
+            syncMarkHidden('#hideExternalVal', data.elem.checked);
+        });
+        form.on('checkbox(markCoreFlag)', function (data) {
+            syncMarkHidden('#coreFlagVal', data.elem.checked);
+        });
+        form.on('checkbox(markTastingFlag)', function (data) {
+            applyTastingUi(data.elem.checked);
+        });
+        syncMarkHidden('#hideExternalVal', $('#chkHideExternal').prop('checked'));
+        syncMarkHidden('#coreFlagVal', $('#chkCoreFlag').prop('checked'));
+        var tastingOn = $('#chkTastingFlag').prop('checked');
+        syncMarkHidden('#tastingFlagVal', tastingOn);
+        if (tastingOn) {
+            $('#packSpuRow').show();
+            updatePackPickedUi();
+        } else {
+            $('#packSpuRow').hide();
+            clearPackSpu();
+        }
+        form.render('checkbox');
+
+        window.onPackSpuPicked = function (row) {
+            if (!row || !row.id) {
+                return;
+            }
+            $('#packSpuId').val(String(row.id));
+            packLabelCache = row.label || '';
+            updatePackPickedUi();
+        };
+
+        $('#btnPickPack').on('click', function () {
+            var url = packPickUrl;
+            if (currentSpuId) {
+                url += (url.indexOf('?') >= 0 ? '&' : '?') + 'excludeId=' + encodeURIComponent(currentSpuId);
+            }
+            layer.open({
+                type: 2,
+                title: '选择整装 SPU',
+                area: ['92%', '90%'],
+                maxmin: true,
+                content: url
+            });
+        });
+        $('#btnClearPack').on('click', function () {
+            clearPackSpu();
+        });
+
         initImageGroup({
             uploadElem: '.image-upload',
             inputId: '#showImageUrls',
@@ -542,7 +732,22 @@
 
         function saveSpu(goNext, confirmDuplicate) {
             syncKwHidden();
+            syncMarkHidden('#hideExternalVal', $('#chkHideExternal').prop('checked'));
+            syncMarkHidden('#coreFlagVal', $('#chkCoreFlag').prop('checked'));
+            var tastingOn = $('#chkTastingFlag').prop('checked');
+            syncMarkHidden('#tastingFlagVal', tastingOn);
+            if (!tastingOn) {
+                clearPackSpu();
+            }
+            var $pack = $('#packSpuId');
+            var packEmpty = !($pack.val() || '').trim();
+            if (packEmpty) {
+                $pack.prop('disabled', true);
+            }
             var data = $('#editform').serialize();
+            if (packEmpty) {
+                $pack.prop('disabled', false);
+            }
             if (confirmDuplicate) {
                 data += '&confirmDuplicate=true';
             }

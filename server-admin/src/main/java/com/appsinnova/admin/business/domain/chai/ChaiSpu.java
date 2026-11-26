@@ -29,7 +29,7 @@ public class ChaiSpu implements Serializable {
     private String keywords;
     /** 检索文本（品牌名+商品名+关键词，系统生成） */
     private String searchText;
-    /** 条形码（EAN-13；一 SPU 一码） */
+    /** 【废弃】旧单列条码；业务读写切至 chai_spu_barcode */
     private String barcode;
     private Long brand;
     private Long expiration;
@@ -44,6 +44,14 @@ public class ChaiSpu implements Serializable {
     private Integer nonSale;
     /** 官方价；非卖品时为 null */
     private BigDecimal officialPrice;
+    /** 对外隐藏：0否 1是 */
+    private Integer hideExternal;
+    /** 核心产品：0否 1是 */
+    private Integer coreFlag;
+    /** 品鉴款：0否 1是 */
+    private Integer tastingFlag;
+    /** 整装 SPU ID；品鉴款可空 */
+    private Long packSpuId;
     private Integer status;
     /** 0有效 1已删除；不与 status（上下架）混用 */
     private Integer deleted;
@@ -82,4 +90,7 @@ public class ChaiSpu implements Serializable {
      */
     @Transient
     private Integer barcodeKind;
+    /** 选整装弹窗：排除当前 SPU，不入库 */
+    @Transient
+    private Long excludeId;
 }

@@ -126,7 +126,7 @@ export function formatSaleCopyText(item: SaleSkuItem, draft?: Partial<SaleCopyDr
     ...buildSaleCopyDraft(item),
     ...(draft || {}),
   }
-  const lines: string[] = [displaySaleTitle(item)]
+  const lines: string[] = ['༆ ' + displaySaleTitle(item)]
   const push = (label: string, value?: string | null) => {
     const v = value != null ? String(value).trim() : ''
     if (v) {

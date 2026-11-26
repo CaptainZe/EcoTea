@@ -74,6 +74,33 @@
       </view>
       <view class="hint" wx:if="{{nonSale === 1}}">非卖品无官方价，区间已禁用</view>
     </view>
+
+    <view class="section">
+      <view class="section-title">对外隐藏</view>
+      <view class="tag-wrap">
+        <view class="ftag {{hideExternal === null ? 'is-on' : ''}}" data-field="hideExternal" data-v="" bindtap="onMarkFlag">不限</view>
+        <view class="ftag {{hideExternal === 1 ? 'is-on' : ''}}" data-field="hideExternal" data-v="1" bindtap="onMarkFlag">是</view>
+        <view class="ftag {{hideExternal === 0 ? 'is-on' : ''}}" data-field="hideExternal" data-v="0" bindtap="onMarkFlag">否</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">核心产品</view>
+      <view class="tag-wrap">
+        <view class="ftag {{coreFlag === null ? 'is-on' : ''}}" data-field="coreFlag" data-v="" bindtap="onMarkFlag">不限</view>
+        <view class="ftag {{coreFlag === 1 ? 'is-on' : ''}}" data-field="coreFlag" data-v="1" bindtap="onMarkFlag">是</view>
+        <view class="ftag {{coreFlag === 0 ? 'is-on' : ''}}" data-field="coreFlag" data-v="0" bindtap="onMarkFlag">否</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">品鉴款</view>
+      <view class="tag-wrap">
+        <view class="ftag {{tastingFlag === null ? 'is-on' : ''}}" data-field="tastingFlag" data-v="" bindtap="onMarkFlag">不限</view>
+        <view class="ftag {{tastingFlag === 1 ? 'is-on' : ''}}" data-field="tastingFlag" data-v="1" bindtap="onMarkFlag">是</view>
+        <view class="ftag {{tastingFlag === 0 ? 'is-on' : ''}}" data-field="tastingFlag" data-v="0" bindtap="onMarkFlag">否</view>
+      </view>
+    </view>
   </scroll-view>
 
   <view class="footer">
