@@ -104,6 +104,9 @@
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
   padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
   background: var(--sale-card);
   box-shadow: 0 -4rpx 24rpx rgba(28, 36, 28, 0.06);
@@ -112,17 +115,26 @@
 }
 
 .btn {
-  width: 100%;
+  flex: 1;
   height: 88rpx;
   border-radius: 44rpx;
-  background: var(--sale-accent);
-  color: #fff;
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 650;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn.primary {
+  background: var(--sale-accent);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: var(--sale-card);
+  color: var(--sale-accent);
+  border: 2rpx solid var(--sale-accent);
 }
 
 .btn-hover {

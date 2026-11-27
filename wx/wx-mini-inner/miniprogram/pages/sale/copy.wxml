@@ -35,7 +35,8 @@
 
   <view class="bar-space"></view>
   <view class="bar">
-    <view class="btn" bindtap="onCopy" hover-class="btn-hover">复制文案</view>
+    <view class="btn primary" bindtap="onCopyPlain" hover-class="btn-hover">复制文案</view>
+    <view class="btn ghost" bindtap="onCopyMarked" hover-class="btn-hover">复制文案（带标识）</view>
   </view>
 </view>
 

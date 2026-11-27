@@ -124,9 +124,18 @@ Page({
     const m = saleLine.match(/（([^）]+)）/)
     if (m) discountHint = m[1]
     this.setData({
-      preview: formatSaleCopyText(item, draft),
+      preview: formatSaleCopyText(item, draft, false),
       discountHint,
     })
+  },
+
+  currentDraft() {
+    return {
+      packLine: this.data.packLine,
+      salePriceNum: this.data.salePriceNum,
+      qty: this.data.qty,
+      remark: this.data.remark,
+    }
   },
 
   onPack(e: WechatMiniprogram.Input) {
@@ -145,8 +154,21 @@ Page({
     this.setData({ remark: e.detail.value }, () => this.refreshPreview())
   },
 
-  onCopy() {
-    const text = this.data.preview
+  onCopyPlain() {
+    this.copyText(false)
+  },
+
+  onCopyMarked() {
+    this.copyText(true)
+  },
+
+  copyText(withMark: boolean) {
+    const item = this.data.item
+    if (!item) {
+      wx.showToast({ title: '文案为空', icon: 'none' })
+      return
+    }
+    const text = formatSaleCopyText(item, this.currentDraft(), withMark)
     if (!text) {
       wx.showToast({ title: '文案为空', icon: 'none' })
       return

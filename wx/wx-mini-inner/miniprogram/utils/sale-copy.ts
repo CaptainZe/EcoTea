@@ -120,13 +120,19 @@ export function buildSaleCopyDraft(item: SaleSkuItem): SaleCopyDraft {
 
 /**
  * 客户向文案：标题 / 等级 / 规格 / 原封行 / 生产日期 / 保质期 / 官方 / 售价 / 数量 / 备注
+ * @param withMark 标题前是否加「༆ 」标识，默认 false
  */
-export function formatSaleCopyText(item: SaleSkuItem, draft?: Partial<SaleCopyDraft>): string {
+export function formatSaleCopyText(
+  item: SaleSkuItem,
+  draft?: Partial<SaleCopyDraft>,
+  withMark = false
+): string {
   const d = {
     ...buildSaleCopyDraft(item),
     ...(draft || {}),
   }
-  const lines: string[] = ['༆ ' + displaySaleTitle(item)]
+  const title = displaySaleTitle(item)
+  const lines: string[] = [withMark ? '༆ ' + title : title]
   const push = (label: string, value?: string | null) => {
     const v = value != null ? String(value).trim() : ''
     if (v) {
